@@ -1,0 +1,291 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   <!--
+This HTML was auto-generated from MATLAB code.
+To make changes, update the MATLAB code and republish this document.
+      --><title>aero_stripTheory_usteady_LeishmanIndicial</title><meta name="generator" content="MATLAB 9.4"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2019-01-29"><meta name="DC.source" content="aero_stripTheory_usteady_LeishmanIndicial.m"><style type="text/css">
+html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,sub,sup,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
+
+html { min-height:100%; margin-bottom:1px; }
+html body { height:100%; margin:0px; font-family:Arial, Helvetica, sans-serif; font-size:10px; color:#000; line-height:140%; background:#fff none; overflow-y:scroll; }
+html body td { vertical-align:top; text-align:left; }
+
+h1 { padding:0px; margin:0px 0px 25px; font-family:Arial, Helvetica, sans-serif; font-size:1.5em; color:#d55000; line-height:100%; font-weight:normal; }
+h2 { padding:0px; margin:0px 0px 8px; font-family:Arial, Helvetica, sans-serif; font-size:1.2em; color:#000; font-weight:bold; line-height:140%; border-bottom:1px solid #d6d4d4; display:block; }
+h3 { padding:0px; margin:0px 0px 5px; font-family:Arial, Helvetica, sans-serif; font-size:1.1em; color:#000; font-weight:bold; line-height:140%; }
+
+a { color:#005fce; text-decoration:none; }
+a:hover { color:#005fce; text-decoration:underline; }
+a:visited { color:#004aa0; text-decoration:none; }
+
+p { padding:0px; margin:0px 0px 20px; }
+img { padding:0px; margin:0px 0px 20px; border:none; }
+p img, pre img, tt img, li img, h1 img, h2 img { margin-bottom:0px; } 
+
+ul { padding:0px; margin:0px 0px 20px 23px; list-style:square; }
+ul li { padding:0px; margin:0px 0px 7px 0px; }
+ul li ul { padding:5px 0px 0px; margin:0px 0px 7px 23px; }
+ul li ol li { list-style:decimal; }
+ol { padding:0px; margin:0px 0px 20px 0px; list-style:decimal; }
+ol li { padding:0px; margin:0px 0px 7px 23px; list-style-type:decimal; }
+ol li ol { padding:5px 0px 0px; margin:0px 0px 7px 0px; }
+ol li ol li { list-style-type:lower-alpha; }
+ol li ul { padding-top:7px; }
+ol li ul li { list-style:square; }
+
+.content { font-size:1.2em; line-height:140%; padding: 20px; }
+
+pre, code { font-size:12px; }
+tt { font-size: 1.2em; }
+pre { margin:0px 0px 20px; }
+pre.codeinput { padding:10px; border:1px solid #d3d3d3; background:#f7f7f7; }
+pre.codeoutput { padding:10px 11px; margin:0px 0px 20px; color:#4c4c4c; }
+pre.error { color:red; }
+
+@media print { pre.codeinput, pre.codeoutput { word-wrap:break-word; width:100%; } }
+
+span.keyword { color:#0000FF }
+span.comment { color:#228B22 }
+span.string { color:#A020F0 }
+span.untermstring { color:#B20000 }
+span.syscmd { color:#B28C00 }
+
+.footer { width:auto; padding:10px 0px; margin:25px 0px 0px; border-top:1px dotted #878787; font-size:0.8em; line-height:140%; font-style:italic; color:#878787; text-align:left; float:none; }
+.footer p { margin:0px; }
+.footer a { color:#878787; }
+.footer a:hover { color:#878787; text-decoration:underline; }
+.footer a:visited { color:#878787; }
+
+table th { padding:7px 5px; text-align:left; vertical-align:middle; border: 1px solid #d6d4d4; font-weight:bold; }
+table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px solid #d6d4d4; }
+
+
+
+
+
+  </style></head><body><div class="content"><h2>Contents</h2><div><ul><li><a href="#3">coded implementation of Leishman's Indicial Response Method</a></li><li><a href="#4">Define Aerodynamic Parameters</a></li><li><a href="#5">Define Wagners Function</a></li><li><a href="#7">Aerodynamic State ODE</a></li><li><a href="#10">Lift Coefficient</a></li><li><a href="#14">Moment Coefficient</a></li><li><a href="#18">Create Aerodynamic Force Vectors</a></li></ul></div><pre class="codeinput"><span class="keyword">function</span> [dQaero,Qaero,Fqc,Mqc,Drag,alpha] = aero_stripTheory_usteady_LeishmanIndicial(Qaero,rho,Vinf,V3qrt,xAp,yAp,zAp,Omega,chord,width,AIC,C_D0,qsteady)
+</pre><pre class="codeinput"><span class="comment">%                                                                          - C.Howcroft</span>
+</pre><h2 id="3">coded implementation of Leishman's Indicial Response Method</h2><p>[use publish button to view latex comments]</p><pre class="codeinput"><span class="comment">% INPUT ARGUMENTS</span>
+<span class="comment">% Qaero [nxv] - aerodynamic state vector</span>
+<span class="comment">% rho [1] - air density</span>
+<span class="comment">% Vinf [3x1] - free stream flow vector (magnitude = flight speed)</span>
+<span class="comment">% V3qrt [3xv] - velocity of the three quarter chord point</span>
+<span class="comment">% xAp [3xv] - unit vector in the strip chordwise direction from leading to trailing edge</span>
+<span class="comment">% yAp [3xv] - unit vector perpendicular to xAp and normal to the aerofoil cross sectional plane, pitch up is positive in this direction</span>
+<span class="comment">% zAp [3xv] - out of plane unit vector perpendicular to xAp and yAp</span>
+<span class="comment">% Omega [3xv] - rotational velocity of the aerodynamic strip</span>
+<span class="comment">% chord [1xv] - chord length of the strip in the xAp direction</span>
+<span class="comment">% width [1xv] - width of the strip in the yAp direction</span>
+<span class="comment">% AIC [1xv] - aerodynamic influence coefficients by which the aerodynamic forces are scaled</span>
+<span class="comment">% C_D0 [1xv] - coefficient of parasitic drag, calculated externally by empirical function and supplied by user (set C_D0=0 to neglect this effect)</span>
+<span class="comment">% qsteady [true/(false or unspecified)] - quasi steady flag, set to true to bypass unsteady terms</span>
+
+<span class="comment">% Notes:</span>
+<span class="comment">% - a single arbitrary inertial reference coordinate system must be selected in which to specify the [3x...] input quantities</span>
+<span class="comment">%   output quantities are returned in this same reference system</span>
+<span class="comment">% - this aerodynamic function is vectorised by stacking multiple inputs along dimension v</span>
+<span class="comment">%   v may be along any dimension except the 1st (dim v = 2 in these example comments)</span>
+<span class="comment">%   the output is vectorised along the same dimension</span>
+
+<span class="comment">% OUTPUT</span>
+<span class="comment">% dQaero [nxv] - time derivative of aerodynamic state vector</span>
+<span class="comment">% Qaero [nxv] - if qsteady is true then Qaero is assigned the quasi steady state value, else Qaero is simply passed through the function unchanged</span>
+<span class="comment">% Fqc [3xv] - aerodynamic force vector generated at the 1/4 chord location excluding parasitic drag</span>
+<span class="comment">% Mqc [3xv] - aerodynamic moment vector generated at the 1/4 chord location</span>
+<span class="comment">% Drag [3xv] - parasitic drag vector</span>
+</pre><h2 id="4">Define Aerodynamic Parameters</h2><pre class="codeinput"><span class="comment">%Calculate apparent flow vector at 3/4 chord</span>
+Vflow = bsxfun(@plus,Vinf,-V3qrt);
+velocity = sum(Vflow.^2,1).^0.5;
+
+<span class="comment">%Take components of this apparent flow in the strip coordinate system</span>
+vx3qrt = sum(Vflow.*xAp,1);
+<span class="comment">%vy3qrt = Vflow.'*yAp; Not Used</span>
+vz3qrt = sum(Vflow.*zAp,1);
+
+<span class="comment">%neglect linear and angular acceleration contributions to non-circulatory terms</span>
+dvzmid_dt = 0;
+d2alpha_dt2 = 0;
+
+<span class="comment">% Dynamic Pressure</span>
+Pdyn = 0.5*rho*velocity.^2;
+
+<span class="comment">%Angle of attack of strip</span>
+alpha = atan(vz3qrt./vx3qrt);
+
+<span class="comment">%d[alpha]/dt</span>
+dalpha_dt = sum(Omega.*yAp,1);
+
+<span class="comment">%Half chord</span>
+b = chord/2;
+</pre><pre class="codeoutput error">Not enough input arguments.
+
+Error in aero_stripTheory_usteady_LeishmanIndicial (line 38)
+Vflow = bsxfun(@plus,Vinf,-V3qrt);
+</pre><h2 id="5">Define Wagners Function</h2><p>Exponential approximation of Wagners Function psi(t)</p><p><img src="aero_stripTheory_usteady_LeishmanIndicial_eq11551129567319040187.png" alt="$$\psi(t) = 1 - \sum_{i=1}^{N} a_i e^{-b_i s}\;\;, \qquad s = \frac{v_x t}{b}$">$ for R.T. Jones approximation</p><pre class="codeinput">aiCoeffs = [0.165 ; 0.335];
+biCoeffs = [0.041 ; 0.32 ];
+
+<span class="comment">%initial value of Wagners Function</span>
+psi_0 = 1 - sum(aiCoeffs);
+</pre><h2 id="7">Aerodynamic State ODE</h2><p>Bypass unsteady terms if qsteady flag is 'true'</p><p><img src="aero_stripTheory_usteady_LeishmanIndicial_eq06518777270946609392.png" alt="$$\dot\xi_i = 0\;\;,\qquad$$&#xA;$$\xi_i = \frac{b\alpha}{b_i v_x}$$"></p><pre class="codeinput"><span class="keyword">if</span> nargin &gt; 12 &amp;&amp; qsteady
+    dalpha_dt = 0;
+    Qaero = bsxfun(@times, b.*alpha./vx3qrt, 1./biCoeffs);
+    dQaero = Qaero*0;
+<span class="keyword">else</span>
+</pre><p>else get state derivative from ode</p><p><img src="aero_stripTheory_usteady_LeishmanIndicial_eq05014020505791546452.png" alt="$$\dot\xi_i + b_i\frac{v_x}{b}\xi_i = \alpha$$"></p><pre class="codeinput">dQaero = bsxfun(@plus, alpha , -bsxfun(@times, (vx3qrt./b) , bsxfun(@times,biCoeffs,Qaero) ) );
+<span class="keyword">end</span>
+</pre><h2 id="10">Lift Coefficient</h2><p>Circulatory Component</p><p><img src="aero_stripTheory_usteady_LeishmanIndicial_eq13806308741009363468.png" alt="$$C_{Lc} = 2\pi\alpha\psi(0) + 2\pi\frac{v_x}{b}\sum_{i=1}^{N} a_i b_i \xi_i$$"></p><pre class="codeinput">C_Lc = 2*pi*alpha*psi_0 + 2*pi*vx3qrt./b.*sum( bsxfun(@times,aiCoeffs.*biCoeffs,Qaero) , 1 );
+</pre><p>Non-circulatory Component</p><p><img src="aero_stripTheory_usteady_LeishmanIndicial_eq04374187409252199344.png" alt="$$C_{Li} = \pi\frac{b}{v_x^2}( v_x \dot{\alpha} - \dot{v}_{zMid})$$"></p><pre class="codeinput">C_Li = pi*b./vx3qrt.^2.*( vx3qrt.*dalpha_dt - dvzmid_dt );
+</pre><p>Add circulatory and non-circulatory components to obtain lift coefficient</p><pre class="codeinput">CL = C_Lc + C_Li;
+</pre><h2 id="14">Moment Coefficient</h2><p>Circulatory Component</p><pre class="codeinput">C_Mc = 0; <span class="comment">%zero when taken at quarter chord</span>
+</pre><p>Non-circulatory Component</p><p><img src="aero_stripTheory_usteady_LeishmanIndicial_eq16056647794090509638.png" alt="$$C_{Li} = \pi\frac{b^2}{v_x^2}(-v_x \dot{\alpha} + \frac{1}{2}( \dot{v}_{zMid} - \frac{b}{4}\ddot{\alpha} ))$$"></p><pre class="codeinput">C_Mi = pi*b.^2./vx3qrt.^2.*(-vx3qrt.*dalpha_dt + 0.5*(dvzmid_dt - b/4*d2alpha_dt2) );
+</pre><p>Add circulatory and non-circulatory components to obtain lift coefficient</p><pre class="codeinput">CM = C_Mc + C_Mi;
+</pre><h2 id="18">Create Aerodynamic Force Vectors</h2><p>Lift</p><pre class="codeinput">Fqc  = bsxfun(@times, Pdyn.*chord.*width.*AIC.*CL , zAp); <span class="comment">%Include circulatory component of drag by casting this aero force normal to the strip (ie. in the zAp direction).</span>
+</pre><p>Moment</p><pre class="codeinput">Mqc  = bsxfun(@times, Pdyn.*chord.*width.*AIC.*CM , yAp);
+</pre><p>Parasitic Drag</p><pre class="codeinput">Drag = bsxfun(@times, Pdyn.*chord.*width.*AIC.*C_D0 , xAp);
+</pre><pre class="codeinput"><span class="keyword">end</span>
+</pre><p class="footer"><br><a href="https://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2018a</a><br></p></div><!--
+##### SOURCE BEGIN #####
+function [dQaero,Qaero,Fqc,Mqc,Drag,alpha] = aero_stripTheory_usteady_LeishmanIndicial(Qaero,rho,Vinf,V3qrt,xAp,yAp,zAp,Omega,chord,width,AIC,C_D0,qsteady)
+%                                                                          - C.Howcroft
+%% coded implementation of Leishman's Indicial Response Method
+% [use publish button to view latex comments]
+% 
+
+% INPUT ARGUMENTS
+% Qaero [nxv] - aerodynamic state vector
+% rho [1] - air density
+% Vinf [3x1] - free stream flow vector (magnitude = flight speed)
+% V3qrt [3xv] - velocity of the three quarter chord point
+% xAp [3xv] - unit vector in the strip chordwise direction from leading to trailing edge
+% yAp [3xv] - unit vector perpendicular to xAp and normal to the aerofoil cross sectional plane, pitch up is positive in this direction
+% zAp [3xv] - out of plane unit vector perpendicular to xAp and yAp
+% Omega [3xv] - rotational velocity of the aerodynamic strip
+% chord [1xv] - chord length of the strip in the xAp direction
+% width [1xv] - width of the strip in the yAp direction
+% AIC [1xv] - aerodynamic influence coefficients by which the aerodynamic forces are scaled
+% C_D0 [1xv] - coefficient of parasitic drag, calculated externally by empirical function and supplied by user (set C_D0=0 to neglect this effect)
+% qsteady [true/(false or unspecified)] - quasi steady flag, set to true to bypass unsteady terms
+
+% Notes:
+% - a single arbitrary inertial reference coordinate system must be selected in which to specify the [3x...] input quantities
+%   output quantities are returned in this same reference system
+% - this aerodynamic function is vectorised by stacking multiple inputs along dimension v
+%   v may be along any dimension except the 1st (dim v = 2 in these example comments)
+%   the output is vectorised along the same dimension
+
+% OUTPUT
+% dQaero [nxv] - time derivative of aerodynamic state vector
+% Qaero [nxv] - if qsteady is true then Qaero is assigned the quasi steady state value, else Qaero is simply passed through the function unchanged
+% Fqc [3xv] - aerodynamic force vector generated at the 1/4 chord location excluding parasitic drag
+% Mqc [3xv] - aerodynamic moment vector generated at the 1/4 chord location
+% Drag [3xv] - parasitic drag vector
+
+%% Define Aerodynamic Parameters
+%Calculate apparent flow vector at 3/4 chord
+Vflow = bsxfun(@plus,Vinf,-V3qrt);
+velocity = sum(Vflow.^2,1).^0.5;
+
+%Take components of this apparent flow in the strip coordinate system
+vx3qrt = sum(Vflow.*xAp,1);
+%vy3qrt = Vflow.'*yAp; Not Used
+vz3qrt = sum(Vflow.*zAp,1);
+
+%neglect linear and angular acceleration contributions to non-circulatory terms
+dvzmid_dt = 0;
+d2alpha_dt2 = 0;
+
+% Dynamic Pressure
+Pdyn = 0.5*rho*velocity.^2;
+
+%Angle of attack of strip
+alpha = atan(vz3qrt./vx3qrt);
+
+%d[alpha]/dt
+dalpha_dt = sum(Omega.*yAp,1);
+
+%Half chord
+b = chord/2;
+
+%% Define Wagners Function
+%%%
+% Exponential approximation of Wagners Function psi(t)
+%
+                                                                           % $$\psi(t) = 1 - \sum_{i=1}^{N} a_i e^{-b_i s}\;\;, \qquad s = \frac{v_x t}{b}$$
+% for R.T. Jones approximation
+aiCoeffs = [0.165 ; 0.335];
+biCoeffs = [0.041 ; 0.32 ];
+
+%initial value of Wagners Function
+psi_0 = 1 - sum(aiCoeffs);
+
+%% Aerodynamic State ODE
+%%%
+% Bypass unsteady terms if qsteady flag is 'true'
+%
+                                                                           % $$\dot\xi_i = 0\;\;,\qquad$$
+                                                                           % $$\xi_i = \frac{b\alpha}{b_i v_x}$$
+if nargin > 12 && qsteady
+    dalpha_dt = 0;
+    Qaero = bsxfun(@times, b.*alpha./vx3qrt, 1./biCoeffs);
+    dQaero = Qaero*0;
+else
+%%%
+% else get state derivative from ode
+%
+                                                                           % $$\dot\xi_i + b_i\frac{v_x}{b}\xi_i = \alpha$$
+dQaero = bsxfun(@plus, alpha , -bsxfun(@times, (vx3qrt./b) , bsxfun(@times,biCoeffs,Qaero) ) );
+end
+
+%% Lift Coefficient
+%%%
+% Circulatory Component
+%
+                                                                           % $$C_{Lc} = 2\pi\alpha\psi(0) + 2\pi\frac{v_x}{b}\sum_{i=1}^{N} a_i b_i \xi_i$$
+C_Lc = 2*pi*alpha*psi_0 + 2*pi*vx3qrt./b.*sum( bsxfun(@times,aiCoeffs.*biCoeffs,Qaero) , 1 );
+
+%%%
+% Non-circulatory Component
+%
+                                                                           % $$C_{Li} = \pi\frac{b}{v_x^2}( v_x \dot{\alpha} - \dot{v}_{zMid})$$
+C_Li = pi*b./vx3qrt.^2.*( vx3qrt.*dalpha_dt - dvzmid_dt );
+
+%%%
+% Add circulatory and non-circulatory components to obtain lift coefficient
+CL = C_Lc + C_Li;
+
+%% Moment Coefficient
+%%%
+% Circulatory Component
+C_Mc = 0; %zero when taken at quarter chord
+
+%%%
+% Non-circulatory Component
+%
+                                                                           % $$C_{Li} = \pi\frac{b^2}{v_x^2}(-v_x \dot{\alpha} + \frac{1}{2}( \dot{v}_{zMid} - \frac{b}{4}\ddot{\alpha} ))$$
+C_Mi = pi*b.^2./vx3qrt.^2.*(-vx3qrt.*dalpha_dt + 0.5*(dvzmid_dt - b/4*d2alpha_dt2) );
+
+%%%
+% Add circulatory and non-circulatory components to obtain lift coefficient
+CM = C_Mc + C_Mi;
+
+%% Create Aerodynamic Force Vectors
+%%%
+% Lift
+Fqc  = bsxfun(@times, Pdyn.*chord.*width.*AIC.*CL , zAp); %Include circulatory component of drag by casting this aero force normal to the strip (ie. in the zAp direction).
+
+%%%
+% Moment
+Mqc  = bsxfun(@times, Pdyn.*chord.*width.*AIC.*CM , yAp);
+
+%%%
+% Parasitic Drag
+Drag = bsxfun(@times, Pdyn.*chord.*width.*AIC.*C_D0 , xAp);
+
+end
+
+
+##### SOURCE END #####
+--></body></html>
