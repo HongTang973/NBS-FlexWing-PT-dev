@@ -18,10 +18,12 @@ if nargin == 0
 end
 
 %mtimesx('LOOPS');
-addpath('./utility_functions');
-addpath('./static_method_groups');
-addpath('./aerodynamic_codes');
+% addpath('./utility_functions');
+% addpath('./static_method_groups');
+% addpath('./aerodynamic_codes');
 %addpath(genpath('.')) <- add all subfolders to search path
+
+%TODO - add generic inputParser;
 
 analysisType = get_option(varargin,'analysisType','dynamic');
 solver = get_option(varargin,'solver','ode15s');

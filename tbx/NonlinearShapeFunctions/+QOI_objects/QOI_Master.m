@@ -36,9 +36,9 @@ classdef QOI_Master < handle
             
             Display = get_option(varargin,'display',true);
             
-            addpath('./utility_functions');
-            addpath('./static_method_groups');
-            addpath('./aerodynamic_codes');
+%             addpath('./utility_functions');
+%             addpath('./static_method_groups');
+%             addpath('./aerodynamic_codes');
             
             if Display, disp('Pushing request to qoi objects'); end
             obj.preProcess_qoi_request(qoiRequestSource);

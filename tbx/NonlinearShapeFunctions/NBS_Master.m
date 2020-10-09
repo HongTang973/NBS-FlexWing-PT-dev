@@ -104,10 +104,12 @@ classdef NBS_Master < handle
     methods %constuctor and parameter methods
     
     function obj = NBS_Master(varargin)
-        addpath('./utility_functions');
-        addpath('./static_method_groups');
-        addpath('./aerodynamic_codes');
-        addpath('./user_functions');
+        package_dir = fileparts(mfilename('fullpath'));
+        addpath(fullfile(package_dir, 'utility_functions'));
+        addpath(fullfile(package_dir, 'static_method_groups'));
+        addpath(fullfile(package_dir, 'static_method_groups_mcode'));
+        addpath(fullfile(package_dir, 'aerodynamic_codes'));
+        addpath(fullfile(package_dir, 'user_functions'));
         
         obj.object_creation_date = datetime;
         obj.ModelName = get_option(varargin,'Global',[]);

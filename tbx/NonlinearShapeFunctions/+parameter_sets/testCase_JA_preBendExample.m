@@ -43,7 +43,7 @@ O_Blade.shape_BCs_exten = [1 1;1 1;1 1];
 O_Blade.qth.n = 4; O_Blade.qth.group = 'qth1';
 O_Blade.qsi.n = 4; O_Blade.qsi.group = 'qsi1';
 O_Blade.qph.n = 4; O_Blade.qph.group = 'qph1';
-O_Blade.qSx.n = 0; O_Blade.qSx.group = 'qSx1';
+O_Blade.qSx.n = 0; O_Blade.qSx.group = 'qSx1';  %TODO - Unit test the case where we have no shear/extension states
 O_Blade.qSy.n = 0; O_Blade.qSy.group = 'qSy1';
 O_Blade.qSz.n = 0; O_Blade.qSz.group = 'qSz1';
 
