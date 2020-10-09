@@ -7,13 +7,24 @@ classdef Test_NonlinearShapeFunctions < matlab.unittest.TestCase
     end
     
     %   - examples
+%     methods (TestMethodSetup)
+%         function create_figures(obj)
+%             obj.TestFigure = figure('Name', 'MyTestFigure');
+%         end
+%     end
     methods (Test)
-        function example_run_example_scripts(obj, ExampleBasedTest)
+        function example_run_example_scripts(~, ExampleBasedTest)
             %runExamples Attempts to run each of the example files in the
             %'../examples/' directory.
                         
             run(ExampleBasedTest);
             
+        end
+    end
+    methods (TestMethodTeardown)
+        function remove_figures(~)
+            hFigure = findobj(0, 'Type', 'Figure');
+            close(hFigure);
         end
     end
 end
