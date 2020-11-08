@@ -1060,6 +1060,7 @@ classdef NBS_flexPart_nonlinear < handle
             dtau_y_dsdy = mult_Anm1_Bmpz(Q(dSy_idx).',dB_Sy);
             dtau_z_dsdy = mult_Anm1_Bmpz(Q(dSz_idx).',dB_Sz);
             %~~ Shear state derivatives
+            
             if isempty(B_Sx_tr)
                 dtau_x_dqsx = zeros(1, 1, ns, 0);
             else
@@ -1075,6 +1076,7 @@ classdef NBS_flexPart_nonlinear < handle
             else
                 dtau_z_dqsz = permute(B_Sz_tr,[1 4 3 2]);    % tau_z variation with respect to shear_z states
             end  
+            
             nSx = numel(Sx_idx);
             nSy = numel(Sy_idx);
             nSz = numel(Sz_idx);

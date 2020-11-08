@@ -107,7 +107,6 @@ classdef NBS_Master < handle
         package_dir = fileparts(mfilename('fullpath'));
         addpath(fullfile(package_dir, 'utility_functions'));
         addpath(fullfile(package_dir, 'static_method_groups'));
-        addpath(fullfile(package_dir, 'static_method_groups_mcode'));
         addpath(fullfile(package_dir, 'aerodynamic_codes'));
         addpath(fullfile(package_dir, 'user_functions'));
         
