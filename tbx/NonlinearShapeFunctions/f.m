@@ -512,7 +512,7 @@ switch outputFormat
     
     case 'qoi'
     
-    QOI_Container = get_field(SimObject,'QOI_Master.QOIcontainers_struct.aircraft'); %TODO read properties(QOI_Master) to get 'QOIcontainers_struct' string
+    QOI_Container = get_field(SimObject,['QOI_Master.QOIcontainers_struct.',NBS_Master_partName]); %TODO read properties(QOI_Master) to get 'QOIcontainers_struct' string
     CoM_info = [CoM_info_flexPart_nonlinear , CoM_info_rigidPart];
     aircraftMass = sum(CoM_info(1,:));
     QOI_Container.add_qoi('aircraftMass',tidx,aircraftMass,'1','Aircraft Mass','kg');
