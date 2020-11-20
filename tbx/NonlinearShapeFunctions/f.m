@@ -91,7 +91,50 @@ rR_idx  = StateInfo{'Index','qRigidR'}{:};
 drT_idx = StateInfo{'Index','dqRigidT'}{:};
 drR_idx = StateInfo{'Index','dqRigidR'}{:};
 
-if ~FLAG_free_free
+if FLAG_free_free
+    
+    rBarA_G = Q(rT_idx);
+    Beta_G = Q(rR_idx);
+    drBarA_dt_G = Q(drT_idx);
+    Omega_G = Q(drR_idx);
+    
+    d2rBarA_dt2_G_star = [0;0;0];
+    dOmega_dt_G_star = [0;0;0];
+    BetaNorm_G = max(norm(Beta_G),1e-10);
+    R_G_A = r_matrix(Beta_G./BetaNorm_G,BetaNorm_G);
+    OmegaSkew_G = getSkewMat(Omega_G); dOmega_dtSkew_G_star = getSkewMat(dOmega_dt_G_star);
+    dR_G_A_dt = OmegaSkew_G*R_G_A;
+    d2R_G_A_dt2_star = dOmega_dtSkew_G_star*R_G_A + OmegaSkew_G*OmegaSkew_G*R_G_A;
+    
+    skewX = getSkewMat([1;0;0]);
+    skewY = getSkewMat([0;1;0]);
+    skewZ = getSkewMat([0;0;1]);
+    
+    dR_G_A_dqr_Dim3x3x1xnqr = MultiProd_(cat(4,zeros(3,3,1,3),skewX,skewY,skewZ) , R_G_A);
+    dvarTheta_dqr_G_Dim3x1x1xnqr = reshape([zeros(3) eye(3)],3,1,1,6);
+    drBarA_G_dqr_G_Dim3x1x1xnqr = reshape([eye(3) zeros(3)],3,1,1,6);
+   
+elseif ~isempty(SimObject.CUSTOM_free_states)
+    
+    custom_free_state_map = SimObject.CUSTOM_free_states(SimObject,Q,t);
+    
+    rBarA_G = custom_free_state_map.rBarA_G;
+    drBarA_dt_G = custom_free_state_map.drBarA_dt_G;
+    Beta_G = custom_free_state_map.Beta_G;
+    R_G_A = custom_free_state_map.R_G_A;
+    Omega_G = custom_free_state_map.Omega_G;
+    dR_G_A_dqr_Dim3x3x1xnqr = custom_free_state_map.dR_G_A_dqr_Dim3x3x1xnqr;
+    dvarTheta_dqr_G_Dim3x1x1xnqr = custom_free_state_map.dvarTheta_dqr_G_Dim3x1x1xnqr;
+    drBarA_G_dqr_G_Dim3x1x1xnqr = custom_free_state_map.drBarA_G_dqr_G_Dim3x1x1xnqr;
+    
+    d2rBarA_dt2_G_star = [0;0;0];
+    dOmega_dt_G_star = [0;0;0];
+    BetaNorm_G = max(norm(Beta_G),1e-10);
+    OmegaSkew_G = getSkewMat(Omega_G); dOmega_dtSkew_G_star = getSkewMat(dOmega_dt_G_star);
+    dR_G_A_dt = OmegaSkew_G*R_G_A;
+    d2R_G_A_dt2_star = dOmega_dtSkew_G_star*R_G_A + OmegaSkew_G*OmegaSkew_G*R_G_A;
+    
+else
     
     if ~isempty(SimObject.prescribedMotion_fnc)
         prescribed_motion = SimObject.prescribedMotion(SimObject,t);
@@ -120,34 +163,7 @@ if ~FLAG_free_free
     dR_G_A_dqr_Dim3x3x1xnqr = zeros(3,3,1,0);
     dvarTheta_dqr_G_Dim3x1x1xnqr = zeros(3,1,1,0);
     drBarA_G_dqr_G_Dim3x1x1xnqr = zeros(3,1,1,0);
-    
-else
-    
-    rBarA_G = Q(rT_idx);
-    Beta_G = Q(rR_idx);
-    drBarA_dt_G = Q(drT_idx);
-    Omega_G = Q(drR_idx);
-    
-    d2rBarA_dt2_G_star = [0;0;0];
-    dOmega_dt_G_star = [0;0;0];
-    BetaNorm_G = max(norm(Beta_G),1e-10);
-    R_G_A = r_matrix(Beta_G./BetaNorm_G,BetaNorm_G);
-    OmegaSkew_G = getSkewMat(Omega_G); dOmega_dtSkew_G_star = getSkewMat(dOmega_dt_G_star);
-    dR_G_A_dt = OmegaSkew_G*R_G_A;
-    d2R_G_A_dt2_star = dOmega_dtSkew_G_star*R_G_A + OmegaSkew_G*OmegaSkew_G*R_G_A;
-    
-    skewX = getSkewMat([1;0;0]);
-    skewY = getSkewMat([0;1;0]);
-    skewZ = getSkewMat([0;0;1]);
-    
-    dR_G_A_dqr_Dim3x3x1xnqr = MultiProd_(cat(4,zeros(3,3,1,3),skewX,skewY,skewZ) , R_G_A);
-    dvarTheta_dqr_G_Dim3x1x1xnqr = reshape([zeros(3) eye(3)],3,1,1,6);
-    drBarA_G_dqr_G_Dim3x1x1xnqr = reshape([eye(3) zeros(3)],3,1,1,6);
-    
 end
-
-
-
 
 output = [];
 
@@ -496,7 +512,7 @@ switch outputFormat
     
     case 'qoi'
     
-    QOI_Container = get_field(SimObject,'QOI_Master.QOIcontainers_struct.aircraft'); %TODO read properties(QOI_Master) to get 'QOIcontainers_struct' string
+    QOI_Container = get_field(SimObject,['QOI_Master.QOIcontainers_struct.',NBS_Master_partName]); %TODO read properties(QOI_Master) to get 'QOIcontainers_struct' string
     CoM_info = [CoM_info_flexPart_nonlinear , CoM_info_rigidPart];
     aircraftMass = sum(CoM_info(1,:));
     QOI_Container.add_qoi('aircraftMass',tidx,aircraftMass,'1','Aircraft Mass','kg');

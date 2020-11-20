@@ -13,6 +13,7 @@ classdef NBS_Master < handle
         gravVec_G = [0;0;-1]                                               %[-] global orientation of gravitational acceleration (unit vector)
         aerodynamics                                                       %[-] aerodynamics switch
         prescribedMotion_fnc                                               %handle to a function that prescribes an enforced motion of the aircraft reference point
+        CUSTOM_free_states                                                 %handle to a function that prescribes a mapping from a set of kinematic states to position/rotational quantities and their variations
         
         StateInfo
                         StateMap_cell
@@ -101,14 +102,18 @@ classdef NBS_Master < handle
 %//////////////////////////////////////////////////////////////////////////
 %==========================================================================
     methods %constuctor and parameter methods
-    
+        
     function obj = NBS_Master(varargin)
-        addpath('./utility_functions');
-        addpath('./static_method_groups');
-        addpath('./aerodynamic_codes');
+        
+        package_dir = fileparts(mfilename('fullpath'));
+        addpath(fullfile(package_dir, 'utility_functions'));
+        addpath(fullfile(package_dir, 'static_method_groups'));
+        addpath(fullfile(package_dir, 'aerodynamic_codes'));
+        addpath(fullfile(package_dir, 'user_functions'));
         
         obj.object_creation_date = datetime;
         obj.ModelName = get_option(varargin,'Global',[]);
+        obj.partName = get_option(varargin,'partName',[]);
 %                                                                          obj.archive('f.m');
 %                                                                          obj.archive('NBS_Master.m');
 %                                                                          obj.archive('NBS_flexPart_nonlinear.m');

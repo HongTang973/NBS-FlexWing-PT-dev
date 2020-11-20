@@ -50,7 +50,7 @@ classdef NBS_flexPart_nonlinear < handle
                         ApWidths_pm                                        %[m] aero panel widths in the eyAp direction
         w                                                                  %[m] wing width in the ex direction
         h                                                                  %[m] wing thicknesses
-       %aero_cntr = 0.25;                                                  %[-] assumed aero centres for each panel (percentage of chord)
+        aero_cntr = 0.25;                                                  %[-] assumed aero centres for each panel (percentage of chord)
         beam_cntr                                                          %[-] beam centre locations (percentage of chord)
                         beam_cntr_pm                                       %[-] beam centre sampled at aero panel mid points
                         beam_cntr_pn                                       %[-] beam centre sampled at aero panel nodal points
@@ -974,7 +974,7 @@ classdef NBS_flexPart_nonlinear < handle
             
             nqs = obj.nqs;
             nqa = obj.nqa;
-            nqe = nqr;
+            nqr = size(dR_G_A_dqe_Dim3x3x1xnqe,4);
             nq2nd = nqa + nqs + nqr;
             
            %q2nd_idx = [...
@@ -1060,11 +1060,30 @@ classdef NBS_flexPart_nonlinear < handle
             dtau_y_dsdy = mult_Anm1_Bmpz(Q(dSy_idx).',dB_Sy);
             dtau_z_dsdy = mult_Anm1_Bmpz(Q(dSz_idx).',dB_Sz);
             %~~ Shear state derivatives
-            dtau_x_dqs = B_Sx_tr;
-            dtau_y_dqs = B_Sy_tr;
-            dtau_z_dqs = B_Sz_tr;
             
+            if isempty(B_Sx_tr)
+                dtau_x_dqsx = zeros(1, 1, ns, 0);
+            else
+                dtau_x_dqsx = permute(B_Sx_tr,[1 4 3 2]);    % tau_x variation with respect to shear_x states
+            end
+            if isempty(B_Sy_tr)
+                dtau_y_dqsy = zeros(1, 1, ns, 0);
+            else
+                dtau_y_dqsy = permute(B_Sy_tr,[1 4 3 2]);    % tau_y variation with respect to shear_y states
+            end                
+            if isempty(B_Sz_tr)
+                dtau_z_dqsz = zeros(1, 1, ns, 0);
+            else
+                dtau_z_dqsz = permute(B_Sz_tr,[1 4 3 2]);    % tau_z variation with respect to shear_z states
+            end  
             
+            nSx = numel(Sx_idx);
+            nSy = numel(Sy_idx);
+            nSz = numel(Sz_idx);
+            dtau_x_dq = cat(4,zeros(1,1,ns,nqa),       dtau_x_dqsx,zeros(1,1,ns,nSy+nSz)       ,zeros(1,1,ns,nqr));    % tau_x variation with respect to all states
+            dtau_y_dq = cat(4,zeros(1,1,ns,nqa),zeros(1,1,ns,nSx),dtau_y_dqsy,zeros(1,1,ns,nSz),zeros(1,1,ns,nqr));    % tau_y variation with respect to all states
+            dtau_z_dq = cat(4,zeros(1,1,ns,nqa),       zeros(1,1,ns,nSx+nSy),dtau_z_dqsz       ,zeros(1,1,ns,nqr));    % tau_z variation with respect to all states
+                      
             %~~ Evaluate trigonometric terms
             st = sin(th); ss = sin(si); sp = sin(ph); %                                (1)x(1)x(ns)
             ct = cos(th); cs = cos(si); cp = cos(ph); %                                (1)x(1)x(ns)
@@ -1195,7 +1214,7 @@ classdef NBS_flexPart_nonlinear < handle
                 E_W,dE_dt_G,d2E_dt2_G_star,E_G,dE_dq_G_Dim3x3xnsxnq2nd,...
                 tau_x,tau_y,tau_z,...
                 dtau_x_dt,dtau_y_dt,dtau_z_dt,...
-                dtau_x_dqs,dtau_y_dqs,dtau_z_dqs,...
+                dtau_x_dq,dtau_y_dq,dtau_z_dq,...
                 massOffset_I,FLAG_massOffset,...                               %dR_G_W_dqr456_931,FLAG_free_free,...
                 FLAG_shear,Gamma_approx_lvl,...
                 Gamma_root_G,dGamma_dt_root_G,dGamma_dq_root_G_Dim3x1x1xnq2nd,d2Gamma_dt2_root_G_star);
@@ -1218,8 +1237,9 @@ classdef NBS_flexPart_nonlinear < handle
             
             TAU = [tau_x;tau_y;tau_z];
             dTAU_dt = [dtau_x_dt;dtau_y_dt;dtau_z_dt];
-            dTAU_dqs = [bsxfun(@times,dtau_x_dqs,[1;0;0]) , bsxfun(@times,dtau_y_dqs,[0;1;0]) , bsxfun(@times,dtau_z_dqs,[0;0;1])];
-            dTAU_dqs_tr = permute(dTAU_dqs,[2 1 3]);
+            dTAU_dqs = cat(4, bsxfun(@times,dtau_x_dqsx,[1;0;0]) , bsxfun(@times,dtau_y_dqsy,[0;1;0]) , bsxfun(@times,dtau_z_dqsz,[0;0;1]));
+            dTAU_dqs_tr = permute(dTAU_dqs,[2 1 3 4]);
+
             TAU_0 = [0;0;0];
             
             Linear_Stiffness_Matrix = {obj.StiffnessMatrix_kappaHalf;obj.StiffnessMatrix_shearHalf};
