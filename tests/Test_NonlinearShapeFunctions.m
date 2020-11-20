@@ -35,7 +35,7 @@ function example_files = getExampleScripts
 %the example scripts in the '\tbx\AwiWttToolbox\workflow' folder.
 
 tbx_path    = fileparts(fileparts(mfilename('fullpath')));
-example_loc = fullfile(tbx_path, '\examples');
+example_loc = fullfile(tbx_path, 'examples');
 
 %What is in the folder?
 contents = dir(example_loc);
