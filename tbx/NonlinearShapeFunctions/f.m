@@ -253,14 +253,16 @@ if ismember(aerodynamics,{'strip_steady','strip_unsteady'})
         AICs_global,...
         dGamma_dqg_G_pm_global,...
         dvarTheta_dqg_G_pm_global,...
-        qAero_idx_global] = deal([]);
+        qAero_idx_global,...
+        aeroCoeff2D_global] = deal([]);
     
     global_idx_counter = 0;
     
     for aeroPartName_cell = aeroPartNames
         
         aeroPartName = aeroPartName_cell{1};
-        
+       
+        aeroCoeff2D_global = cat(3,aeroCoeff2D_global,partInformationStruct.(aeroPartName).aeroCoeff.Aerodata.Coeff2D);
         nsAp = partInformationStruct.(aeroPartName).nsAp;
         EAp_G_pm_global = cat(3,EAp_G_pm_global,partInformationStruct.(aeroPartName).EAp_G_pm);
         dEAp_dt_G_pm_global = cat(3,dEAp_dt_G_pm_global,partInformationStruct.(aeroPartName).dEAp_dt_G_pm);
@@ -310,8 +312,9 @@ if ismember(aerodynamics,{'strip_steady','strip_unsteady'})
             AIC = AICs_global;
             C_D0 = 0;
             qsteady = true;
+            aeroCoeff2D = aeroCoeff2D_global;
             
-            [dQaero,Qaero,Fqc,Mqc,Drag,alpha_global] = aero_stripTheory_usteady_LeishmanIndicial(Qaero,rho,Vinf,V3qrt,xAp,yAp,zAp,Omega,chord,ApWidth,AIC,C_D0,qsteady);
+            [dQaero,Qaero,Fqc,Mqc,Drag,alpha_global] = aero_stripTheory_usteady_LeishmanIndicial(Qaero,rho,Vinf,V3qrt,xAp,yAp,zAp,Omega,chord,ApWidth,AIC,C_D0,qsteady,aeroCoeff2D);
             
         case 'strip_unsteady'
             

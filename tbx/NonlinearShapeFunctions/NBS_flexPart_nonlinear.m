@@ -51,6 +51,7 @@ classdef NBS_flexPart_nonlinear < handle
         w                                                                  %[m] wing width in the ex direction
         h                                                                  %[m] wing thicknesses
         aero_cntr = 0.25;                                                  %[-] assumed aero centres for each panel (percentage of chord)
+        aeroCoeff = [];                                                    %[-] spanwise variation in aerodynamic coefficients 
         beam_cntr                                                          %[-] beam centre locations (percentage of chord)
                         beam_cntr_pm                                       %[-] beam centre sampled at aero panel mid points
                         beam_cntr_pn                                       %[-] beam centre sampled at aero panel nodal points
@@ -746,8 +747,8 @@ classdef NBS_flexPart_nonlinear < handle
         
         function set.I_varTheta(obj,val)
             %Avoid numerical issues if sectional inertia is torsional only
-            if val(1,1)==0, val(1,1) = norm(val)*1e-6; end
-            if val(3,3)==0, val(3,3) = norm(val)*1e-6; end
+            if val(1,1,end)==0, val(1,1) = norm(val)*1e-6; end
+            if val(3,3,end)==0, val(3,3) = norm(val)*1e-6; end
             
             obj.I_varTheta = val;
         end
@@ -933,7 +934,7 @@ classdef NBS_flexPart_nonlinear < handle
             parentName = parentObj.partName;
             parentConnIdx = obj.connection_idx_ParentObj;
             root_idx = obj.root_idx;
-            wingRoot_offset_A = obj.wingRoot_offset_A;
+            wingRoot_offset_A = obj.wingRoot_offset_A; 
             wingRoot_offset_G = R_G_A*wingRoot_offset_A;
             
             R_G_A = partInformationStruct.(parentName).E_G(:,:,parentConnIdx);
@@ -1308,6 +1309,7 @@ classdef NBS_flexPart_nonlinear < handle
                     partInformationStruct.(flex_part_name).AIC = obj.AICs;
                     partInformationStruct.(flex_part_name).dGamma_dq_G_pm = sample(dGamma_dq_G_Dim3x1xnsxnq2nd,Apm_idx,3);
                     partInformationStruct.(flex_part_name).dvarTheta_dq_G_pm = sample(dvarTheta_dq_G_Dim3x1xnsxnq2nd,Apm_idx,3);
+                    partInformationStruct.(flex_part_name).aeroCoeff = obj.aeroCoeff;
                     %PvecAero_G_pm = [];
                     %MvecAero_G_pm = [];
                     

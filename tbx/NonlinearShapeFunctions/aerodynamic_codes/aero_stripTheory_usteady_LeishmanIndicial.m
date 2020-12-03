@@ -1,8 +1,6 @@
-function [dQaero,Qaero,Fqc,Mqc,Drag,alpha] = aero_stripTheory_usteady_LeishmanIndicial(Qaero,rho,Vinf,V3qrt,xAp,yAp,zAp,Omega,chord,width,AIC,C_D0,qsteady)
-%                                                                          - C.Howcroft
-%% coded implementation of Leishman's Indicial Response Method
+function [dQaero,Qaero,Fqc,Mqc,Drag,alpha] = aero_stripTheory_usteady_LeishmanIndicial(Qaero,rho,Vinf,V3qrt,xAp,yAp,zAp,Omega,chord,width,AIC,C_D0,qsteady,aeroCoeff2D)                                                                     
+%% coded implementation of Leishman's Indicial Response Method  - C.Howcroft
 % [use publish button to view latex comments]
-% 
 
 % INPUT ARGUMENTS
 % Qaero [nxv] - aerodynamic state vector
@@ -63,7 +61,7 @@ b = chord/2;
 %%%
 % Exponential approximation of Wagners Function psi(t)
 %
-                                                                           % $$\psi(t) = 1 - \sum_{i=1}^{N} a_i e^{-b_i s}\;\;, \qquad s = \frac{v_x t}{b}$$
+% $$\psi(t) = 1 - \sum_{i=1}^{N} a_i e^{-b_i s}\;\;, \qquad s = \frac{v_x t}{b}$$
 % for R.T. Jones approximation
 aiCoeffs = [0.165 ; 0.335];
 biCoeffs = [0.041 ; 0.32 ];
@@ -75,64 +73,113 @@ psi_0 = 1 - sum(aiCoeffs);
 %%%
 % Bypass unsteady terms if qsteady flag is 'true'
 %
-                                                                           % $$\dot\xi_i = 0\;\;,\qquad$$
-                                                                           % $$\xi_i = \frac{b\alpha}{b_i v_x}$$
+% $$\dot\xi_i = 0\;\;,\qquad$$
+% $$\xi_i = \frac{b\alpha}{b_i v_x}$$
 if nargin > 12 && qsteady
     dalpha_dt = 0;
     Qaero = bsxfun(@times, b.*alpha./vx3qrt, 1./biCoeffs);
     dQaero = Qaero*0;
 else
-%%%
-% else get state derivative from ode
-%
-                                                                           % $$\dot\xi_i + b_i\frac{v_x}{b}\xi_i = \alpha$$
-dQaero = bsxfun(@plus, alpha , -bsxfun(@times, (vx3qrt./b) , bsxfun(@times,biCoeffs,Qaero) ) );
+    %%%
+    % else get state derivative from ode
+    %
+    % $$\dot\xi_i + b_i\frac{v_x}{b}\xi_i = \alpha$$
+    dQaero = bsxfun(@plus, alpha , -bsxfun(@times, (vx3qrt./b) , bsxfun(@times,biCoeffs,Qaero) ) );
 end
 
-%% Lift Coefficient
-%%%
-% Circulatory Component
-%
-                                                                           % $$C_{Lc} = 2\pi\alpha\psi(0) + 2\pi\frac{v_x}{b}\sum_{i=1}^{N} a_i b_i \xi_i$$
-C_Lc = 2*pi*alpha*psi_0 + 2*pi*vx3qrt./b.*sum( bsxfun(@times,aiCoeffs.*biCoeffs,Qaero) , 1 );
-
-%%%
-% Non-circulatory Component
-%
-                                                                           % $$C_{Li} = \pi\frac{b}{v_x^2}( v_x \dot{\alpha} - \dot{v}_{zMid})$$
-C_Li = pi*b./vx3qrt.^2.*( vx3qrt.*dalpha_dt - dvzmid_dt );
-
-%%%
-% Add circulatory and non-circulatory components to obtain lift coefficient
-CL = C_Lc + C_Li;
-
-%% Moment Coefficient
-%%%
-% Circulatory Component
-C_Mc = 0; %zero when taken at quarter chord
-
-%%%
-% Non-circulatory Component
-%
-                                                                           % $$C_{Li} = \pi\frac{b^2}{v_x^2}(-v_x \dot{\alpha} + \frac{1}{2}( \dot{v}_{zMid} - \frac{b}{4}\ddot{\alpha} ))$$
-C_Mi = pi*b.^2./vx3qrt.^2.*(-vx3qrt.*dalpha_dt + 0.5*(dvzmid_dt - b/4*d2alpha_dt2) );
-
-%%%
-% Add circulatory and non-circulatory components to obtain lift coefficient
-CM = C_Mc + C_Mi;
-
-%% Create Aerodynamic Force Vectors
-%%%
-% Lift
-Fqc  = bsxfun(@times, Pdyn.*chord.*width.*AIC.*CL , zAp); %Include circulatory component of drag by casting this aero force normal to the strip (ie. in the zAp direction).
-
-%%%
-% Moment
-Mqc  = bsxfun(@times, Pdyn.*chord.*width.*AIC.*CM , yAp);
-
-%%%
-% Parasitic Drag
-Drag = bsxfun(@times, Pdyn.*chord.*width.*AIC.*C_D0 , xAp);
-
+if isempty(aeroCoeff2D)
+    %% Lift Coefficient
+    %%%
+    % Circulatory Component
+    %
+    % $$C_{Lc} = 2\pi\alpha\psi(0) + 2\pi\frac{v_x}{b}\sum_{i=1}^{N} a_i b_i \xi_i$$
+    C_Lc = 2*pi*alpha*psi_0 + 2*pi*vx3qrt./b.*sum( bsxfun(@times,aiCoeffs.*biCoeffs,Qaero) , 1 );
+    
+    %%%
+    % Non-circulatory Component
+    %
+    % $$C_{Li} = \pi\frac{b}{v_x^2}( v_x \dot{\alpha} - \dot{v}_{zMid})$$
+    C_Li = pi*b./vx3qrt.^2.*( vx3qrt.*dalpha_dt - dvzmid_dt );
+    
+    %%%
+    % Add circulatory and non-circulatory components to obtain lift coefficient
+    CL = C_Lc + C_Li;
+    
+    %% Moment Coefficient
+    %%%
+    % Circulatory Component
+    C_Mc = 0; %zero when taken at quarter chord
+    
+    %%%
+    % Non-circulatory Component
+    %
+    % $$C_{Li} = \pi\frac{b^2}{v_x^2}(-v_x \dot{\alpha} + \frac{1}{2}( \dot{v}_{zMid} - \frac{b}{4}\ddot{\alpha} ))$$
+    C_Mi = pi*b.^2./vx3qrt.^2.*(-vx3qrt.*dalpha_dt + 0.5*(dvzmid_dt - b/4*d2alpha_dt2) );
+    
+    %%%
+    % Add circulatory and non-circulatory components to obtain lift coefficient
+    CM = C_Mc + C_Mi;
+    
+    %% Create Aerodynamic Force Vectors
+    %%%
+    % Lift
+    Fqc  = bsxfun(@times, Pdyn.*chord.*width.*AIC.*CL , zAp); %Include circulatory component of drag by casting this aero force normal to the strip (ie. in the zAp direction).
+    
+    %%%
+    % Moment
+    Mqc  = bsxfun(@times, Pdyn.*chord.*width.*AIC.*CM , yAp);
+    
+    %%%
+    % Parasitic Drag
+    Drag = bsxfun(@times, Pdyn.*chord.*width.*AIC.*C_D0 , xAp);
+    
+else
+    
+    [CL, CD, CM] = interpCoeff(alpha, aeroCoeff2D);
+    
+    CL = permute(CL,[3 2 1]);
+    CD = permute(CD,[3 2 1]);
+    CM = permute(CM,[3 2 1]);
+    
+    T = [cos(alpha), -sin(alpha), alpha.*0;
+         sin(alpha), cos(alpha), alpha.*0;
+         alpha.*0, alpha.*0, alpha.*0 + 1];
+    
+    Fqc  = bsxfun(@times, Pdyn.*chord.*width.*AIC.*CL , MultiProd_(T,zAp));     
+    Mqc  = bsxfun(@times, Pdyn.*chord.*width.*AIC.*CM , yAp);   
+    Drag = bsxfun(@times, Pdyn.*chord.*width.*AIC.*(CD + C_D0) , MultiProd_(T,xAp));
+    
 end
 
+    function [cl, cd, cm, aoa] = interpCoeff(aoa, aeroCoeff2D)
+        
+        alfa_in_file = aeroCoeff2D(:,1,:);
+        cl_in_file = aeroCoeff2D(:,2,:);
+        cd_in_file = aeroCoeff2D(:,3,:);
+        cm_in_file = aeroCoeff2D(:,4,:);
+        
+        Nseg = length(aoa);
+        IDSeg = (1:Nseg)';
+        Nrow_cl = size(cl_in_file,1);
+        aoa = squeeze(aoa*180/pi);
+        
+        % --- Interpolate_LiftDrag
+        L = alfa_in_file(2)-alfa_in_file(1);
+        if all(isreal(aoa))
+            Id          = ceil(aoa/L - alfa_in_file(1)/L);
+            LinId      = Id + (IDSeg-1)*Nrow_cl; % Id + (find(NcId)-1)*Nrow_cl; % LinId = sub2ind(size(cl_in_file),Id,find(NcId))
+            Gamma   = (aoa-alfa_in_file(Id))/L;
+        else
+            % for complex difference step
+            %                                     aoa_EqC   = real(aoa) + imag(aoa);
+            Id            = ceil(real(aoa)/L - alfa_in_file(1)/L); %ceil(aoa_EqC/L - alfa_in_file(1)/L);
+            LinId        = Id + (IDSeg-1)*Nrow_cl;
+            Gamma     = (aoa-alfa_in_file(Id))/L; %(real(aoa(NcId,ib))-alfa_in_file(Id))/L + (aoa(NcId,ib))/L;
+        end
+        
+        cl  = (1-Gamma).*cl_in_file(LinId) + Gamma.*cl_in_file(LinId+1);
+        cd = (1-Gamma).*cd_in_file(LinId) + Gamma.*cd_in_file(LinId+1);
+        cm = (1-Gamma).*cm_in_file(LinId) + Gamma.*cm_in_file(LinId+1);  % positive moment = nose up convention
+    end
+
+end
