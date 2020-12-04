@@ -112,8 +112,8 @@ classdef NBS_Master < handle
         addpath(fullfile(package_dir, 'user_functions'));
         
         obj.object_creation_date = datetime;
-        obj.ModelName = get_option(varargin,'Global',[]);
-        obj.partName = get_option(varargin,'partName',[]);
+        obj.ModelName = get_option(varargin,'Global',obj.ModelName);
+        obj.partName = get_option(varargin,'partName',obj.partName);
 %                                                                          obj.archive('f.m');
 %                                                                          obj.archive('NBS_Master.m');
 %                                                                          obj.archive('NBS_flexPart_nonlinear.m');
