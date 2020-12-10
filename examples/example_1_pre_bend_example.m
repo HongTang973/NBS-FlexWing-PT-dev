@@ -7,7 +7,7 @@
 ModelDefinition = parameter_sets.testCase_JA_preBendExample;
 
 %Run an analysis
-AnalysisOutput = runSim(0, 1, 'analysisType', 'static', 'fromObject', ModelDefinition);
+AnalysisOutput = runSim(0, 10, 'analysisType', 'dynamic', 'fromObject', ModelDefinition);
 
 %Post process the results
 part_name = AnalysisOutput.flexParts_nonlinear_cell{1}.partName;

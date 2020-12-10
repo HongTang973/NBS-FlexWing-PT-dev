@@ -7,16 +7,15 @@ O = NBS_Master;
 %//////Flight Condition
 O.V = 30; %m/s                                                             airspeed
 O.rho = 0.0881; %kg/m^3                                                    air density
-%O.aerodynamics = 'strip_steady';
+% O.aerodynamics = 'strip_steady';
 O.uVec_freeStream_G = [1;0;0];
 %--------------------------------------------------------------------------
-O.grav_acc = 9.807*0;
+O.grav_acc = 9.807;
 O.gravVec_G = [0;0;-1];
-
 %--------------------------------------------------------------------------
 O.qRigidT = [];
-O.qRigidR = [];
-
+O.qRigidR = [0]; %#ok<NBRAK>
+O.CUSTOM_free_states = @custom_free_states;
 %==========================================================================
 
 %==========================================================================
@@ -52,7 +51,7 @@ O_Blade.populate_shape_set('PLOT',false);
 
 %==========================================================================
 
-O.plotBounds = [[-8 8];[0 16];[-8 8]]*1;
+O.plotBounds = [[-8 8];[-16 16];[-16 8]]*1;
 set_dependent_properties(O);
 
 end

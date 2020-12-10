@@ -64,6 +64,12 @@ end
 V = SimObject.V; %m/s
 rho = SimObject.rho; %kg/m^3
 Vinf = V*uVec_freeStream_G;
+
+SimType = SimObject.SimType;
+if ~isfield(SimType,'BEM')
+    SimType.BEM = 0;
+end
+
 FLAG_free_free = SimObject.FLAG_free_free;
 Gamma_Integration_Function = SimObject.Gamma_int_fnc;
 StateInfo = SimObject.StateInfo;
@@ -137,7 +143,7 @@ elseif ~isempty(SimObject.CUSTOM_free_states)
 else
     
     if ~isempty(SimObject.prescribedMotion_fnc)
-        prescribed_motion = SimObject.prescribedMotion(SimObject,t);
+        prescribed_motion = SimObject.prescribedMotion_fnc(SimObject,t);
         
         Omega_G = prescribed_motion.Omega_G;
         OmegaSkew_G = prescribed_motion.OmegaSkew_G;
@@ -297,8 +303,17 @@ if ismember(aerodynamics,{'strip_steady','strip_unsteady'})
     aeroOffset_global = bsxfun(@times, chord_pm_global.*bsxfun(@plus,aero_cntr, -beam_cntr_pm_global) , EAp_G_pm_global(:,1,:)); %center of pressure offset from the beam line, +ve in ex direction
     aeroOffset_skew_global = getSkewMat(aeroOffset_global);
     
+    if ~isempty(Omega_G) && SimType.BEM
+        [a, ap, aoa, x_phi,...
+            cl, cd, cm, Vrel_c, iter_a] = SolveBEM_NING(V_io, Disp, ...
+            bladeVel_io, pitch, ...
+            AeroCoeff, BladeRef, Option)
+    end
+   
     switch aerodynamics
         %=================================quasi steady strip theory=============================V3qrt,xAp,yAp,zAp
+
+        
         case 'strip_steady'
             
             Qaero = [];
@@ -314,7 +329,11 @@ if ismember(aerodynamics,{'strip_steady','strip_unsteady'})
             qsteady = true;
             aeroCoeff2D = aeroCoeff2D_global;
             
+            if ~isempty(Omega_G) && SimType.BEM
+            [cl, cd, cm, aoa, Vrel_c] = UpdateAoA(a, ap, BladeRef, AeroCoeff, V_io, bladeVel_io)   
+            else
             [dQaero,Qaero,Fqc,Mqc,Drag,alpha_global] = aero_stripTheory_usteady_LeishmanIndicial(Qaero,rho,Vinf,V3qrt,xAp,yAp,zAp,Omega,chord,ApWidth,AIC,C_D0,qsteady,aeroCoeff2D);
+            end 
             
         case 'strip_unsteady'
             
