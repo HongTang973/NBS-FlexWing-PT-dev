@@ -52,6 +52,7 @@ classdef NBS_flexPart_nonlinear < handle
         h                                                                  %[m] wing thicknesses
         aero_cntr = 0.25;                                                  %[-] assumed aero centres for each panel (percentage of chord)
         aeroCoeff = [];                                                    %[-] spanwise variation in aerodynamic coefficients 
+        BEMvar = struct();
         beam_cntr                                                          %[-] beam centre locations (percentage of chord)
                         beam_cntr_pm                                       %[-] beam centre sampled at aero panel mid points
                         beam_cntr_pn                                       %[-] beam centre sampled at aero panel nodal points
@@ -1280,7 +1281,7 @@ classdef NBS_flexPart_nonlinear < handle
                     aeroPartNames = [aeroPartNames {flex_part_name}];
                 end
                 
-                if ismember(aerodynamics,{'strip_steady','strip_unsteady'})
+                if ismember(aerodynamics,{'strip_steady','strip_unsteady','BEM'})
                     
                     E_G_pm = sample(E_G,Apm_idx,3);
                     dE_dt_G_pm = sample(dE_dt_G,Apm_idx,3);
@@ -1295,7 +1296,7 @@ classdef NBS_flexPart_nonlinear < handle
                     %     alphaCP = 3/4;
                     %     dGammaAlphaCP_dt_G_pm = bsxfun(@plus,drBarA_dt_G,...
                     %                            dGamma_dt_G_pm + bsxfun(@times,c_pm.*(alphaCP - beam_cntr_pm),dexAp_dt_G_pm));
-                    
+                    partInformationStruct.(flex_part_name).aero_cntr = obj.aero_cntr;
                     partInformationStruct.(flex_part_name).nsAp = nsAp;
                     partInformationStruct.(flex_part_name).EAp_G_pm = EAp_G_pm;
                     partInformationStruct.(flex_part_name).dEAp_dt_G_pm = dEAp_dt_G_pm;
@@ -1310,6 +1311,7 @@ classdef NBS_flexPart_nonlinear < handle
                     partInformationStruct.(flex_part_name).dGamma_dq_G_pm = sample(dGamma_dq_G_Dim3x1xnsxnq2nd,Apm_idx,3);
                     partInformationStruct.(flex_part_name).dvarTheta_dq_G_pm = sample(dvarTheta_dq_G_Dim3x1xnsxnq2nd,Apm_idx,3);
                     partInformationStruct.(flex_part_name).aeroCoeff = obj.aeroCoeff;
+                    partInformationStruct.(flex_part_name).BEMvar = obj.BEMvar;
                     %PvecAero_G_pm = [];
                     %MvecAero_G_pm = [];
                     

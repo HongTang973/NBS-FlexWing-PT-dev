@@ -65,11 +65,6 @@ V = SimObject.V; %m/s
 rho = SimObject.rho; %kg/m^3
 Vinf = V*uVec_freeStream_G;
 
-SimType = SimObject.SimType;
-if ~isfield(SimType,'BEM')
-    SimType.BEM = 0;
-end
-
 FLAG_free_free = SimObject.FLAG_free_free;
 Gamma_Integration_Function = SimObject.Gamma_int_fnc;
 StateInfo = SimObject.StateInfo;
@@ -246,7 +241,7 @@ if ~isempty(aerodynamics)
 aero_cntr = 1/4;
 alphaCP = 3/4;
 
-if ismember(aerodynamics,{'strip_steady','strip_unsteady'})
+if ismember(aerodynamics,{'strip_steady','strip_unsteady','BEM'})
     %TODO pre allocate aero matrices after the first iteration
     
     [EAp_G_pm_global,...
@@ -260,14 +255,14 @@ if ismember(aerodynamics,{'strip_steady','strip_unsteady'})
         dGamma_dqg_G_pm_global,...
         dvarTheta_dqg_G_pm_global,...
         qAero_idx_global,...
-        aeroCoeff2D_global] = deal([]);
+        aeroCoeff2D_global,...
+        ] = deal([]);
     
     global_idx_counter = 0;
     
     for aeroPartName_cell = aeroPartNames
         
         aeroPartName = aeroPartName_cell{1};
-       
         aeroCoeff2D_global = cat(3,aeroCoeff2D_global,partInformationStruct.(aeroPartName).aeroCoeff);
         nsAp = partInformationStruct.(aeroPartName).nsAp;
         EAp_G_pm_global = cat(3,EAp_G_pm_global,partInformationStruct.(aeroPartName).EAp_G_pm);
@@ -302,18 +297,61 @@ if ismember(aerodynamics,{'strip_steady','strip_unsteady'})
     
     aeroOffset_global = bsxfun(@times, chord_pm_global.*bsxfun(@plus,aero_cntr, -beam_cntr_pm_global) , EAp_G_pm_global(:,1,:)); %center of pressure offset from the beam line, +ve in ex direction
     aeroOffset_skew_global = getSkewMat(aeroOffset_global);
-    
-    if ~isempty(Omega_G) && SimType.BEM
-        [a, ap, aoa, x_phi,...
-            cl, cd, cm, Vrel_c, iter_a] = SolveBEM_NING(V_io, Disp, ...
-            bladeVel_io, pitch, ...
-            AeroCoeff, BladeRef, Option)
-    end
-   
+      
     switch aerodynamics
-        %=================================quasi steady strip theory=============================V3qrt,xAp,yAp,zAp
-
-        
+        %blade element momentum steady ==================================== TODO: bem unsteady
+        case 'BEM' 
+            if ~isempty(Omega_G) 
+                BEMvar = partInformationStruct.(aeroPartName).BEMvar;
+                if ~isempty(SimObject.CUSTOM_free_states) && SimType.Parked
+                    BEMvar.IDLING = true;
+                else
+                    BEMvar.IDLING = false;
+                end
+                BEMvar.NskipAllowed = 6;
+                BEMvar.iter_a_max = 200;
+                BEMvar.eps_a = 1e-3;
+                BEMvar.eps_ap = 1e-3;
+                BEMvar.RealOnly = true;
+                BEMvar.polarMethod = 'linear';
+                
+                [a_global, ap_global, alpha_global, x_phi_global, cl_global, cd_global, cm_global, Vrel_c_global, iter_a_global] = deal([]);
+                
+                for aeroPartName_cell = aeroPartNames
+                    aeroPartName = aeroPartName_cell{1};
+                    
+                    aeroCoeff2D_BEM = partInformationStruct.(aeroPartName).aeroCoeff;
+                    chord_BEM = partInformationStruct.(aeroPartName).chord;
+                    EAp_BEM = partInformationStruct.(aeroPartName).EAp_G_pm;
+                    dexAp_dt_G_BEM = partInformationStruct.(aeroPartName).dEAp_dt_G_pm(:,1,:);
+                    dGamma_dt_G_BEM = partInformationStruct.(aeroPartName).dGamma_dt_G_pm;
+                    beam_cntr_BEM = partInformationStruct.(aeroPartName).beam_cntr_pm;
+                    V3qrt_BEM = (dGamma_dt_G_BEM + bsxfun(@times,chord_BEM.*(alphaCP - beam_cntr_BEM),dexAp_dt_G_BEM));
+                    Omega_BEM = partInformationStruct.(aeroPartName).dvarTheta_dt_G_pm;
+                    Gamma_G_BEM = partInformationStruct.(aeroPartName).Gamma_G_pm;
+                    
+                    [a, ap, alpha, x_phi, cl, cd, cm, Vrel_c, iter_a] = ...
+                        aero.SolveBEM_NINGsimple(Vinf, [], V3qrt_BEM, aeroCoeff2D_BEM, chord_BEM, EAp_BEM, Omega_BEM, Gamma_G_BEM, BEMvar);
+                    
+                    a_global = cat(3,a_global,permute(a,[3 2 1]));
+                    ap_global = cat(3,ap_global,permute(ap,[3 2 1]));
+                    alpha_global = cat(3,alpha_global,permute(alpha/180*pi,[3 2 1]));
+                    x_phi_global = cat(3,x_phi_global,permute(x_phi,[3 2 1]));
+                    cl_global = cat(3,cl_global,permute(cl,[3 2 1]));
+                    cd_global = cat(3,cd_global,permute(cd,[3 2 1]));
+                    cm_global = cat(3,cm_global,permute(cm,[3 2 1]));
+                    Vrel_c_global = cat(3,Vrel_c_global,permute(Vrel_c,[1 3 2]));
+                    iter_a_global = cat(3,iter_a_global,permute(iter_a,[3 2 1]));  
+                end
+                        
+                    Fqc = 0.5.*rho.*cl_global.*chord_pm_global.*ApWidth_pm_global.*Vrel_c_global.^2;
+                    Mqc = 0.5.*rho.*cm_global.*chord_pm_global.*ApWidth_pm_global.*Vrel_c_global.^2;
+                    Drag = 0.5.*rho.*cd_global.*chord_pm_global.*ApWidth_pm_global.*Vrel_c_global.^2;
+%                                         
+            else
+                error('No global rotation.')
+            end
+        %=================================quasi steady strip theory=============================V3qrt,xAp,yAp,zAp    
         case 'strip_steady'
             
             Qaero = [];
@@ -329,12 +367,8 @@ if ismember(aerodynamics,{'strip_steady','strip_unsteady'})
             qsteady = true;
             aeroCoeff2D = aeroCoeff2D_global;
             
-            if ~isempty(Omega_G) && SimType.BEM
-            [cl, cd, cm, aoa, Vrel_c] = UpdateAoA(a, ap, BladeRef, AeroCoeff, V_io, bladeVel_io)   
-            else
             [dQaero,Qaero,Fqc,Mqc,Drag,alpha_global] = aero_stripTheory_usteady_LeishmanIndicial(Qaero,rho,Vinf,V3qrt,xAp,yAp,zAp,Omega,chord,ApWidth,AIC,C_D0,qsteady,aeroCoeff2D);
-            end 
-            
+             
         case 'strip_unsteady'
             
             Qaero_idx = qAero_idx_global;
@@ -350,8 +384,9 @@ if ismember(aerodynamics,{'strip_steady','strip_unsteady'})
             AIC = AICs_global;
             C_D0 = 0;
             qsteady = false;
+            aeroCoeff2D = aeroCoeff2D_global;
             
-            [dQaero,Qaero,Fqc,Mqc,Drag,alpha_global] = aero_stripTheory_usteady_LeishmanIndicial(Qaero,rho,Vinf,V3qrt,xAp,yAp,zAp,Omega,chord,ApWidth,AIC,C_D0,qsteady);
+            [dQaero,Qaero,Fqc,Mqc,Drag,alpha_global] = aero_stripTheory_usteady_LeishmanIndicial(Qaero,rho,Vinf,V3qrt,xAp,yAp,zAp,Omega,chord,ApWidth,AIC,C_D0,qsteady,aeroCoeff2D);
             
              dQ_Aero(Qaero_idx,1) = dQaero(:);
             
@@ -557,7 +592,7 @@ switch outputFormat
         QOI_Container.add_qoi('Net_Lift' ,tidx,sum(PvecAero_G_pm_global(3,1,:)),'1','NetLift','N');
         if exist('alpha','var')
             alpha_degrees = alpha_global*180/pi;
-            QOI_Container.add_qoi('Angle_Of_Attack' ,tidx,reshape(alpha_degrees,1,1,[]),'1:nAp','Angle Of Attack','deg');
+            QOI_Container.add_qoi('Angle_Of_Attack' ,tidx,reshape(alpha_degrees,1,1,[]),'1:nsAp','Angle Of Attack','deg');
         end
     end
     

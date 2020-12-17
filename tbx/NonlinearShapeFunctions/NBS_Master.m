@@ -4,7 +4,7 @@ classdef NBS_Master < handle
      %...properties..... .........................
       %..................derived_properties.......
        %|---------------|-------------------------
-       
+        
         %Global Properties <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
         uVec_freeStream_G = [1;0;0]                                        %unit vector in free stream velocity direction, can provide function handle instead of value
         V = 0                                                              %[m/s] free steam velocity
@@ -66,7 +66,7 @@ classdef NBS_Master < handle
         fileArchive
         Camlight = [45,-90]
         temp_properties
-        
+        maindir
         %flexParts_nonlinear_cell
         %               nflexParts_nonlinear
         flexParts_nonlinear
