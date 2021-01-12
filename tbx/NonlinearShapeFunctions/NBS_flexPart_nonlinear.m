@@ -1312,6 +1312,7 @@ classdef NBS_flexPart_nonlinear < handle
                     partInformationStruct.(flex_part_name).dvarTheta_dq_G_pm = sample(dvarTheta_dq_G_Dim3x1xnsxnq2nd,Apm_idx,3);
                     partInformationStruct.(flex_part_name).aeroCoeff = obj.aeroCoeff;
                     partInformationStruct.(flex_part_name).BEMvar = obj.BEMvar;
+                    partInformationStruct.(flex_part_name).alpha_root = obj.alpha_root;
                     %PvecAero_G_pm = [];
                     %MvecAero_G_pm = [];
                     

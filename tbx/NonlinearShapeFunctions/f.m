@@ -64,7 +64,7 @@ end
 V = SimObject.V; %m/s
 rho = SimObject.rho; %kg/m^3
 Vinf = V*uVec_freeStream_G;
-
+SimType = SimObject.SimType;
 FLAG_free_free = SimObject.FLAG_free_free;
 Gamma_Integration_Function = SimObject.Gamma_int_fnc;
 StateInfo = SimObject.StateInfo;
@@ -320,9 +320,10 @@ if ismember(aerodynamics,{'strip_steady','strip_unsteady','BEM'})
                 for aeroPartName_cell = aeroPartNames
                     aeroPartName = aeroPartName_cell{1};
                     
+                    alpha_root = partInformationStruct.(aeroPartName).alpha_root;
                     aeroCoeff2D_BEM = partInformationStruct.(aeroPartName).aeroCoeff;
                     chord_BEM = partInformationStruct.(aeroPartName).chord;
-                    EAp_BEM = partInformationStruct.(aeroPartName).EAp_G_pm;
+                    EAp_G_BEM = partInformationStruct.(aeroPartName).EAp_G_pm;
                     dexAp_dt_G_BEM = partInformationStruct.(aeroPartName).dEAp_dt_G_pm(:,1,:);
                     dGamma_dt_G_BEM = partInformationStruct.(aeroPartName).dGamma_dt_G_pm;
                     beam_cntr_BEM = partInformationStruct.(aeroPartName).beam_cntr_pm;
@@ -331,7 +332,7 @@ if ismember(aerodynamics,{'strip_steady','strip_unsteady','BEM'})
                     Gamma_G_BEM = partInformationStruct.(aeroPartName).Gamma_G_pm;
                     
                     [a, ap, alpha, x_phi, cl, cd, cm, Vrel_c, iter_a] = ...
-                        aero.SolveBEM_NINGsimple(Vinf, [], V3qrt_BEM, aeroCoeff2D_BEM, chord_BEM, EAp_BEM, Omega_BEM, Gamma_G_BEM, BEMvar);
+                        aero.BEM_NING(Vinf, [], V3qrt_BEM, alpha_root, aeroCoeff2D_BEM, chord_BEM, EAp_G_BEM, Omega_BEM, Gamma_G_BEM, BEMvar, aeroPartName);
                     
                     a_global = cat(3,a_global,permute(a,[3 2 1]));
                     ap_global = cat(3,ap_global,permute(ap,[3 2 1]));
@@ -583,14 +584,14 @@ switch outputFormat
     
     nsAp = size(PvecAero_G_pm_global,3);
     
-    if obj.isAero == true && ~isempty(aerodynamics)
+    if ~isempty(SimObject.aeroPartNames) && ~isempty(aerodynamics)
         QOI_Container.add_qoi('Aero_Forces_G' ,tidx,PvecAero_G_pm_global,'1:nsAp','AeroForce#_{[G]}','N','GlobalAeroQuantity',true);
         QOI_Container.add_qoi('Aero_ForcePerSpan_G' ,tidx,PvecAero_G_pm_global.*ApWidth_pm_global,'1:nsAp','AeroForcePerSpan#_{[G]}','N/m','GlobalAeroQuantity',true);
         QOI_Container.add_qoi('Aero_Forces_Gamma_G' ,tidx,PvecAero_Gamma_G,'1:nsAp','AeroForce \Gamma#_{[G]}','m');
         QOI_Container.add_qoi('Aero_Moments_G' ,tidx,MvecAero_G_pm_global,'1:nsAp','AeroMoment#_{[G]}','Nm');
         QOI_Container.add_qoi('Aero_MomentPerSpan_G' ,tidx,MvecAero_G_pm_global.*ApWidth_pm_global,'1:nsAp','AeroMomentPerSpan#_{[G]}','N');
         QOI_Container.add_qoi('Net_Lift' ,tidx,sum(PvecAero_G_pm_global(3,1,:)),'1','NetLift','N');
-        if exist('alpha','var')
+        if exist('alpha_global','var')
             alpha_degrees = alpha_global*180/pi;
             QOI_Container.add_qoi('Angle_Of_Attack' ,tidx,reshape(alpha_degrees,1,1,[]),'1:nsAp','Angle Of Attack','deg');
         end
