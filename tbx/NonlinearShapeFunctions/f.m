@@ -237,9 +237,6 @@ end
 %Global Aerodynamic Models
 %==========================================================================
 if ~isempty(aerodynamics)
-    
-aero_cntr = 1/4;
-alphaCP = 3/4;
 
 if ismember(aerodynamics,{'strip_steady','strip_unsteady','BEM'})
     %TODO pre allocate aero matrices after the first iteration
@@ -251,6 +248,7 @@ if ismember(aerodynamics,{'strip_steady','strip_unsteady','BEM'})
         dvarTheta_dt_G_pm_global,...
         chord_pm_global,ApWidth_pm_global,...
         beam_cntr_pm_global,...
+        aero_cntr_pm_global,...
         AICs_global,...
         dGamma_dqg_G_pm_global,...
         dvarTheta_dqg_G_pm_global,...
@@ -263,6 +261,7 @@ if ismember(aerodynamics,{'strip_steady','strip_unsteady','BEM'})
     for aeroPartName_cell = aeroPartNames
         
         aeroPartName = aeroPartName_cell{1};
+        aero_cntr_pm_global = cat(3,aero_cntr_pm_global,partInformationStruct.(aeroPartName).aero_cntr);
         aeroCoeff2D_global = cat(3,aeroCoeff2D_global,partInformationStruct.(aeroPartName).aeroCoeff);
         nsAp = partInformationStruct.(aeroPartName).nsAp;
         EAp_G_pm_global = cat(3,EAp_G_pm_global,partInformationStruct.(aeroPartName).EAp_G_pm);
@@ -290,6 +289,13 @@ if ismember(aerodynamics,{'strip_steady','strip_unsteady','BEM'})
         dvarTheta_dqg_G_pm_global = cat(3,dvarTheta_dqg_G_pm_global,dvarTheta_dqg_G_pm_part);
         
     end
+    
+    if isempty(obj.aero_cntr)
+        aero_cntr = 1/4;
+    else
+        aero_cntr = aero_cntr_pm_global;
+    end
+    alphaCP = 3/4;
     
     dexAp_dt_G_pm_global = dEAp_dt_G_pm_global(:,1,:);
     dGammaAlphaCP_dt_G_pm_global = ...%bsxfun(@plus,drBarA_dt_G,...
@@ -321,18 +327,18 @@ if ismember(aerodynamics,{'strip_steady','strip_unsteady','BEM'})
                     aeroPartName = aeroPartName_cell{1};
                     
                     alpha_root = partInformationStruct.(aeroPartName).alpha_root;
-                    aeroCoeff2D_BEM = partInformationStruct.(aeroPartName).aeroCoeff;
-                    chord_BEM = partInformationStruct.(aeroPartName).chord;
-                    EAp_G_BEM = partInformationStruct.(aeroPartName).EAp_G_pm;
-                    dexAp_dt_G_BEM = partInformationStruct.(aeroPartName).dEAp_dt_G_pm(:,1,:);
-                    dGamma_dt_G_BEM = partInformationStruct.(aeroPartName).dGamma_dt_G_pm;
-                    beam_cntr_BEM = partInformationStruct.(aeroPartName).beam_cntr_pm;
-                    V3qrt_BEM = (dGamma_dt_G_BEM + bsxfun(@times,chord_BEM.*(alphaCP - beam_cntr_BEM),dexAp_dt_G_BEM));
-                    Omega_BEM = partInformationStruct.(aeroPartName).dvarTheta_dt_G_pm;
-                    Gamma_G_BEM = partInformationStruct.(aeroPartName).Gamma_G_pm;
+                    aeroCoeff2D_part = partInformationStruct.(aeroPartName).aeroCoeff;
+                    chord_part = partInformationStruct.(aeroPartName).chord;
+                    EAp_G_pm_part = partInformationStruct.(aeroPartName).EAp_G_pm;
+                    dexAp_dt_G_pm_part = partInformationStruct.(aeroPartName).dEAp_dt_G_pm(:,1,:);
+                    dGamma_dt_G_pm_part = partInformationStruct.(aeroPartName).dGamma_dt_G_pm;
+                    beam_cntr_pm_part = partInformationStruct.(aeroPartName).beam_cntr_pm;
+                    dGammaAlphaCP_dt_G_pm_part = (dGamma_dt_G_pm_part + bsxfun(@times,chord_part.*(alphaCP - beam_cntr_pm_part),dexAp_dt_G_pm_part));
+                    dvarTheta_dt_G_pm_part = partInformationStruct.(aeroPartName).dvarTheta_dt_G_pm;
+                    Gamma_G_pm_part = partInformationStruct.(aeroPartName).Gamma_G_pm;
                     
                     [a, ap, alpha, x_phi, cl, cd, cm, Vrel_c, iter_a] = ...
-                        aero.BEM_NING(Vinf, [], V3qrt_BEM, alpha_root, aeroCoeff2D_BEM, chord_BEM, EAp_G_BEM, Omega_BEM, Gamma_G_BEM, BEMvar, aeroPartName);
+                        aero.BEM_NING(Vinf, [], dGammaAlphaCP_dt_G_pm_part, alpha_root, aeroCoeff2D_part, chord_part, EAp_G_pm_part, dvarTheta_dt_G_pm_part, Gamma_G_pm_part, BEMvar, aeroPartName);
                     
                     a_global = cat(3,a_global,permute(a,[3 2 1]));
                     ap_global = cat(3,ap_global,permute(ap,[3 2 1]));

@@ -547,6 +547,7 @@ classdef NBS_flexPart_nonlinear < handle
             obj.c_pm = sample(obj.c,obj.Apm_idx,3);
             obj.c_pn = sample(obj.c,obj.Apn_idx,3);
             obj.beam_cntr_pm = sample(obj.beam_cntr,obj.Apm_idx,3);
+            obj.aero_cntr = sample(obj.aero_cntr,obj.Apm_idx,3);
             obj.beam_cntr_pn = sample(obj.beam_cntr,obj.Apn_idx,3);
             obj.del_s_aero = diff(obj.s_aero);
             obj.EAp_I_pm = sample(obj.EAp_I,obj.Apm_idx,3);
