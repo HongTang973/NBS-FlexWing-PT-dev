@@ -141,40 +141,40 @@ else
     CD = permute(CD,[3 2 1]);
     CM = permute(CM,[3 2 1]);
     
-    T = [cos(alpha), -sin(alpha), alpha.*0;
-         sin(alpha), cos(alpha), alpha.*0;
-         alpha.*0, alpha.*0, alpha.*0 + 1];
+    T = [cos(alpha), alpha.*0, sin(alpha);
+         alpha.*0, alpha.*0 + 1 alpha.*0;
+         -sin(alpha), alpha.*0, cos(alpha)];
     
     Fqc  = bsxfun(@times, Pdyn.*chord.*width.*AIC.*CL , MultiProd_(T,zAp));     
-    Mqc  = bsxfun(@times, Pdyn.*chord.*width.*AIC.*CM , yAp);   
+    Mqc  = bsxfun(@times, Pdyn.*chord.*width.*AIC.*CM , MultiProd_(T,yAp));   
     Drag = bsxfun(@times, Pdyn.*chord.*width.*AIC.*(CD + C_D0) , MultiProd_(T,xAp));
     
 end
 
-    function [cl, cd, cm, aoa] = interpCoeff(aoa, aeroCoeff2D)
+    function [cl, cd, cm] = interpCoeff(alpha, aeroCoeff2D)
         
-        alfa_in_file = aeroCoeff2D(:,1,:);
+        alpha_in_file = aeroCoeff2D(:,1,:);
         cl_in_file = aeroCoeff2D(:,2,:);
         cd_in_file = aeroCoeff2D(:,3,:);
         cm_in_file = aeroCoeff2D(:,4,:);
         
-        Nseg = length(aoa);
+        Nseg = length(alpha);
         IDSeg = (1:Nseg)';
         Nrow_cl = size(cl_in_file,1);
-        aoa = squeeze(aoa*180/pi);
+        alpha = squeeze(alpha*180/pi);
         
         % --- Interpolate_LiftDrag
-        L = alfa_in_file(2)-alfa_in_file(1);
-        if all(isreal(aoa))
-            Id          = ceil(aoa/L - alfa_in_file(1)/L);
+        L = alpha_in_file(2)-alpha_in_file(1);
+        if all(isreal(alpha))
+            Id          = ceil(alpha/L - alpha_in_file(1)/L);
             LinId      = Id + (IDSeg-1)*Nrow_cl; % Id + (find(NcId)-1)*Nrow_cl; % LinId = sub2ind(size(cl_in_file),Id,find(NcId))
-            Gamma   = (aoa-alfa_in_file(Id))/L;
+            Gamma   = (alpha-alpha_in_file(Id))/L;
         else
             % for complex difference step
             %                                     aoa_EqC   = real(aoa) + imag(aoa);
-            Id            = ceil(real(aoa)/L - alfa_in_file(1)/L); %ceil(aoa_EqC/L - alfa_in_file(1)/L);
+            Id            = ceil(real(alpha)/L - alpha_in_file(1)/L); %ceil(aoa_EqC/L - alfa_in_file(1)/L);
             LinId        = Id + (IDSeg-1)*Nrow_cl;
-            Gamma     = (aoa-alfa_in_file(Id))/L; %(real(aoa(NcId,ib))-alfa_in_file(Id))/L + (aoa(NcId,ib))/L;
+            Gamma     = (alpha-alpha_in_file(Id))/L; %(real(aoa(NcId,ib))-alfa_in_file(Id))/L + (aoa(NcId,ib))/L;
         end
         
         cl  = (1-Gamma).*cl_in_file(LinId) + Gamma.*cl_in_file(LinId+1);

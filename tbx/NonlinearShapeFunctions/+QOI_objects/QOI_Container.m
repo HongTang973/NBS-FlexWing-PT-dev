@@ -280,7 +280,7 @@ classdef QOI_Container < handle
                 ['xdata: ' qoiObject_x.qoiName ', Component: ' num2str(components{1}) ', Sidx: ' sidx_str{1} ', Tidx: ' tidx_str{1}];
                 ['ydata: ' qoiObject_y.qoiName ', Component: ' num2str(components{2}) ', Sidx: ' sidx_str{2} ', Tidx: ' tidx_str{2}]};
             title(hsp,title_str,'Interpreter','none');
-
+            
         end
         
         

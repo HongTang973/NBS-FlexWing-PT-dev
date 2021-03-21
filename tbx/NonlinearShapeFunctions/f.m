@@ -160,7 +160,7 @@ else
         rBarA_G = zeros(3,1);
         drBarA_dt_G = zeros(3,1);
     end
-    
+     
     dR_G_A_dqr_Dim3x3x1xnqr = zeros(3,3,1,0);
     dvarTheta_dqr_G_Dim3x1x1xnqr = zeros(3,1,1,0);
     drBarA_G_dqr_G_Dim3x1x1xnqr = zeros(3,1,1,0);
@@ -323,9 +323,10 @@ if ismember(aerodynamics,{'strip_steady','strip_unsteady','BEM'})
                 
                 [a_global, ap_global, alpha_global, x_phi_global, cl_global, cd_global, cm_global, Vrel_c_global, iter_a_global] = deal([]);
                 
+                i = 0;
                 for aeroPartName_cell = aeroPartNames
-                    aeroPartName = aeroPartName_cell{1};
-                    
+                    i = 1 + i;
+                    aeroPartName = aeroPartName_cell{1};                                      
                     alpha_root = partInformationStruct.(aeroPartName).alpha_root;
                     aeroCoeff2D_part = partInformationStruct.(aeroPartName).aeroCoeff;
                     chord_part = partInformationStruct.(aeroPartName).chord;
@@ -336,9 +337,15 @@ if ismember(aerodynamics,{'strip_steady','strip_unsteady','BEM'})
                     dGammaAlphaCP_dt_G_pm_part = (dGamma_dt_G_pm_part + bsxfun(@times,chord_part.*(alphaCP - beam_cntr_pm_part),dexAp_dt_G_pm_part));
                     dvarTheta_dt_G_pm_part = partInformationStruct.(aeroPartName).dvarTheta_dt_G_pm;
                     Gamma_G_pm_part = partInformationStruct.(aeroPartName).Gamma_G_pm;
+                   
+                    omega_ = t*Omega_G(1)+2*pi/nflexParts_nonlinear*(i-1)-1;
+                    R_A_H = [1, 0, 0; 0, cos(omega_), -sin(omega_); 0, sin(omega_), cos(omega_)];
+                    
+                    
+                    R_A_W = obj.R_A_W;
                     
                     [a, ap, alpha, x_phi, cl, cd, cm, Vrel_c, iter_a] = ...
-                        aero.BEM_NING(Vinf, [], dGammaAlphaCP_dt_G_pm_part, alpha_root, aeroCoeff2D_part, chord_part, EAp_G_pm_part, dvarTheta_dt_G_pm_part, Gamma_G_pm_part, BEMvar, aeroPartName);
+                        aero.BEM_NING(Vinf, [], dGammaAlphaCP_dt_G_pm_part, alpha_root, aeroCoeff2D_part, chord_part, EAp_G_pm_part, R_G_A, R_A_W, OmegaSkew_G, dvarTheta_dt_G_pm_part, Gamma_G_pm_part, BEMvar, aeroPartName);
                     
                     a_global = cat(3,a_global,permute(a,[3 2 1]));
                     ap_global = cat(3,ap_global,permute(ap,[3 2 1]));
@@ -350,10 +357,15 @@ if ismember(aerodynamics,{'strip_steady','strip_unsteady','BEM'})
                     Vrel_c_global = cat(3,Vrel_c_global,permute(Vrel_c,[1 3 2]));
                     iter_a_global = cat(3,iter_a_global,permute(iter_a,[3 2 1]));  
                 end
-                        
-                    Fqc = 0.5.*rho.*cl_global.*chord_pm_global.*ApWidth_pm_global.*Vrel_c_global.^2;
-                    Mqc = 0.5.*rho.*cm_global.*chord_pm_global.*ApWidth_pm_global.*Vrel_c_global.^2;
-                    Drag = 0.5.*rho.*cd_global.*chord_pm_global.*ApWidth_pm_global.*Vrel_c_global.^2;
+                xAp = EAp_G_pm_global(:,1,:);
+                yAp = EAp_G_pm_global(:,2,:);
+                zAp = EAp_G_pm_global(:,3,:);
+                
+                pdyn = 0.5*rho*Vrel_c_global.^2;
+
+                    Fqc = bsxfun(@times,pdyn.*chord_pm_global.*ApWidth_pm_global.*cl_global,xAp);
+                    Mqc = bsxfun(@times,pdyn.*chord_pm_global.*ApWidth_pm_global.*cm_global,yAp);
+                    Drag = bsxfun(@times,pdyn.*chord_pm_global.*ApWidth_pm_global.*cd_global,zAp);
 %                                         
             else
                 error('No global rotation.')
@@ -471,9 +483,9 @@ if ismember(aerodynamics,{'VLM_steady'})
     
 end
 
-PvecAero_G_pm_global = Fqc;
+PvecAero_G_pm_global = Fqc + Drag;
 PvecAero_Gamma_G = Gamma_G_pm_global + EAp_G_pm_global(:,1,:).*aeroOffset_global;
-MvecAero_G_pm_global = Mqc + MultiProd_(aeroOffset_skew_global,Fqc);
+MvecAero_G_pm_global = Mqc + MultiProd_(aeroOffset_skew_global,(Fqc + Drag));
 
 else
     
@@ -592,10 +604,10 @@ switch outputFormat
     
     if ~isempty(SimObject.aeroPartNames) && ~isempty(aerodynamics)
         QOI_Container.add_qoi('Aero_Forces_G' ,tidx,PvecAero_G_pm_global,'1:nsAp','AeroForce#_{[G]}','N','GlobalAeroQuantity',true);
-        QOI_Container.add_qoi('Aero_ForcePerSpan_G' ,tidx,PvecAero_G_pm_global.*ApWidth_pm_global,'1:nsAp','AeroForcePerSpan#_{[G]}','N/m','GlobalAeroQuantity',true);
+        QOI_Container.add_qoi('Aero_ForcePerSpan_G' ,tidx,PvecAero_G_pm_global./ApWidth_pm_global,'1:nsAp','AeroForcePerSpan#_{[G]}','N/m','GlobalAeroQuantity',true);
         QOI_Container.add_qoi('Aero_Forces_Gamma_G' ,tidx,PvecAero_Gamma_G,'1:nsAp','AeroForce \Gamma#_{[G]}','m');
         QOI_Container.add_qoi('Aero_Moments_G' ,tidx,MvecAero_G_pm_global,'1:nsAp','AeroMoment#_{[G]}','Nm');
-        QOI_Container.add_qoi('Aero_MomentPerSpan_G' ,tidx,MvecAero_G_pm_global.*ApWidth_pm_global,'1:nsAp','AeroMomentPerSpan#_{[G]}','N');
+        QOI_Container.add_qoi('Aero_MomentPerSpan_G' ,tidx,MvecAero_G_pm_global./ApWidth_pm_global,'1:nsAp','AeroMomentPerSpan#_{[G]}','N');
         QOI_Container.add_qoi('Net_Lift' ,tidx,sum(PvecAero_G_pm_global(3,1,:)),'1','NetLift','N');
         if exist('alpha_global','var')
             alpha_degrees = alpha_global*180/pi;
