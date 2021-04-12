@@ -292,11 +292,12 @@ if ismember(aerodynamics,{'strip_steady','strip_unsteady','BEM'})
     
     if isempty(obj.aero_cntr)
         aero_cntr = 1/4;
+        alphaCP = 3/4;
     else
         aero_cntr = aero_cntr_pm_global;
+        alphaCP = 1 - aero_cntr_pm_global;
     end
-    alphaCP = 3/4;
-    
+        
     dexAp_dt_G_pm_global = dEAp_dt_G_pm_global(:,1,:);
     dGammaAlphaCP_dt_G_pm_global = ...%bsxfun(@plus,drBarA_dt_G,...
                            (dGamma_dt_G_pm_global + bsxfun(@times,chord_pm_global.*(alphaCP - beam_cntr_pm_global),dexAp_dt_G_pm_global));
