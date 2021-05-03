@@ -61,6 +61,7 @@ if isa(SimObject.uVec_freeStream_G,'function_handle')
 else
     uVec_freeStream_G = SimObject.uVec_freeStream_G; %unit vector in free stream velocity direction
 end
+
 V = SimObject.V; %m/s
 rho = SimObject.rho; %kg/m^3
 Vinf = V*uVec_freeStream_G;
@@ -261,7 +262,7 @@ if ismember(aerodynamics,{'strip_steady','strip_unsteady','BEM'})
     for aeroPartName_cell = aeroPartNames
         
         aeroPartName = aeroPartName_cell{1};
-        aero_cntr_pm_global = cat(3,aero_cntr_pm_global,partInformationStruct.(aeroPartName).aero_cntr);
+        aero_cntr_pm_global = cat(3,aero_cntr_pm_global,partInformationStruct.(aeroPartName).aero_cntr_pm);
         aeroCoeff2D_global = cat(3,aeroCoeff2D_global,partInformationStruct.(aeroPartName).aeroCoeff);
         nsAp = partInformationStruct.(aeroPartName).nsAp;
         EAp_G_pm_global = cat(3,EAp_G_pm_global,partInformationStruct.(aeroPartName).EAp_G_pm);
@@ -302,7 +303,7 @@ if ismember(aerodynamics,{'strip_steady','strip_unsteady','BEM'})
     dGammaAlphaCP_dt_G_pm_global = ...%bsxfun(@plus,drBarA_dt_G,...
                            (dGamma_dt_G_pm_global + bsxfun(@times,chord_pm_global.*(alphaCP - beam_cntr_pm_global),dexAp_dt_G_pm_global));
     
-    aeroOffset_global = bsxfun(@times, chord_pm_global.*bsxfun(@plus,aero_cntr, -beam_cntr_pm_global) , EAp_G_pm_global(:,1,:)); %center of pressure offset from the beam line, +ve in ex direction
+    aeroOffset_global = bsxfun(@times, chord_pm_global.*bsxfun(@plus,aero_cntr_pm, -beam_cntr_pm_global) , EAp_G_pm_global(:,1,:)); %center of pressure offset from the beam line, +ve in ex direction
     aeroOffset_skew_global = getSkewMat(aeroOffset_global);
       
     switch aerodynamics
@@ -387,7 +388,7 @@ if ismember(aerodynamics,{'strip_steady','strip_unsteady','BEM'})
             qsteady = true;
             aeroCoeff2D = aeroCoeff2D_global;
             
-            [dQaero,Qaero,Fqc,Mqc,Drag,alpha_global] = aero_stripTheory_usteady_LeishmanIndicial(Qaero,rho,Vinf,V3qrt,xAp,yAp,zAp,Omega,chord,ApWidth,AIC,C_D0,qsteady,aeroCoeff2D);
+            [dQaero,Qaero,Fqc,Mqc,Drag,alpha_global,CL] = aero_stripTheory_usteady_LeishmanIndicial(Qaero,rho,Vinf,V3qrt,xAp,yAp,zAp,Omega,chord,ApWidth,AIC,C_D0,qsteady,aeroCoeff2D);
              
         case 'strip_unsteady'
             
@@ -490,7 +491,38 @@ MvecAero_G_pm_global = Mqc + MultiProd_(aeroOffset_skew_global,(Fqc + Drag));
 
 else
     
-    PvecAero_G_pm_global = [];
+        [dGamma_dqg_G_pm_global,...
+        dvarTheta_dqg_G_pm_global,...
+        harmonic_load,...
+        ] = deal([]);
+    
+        global_idx_counter = 0;
+    
+    for aeroPartName_cell = aeroPartNames
+        
+        aeroPartName = aeroPartName_cell{1};
+        harmonic_load = partInformationStruct.(aeroPartName).harmonic_load_global;
+        nsAp = partInformationStruct.(aeroPartName).nsAp;
+        dGamma_dqg_G_pm_part = zeros(3,1,nsAp,nqg2nd);
+        dGamma_dqg_G_pm_part(:,:,:,dqg2nd_to_dq2nd_idx) = partInformationStruct.(aeroPartName).dGamma_dq_G_pm;
+        dGamma_dqg_G_pm_global = cat(3,dGamma_dqg_G_pm_global,dGamma_dqg_G_pm_part);
+        dvarTheta_dqg_G_pm_part = zeros(3,1,nsAp,nqg2nd);
+        dvarTheta_dqg_G_pm_part(:,:,:,dqg2nd_to_dq2nd_idx) = partInformationStruct.(aeroPartName).dvarTheta_dq_G_pm;
+        dvarTheta_dqg_G_pm_global = cat(3,dvarTheta_dqg_G_pm_global,dvarTheta_dqg_G_pm_part);
+        
+        SimObject.allParts_struct.(aeroPartName).sAp_idx_global = 1:nsAp + global_idx_counter;
+        global_idx_counter = global_idx_counter + nsAp;
+    end
+    
+    if ~isempty(harmonic_load)
+        PvecAero_G_pm_global = zeros(3,1,nsAp);
+        harmonic_load_pm = sin(SimObject.omega_*t).*harmonic_load;
+        %     PvecAero_G_pm_global(:,1,end) = PvecAero_G_pm_global(:,1,end) + harmonic_load_pm;
+        PvecAero_G_pm_global = PvecAero_G_pm_global +  harmonic_load_pm;
+    else
+        PvecAero_G_pm_global = [];
+    end
+    
     PvecAero_Gamma_G = [];
     MvecAero_G_pm_global = [];
     
@@ -525,7 +557,7 @@ dW_dqg_sum = sum(dW_dqg,3);
 % ======================================================================================================================================================================================================================================
 
 
-
+% [MOMENT_xi , FORCE_xi] = material_law( KAPPA_I , [] , KAPPA_0_I , TAU , [] , TAU_0 , Linear_Stiffness_Matrix , []);
 
 
 switch outputFormat
@@ -613,6 +645,9 @@ switch outputFormat
         if exist('alpha_global','var')
             alpha_degrees = alpha_global*180/pi;
             QOI_Container.add_qoi('Angle_Of_Attack' ,tidx,reshape(alpha_degrees,1,1,[]),'1:nsAp','Angle Of Attack','deg');
+        end
+        if exist('CL','var')
+            QOI_Container.add_generic_qoi('CL' ,tidx,reshape(CL,1,1,[]),'1:nsAp','CL','');
         end
     end
     

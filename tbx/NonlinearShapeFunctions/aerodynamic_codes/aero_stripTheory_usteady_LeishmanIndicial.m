@@ -1,4 +1,4 @@
-function [dQaero,Qaero,Fqc,Mqc,Drag,alpha] = aero_stripTheory_usteady_LeishmanIndicial(Qaero,rho,Vinf,V3qrt,xAp,yAp,zAp,Omega,chord,width,AIC,C_D0,qsteady,aeroCoeff2D)                                                                     
+function [dQaero,Qaero,Fqc,Mqc,Drag,alpha,CL] = aero_stripTheory_usteady_LeishmanIndicial(Qaero,rho,Vinf,V3qrt,xAp,yAp,zAp,Omega,chord,width,AIC,C_D0,qsteady,aeroCoeff2D)                                                                     
 %% coded implementation of Leishman's Indicial Response Method  - C.Howcroft
 % [use publish button to view latex comments]
 
@@ -151,7 +151,7 @@ else
     
 end
 
-    function [cl, cd, cm] = interpCoeff(alpha, aeroCoeff2D)
+    function [cl, cd, cm, alpha] = interpCoeff(alpha, aeroCoeff2D)
         
         alpha_in_file = aeroCoeff2D(:,1,:);
         cl_in_file = aeroCoeff2D(:,2,:);

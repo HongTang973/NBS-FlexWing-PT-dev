@@ -25,7 +25,7 @@ O.StiffnessMatrix(4:6,4:6) = eye(3)*1e3;
     damping_factor = 0.04;
 O.DampingMatrix = damping_factor*O.StiffnessMatrix;
 %--------------------------------------------------------------------------
-    I_tau = 0.1;
+  I_tau = 0.1;
 O.I_varTheta_ps_I = [
     I_tau 0 0;
     0 I_tau 0;

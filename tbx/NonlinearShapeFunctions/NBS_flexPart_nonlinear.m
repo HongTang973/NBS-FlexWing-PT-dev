@@ -51,6 +51,7 @@ classdef NBS_flexPart_nonlinear < handle
         w                                                                  %[m] wing width in the ex direction
         h                                                                  %[m] wing thicknesses
         aero_cntr = 0.25;                                                  %[-] assumed aero centres for each panel (percentage of chord)
+        aero_cntr_pm
         aeroCoeff = [];                                                    %[-] spanwise variation in aerodynamic coefficients 
         BEMvar = struct();
         beam_cntr                                                          %[-] beam centre locations (percentage of chord)
@@ -84,7 +85,9 @@ classdef NBS_flexPart_nonlinear < handle
         tip_force_local = [0;0;0]                                          %[N] locally applied tip force
         tip_moment_global = [0;0;0]                                        %[N] globally applied tip moment
         tip_moment_local  = [0;0;0]                                        %[N] locally applied tip moment
-
+        
+        harmonic_load_global = [];
+        
         distributed_force_global = [0;0;0]                                 %[N] globally applied tip force
         distributed_force_local = [0;0;0]                                  %[N] locally applied tip force
         distributed_moment_global = [0;0;0]                                %[N] globally applied tip moment
@@ -113,7 +116,7 @@ classdef NBS_flexPart_nonlinear < handle
         
         CrossSectionProfiles = 'box'                                       %[-] cross sectional geometries of airfoil sections;
         zRot_Edraw_cell = {0}
-        temp_properties
+        temp_properties 
         
     end
     
@@ -547,7 +550,7 @@ classdef NBS_flexPart_nonlinear < handle
             obj.c_pm = sample(obj.c,obj.Apm_idx,3);
             obj.c_pn = sample(obj.c,obj.Apn_idx,3);
             obj.beam_cntr_pm = sample(obj.beam_cntr,obj.Apm_idx,3);
-            obj.aero_cntr = sample(obj.aero_cntr,obj.Apm_idx,3);
+            obj.aero_cntr_pm = sample(obj.aero_cntr,obj.Apm_idx,3);
             obj.beam_cntr_pn = sample(obj.beam_cntr,obj.Apn_idx,3);
             obj.del_s_aero = diff(obj.s_aero);
             obj.EAp_I_pm = sample(obj.EAp_I,obj.Apm_idx,3);
@@ -761,6 +764,12 @@ classdef NBS_flexPart_nonlinear < handle
             obj.Pvec_appliedGlobal_G = obj.distributed_force_global;
             obj.Pvec_appliedGlobal_G(:,1,end) = obj.Pvec_appliedGlobal_G(:,1,end) + obj.tip_force_global;
         end
+        
+        function set.harmonic_load_global(obj,val)
+
+                obj.harmonic_load_global = val;
+
+         end
         
         function set.distributed_force_global(obj,val)
             obj.distributed_force_global = reshape(val,3,1,[]);
@@ -1261,7 +1270,7 @@ classdef NBS_flexPart_nonlinear < handle
             
             PvecWeight_G = gravAccVec.*obj.ms;
             massOffset_G = MultiProd_(E_G,massOffset_I);
-            
+                        
             PvecApplied_G = obj.Pvec_appliedGlobal_G + MultiProd_(E_G,obj.Pvec_appliedLocal_I) + PvecWeight_G;
             MvecApplied_G = obj.Mvec_appliedGlobal_G + MultiProd_(E_G,obj.Mvec_appliedLocal_I) + MultiProd_(getSkewMat(massOffset_G),PvecWeight_G);
             
@@ -1297,7 +1306,7 @@ classdef NBS_flexPart_nonlinear < handle
                     %     alphaCP = 3/4;
                     %     dGammaAlphaCP_dt_G_pm = bsxfun(@plus,drBarA_dt_G,...
                     %                            dGamma_dt_G_pm + bsxfun(@times,c_pm.*(alphaCP - beam_cntr_pm),dexAp_dt_G_pm));
-                    partInformationStruct.(flex_part_name).aero_cntr = obj.aero_cntr;
+                    partInformationStruct.(flex_part_name).aero_cntr_pm = obj.aero_cntr_pm;
                     partInformationStruct.(flex_part_name).nsAp = nsAp;
                     partInformationStruct.(flex_part_name).EAp_G_pm = EAp_G_pm;
                     partInformationStruct.(flex_part_name).dEAp_dt_G_pm = dEAp_dt_G_pm;
@@ -1347,8 +1356,14 @@ classdef NBS_flexPart_nonlinear < handle
                     partInformationStruct.(flex_part_name).dPc_dt = dPc_dt;
                     partInformationStruct.(flex_part_name).symmetric_plane_cell = [];
                     
+
                 end
-                
+            else
+                    Apm_idx = obj.Apm_idx;
+                    partInformationStruct.(flex_part_name).harmonic_load_global = obj.harmonic_load_global;
+                    partInformationStruct.(flex_part_name).nsAp = nsAp;
+                    partInformationStruct.(flex_part_name).dGamma_dq_G_pm = sample(dGamma_dq_G_Dim3x1xnsxnq2nd,Apm_idx,3);
+                    partInformationStruct.(flex_part_name).dvarTheta_dq_G_pm = sample(dvarTheta_dq_G_Dim3x1xnsxnq2nd,Apm_idx,3);
                 
             end
             
