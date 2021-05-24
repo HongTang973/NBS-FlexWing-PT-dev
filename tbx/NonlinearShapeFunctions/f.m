@@ -291,7 +291,7 @@ if ismember(aerodynamics,{'strip_steady','strip_unsteady','BEM'})
         
     end
     
-    if isempty(obj.aero_cntr)
+    if isempty(obj.aero_cntr_pm)
         aero_cntr = 1/4;
         alphaCP = 3/4;
     else
@@ -303,7 +303,7 @@ if ismember(aerodynamics,{'strip_steady','strip_unsteady','BEM'})
     dGammaAlphaCP_dt_G_pm_global = ...%bsxfun(@plus,drBarA_dt_G,...
                            (dGamma_dt_G_pm_global + bsxfun(@times,chord_pm_global.*(alphaCP - beam_cntr_pm_global),dexAp_dt_G_pm_global));
     
-    aeroOffset_global = bsxfun(@times, chord_pm_global.*bsxfun(@plus,aero_cntr_pm, -beam_cntr_pm_global) , EAp_G_pm_global(:,1,:)); %center of pressure offset from the beam line, +ve in ex direction
+    aeroOffset_global = bsxfun(@times, chord_pm_global.*bsxfun(@plus,aero_cntr, -beam_cntr_pm_global) , EAp_G_pm_global(:,1,:)); %center of pressure offset from the beam line, +ve in ex direction
     aeroOffset_skew_global = getSkewMat(aeroOffset_global);
       
     switch aerodynamics
