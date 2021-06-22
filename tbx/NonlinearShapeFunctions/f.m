@@ -152,7 +152,11 @@ else
         d2rBarA_dt2_G_star = prescribed_motion.d2rBarA_dt2_G;
     else
         Omega_G = zeros(3,1);
-        R_G_A = eye(3);
+        if isempty(SimObject.R_G_A_0)
+            R_G_A = eye(3);
+        else
+            R_G_A = SimObject.R_G_A_0;
+        end
         dR_G_A_dt = zeros(3);
         d2R_G_A_dt2_star = zeros(3);
         OmegaSkew_G = zeros(3);
@@ -254,7 +258,6 @@ if ismember(aerodynamics,{'strip_steady','strip_unsteady','BEM'})
         dGamma_dqg_G_pm_global,...
         dvarTheta_dqg_G_pm_global,...
         qAero_idx_global,...
-        aeroCoeff2D_global,...
         ] = deal([]);
     
     global_idx_counter = 0;
@@ -263,7 +266,7 @@ if ismember(aerodynamics,{'strip_steady','strip_unsteady','BEM'})
         
         aeroPartName = aeroPartName_cell{1};
         aero_cntr_pm_global = cat(3,aero_cntr_pm_global,partInformationStruct.(aeroPartName).aero_cntr_pm);
-        aeroCoeff2D_global = cat(3,aeroCoeff2D_global,partInformationStruct.(aeroPartName).aeroCoeff);
+        Aero_global = partInformationStruct.(aeroPartName).Aero;
         nsAp = partInformationStruct.(aeroPartName).nsAp;
         EAp_G_pm_global = cat(3,EAp_G_pm_global,partInformationStruct.(aeroPartName).EAp_G_pm);
         dEAp_dt_G_pm_global = cat(3,dEAp_dt_G_pm_global,partInformationStruct.(aeroPartName).dEAp_dt_G_pm);
@@ -291,7 +294,7 @@ if ismember(aerodynamics,{'strip_steady','strip_unsteady','BEM'})
         
     end
     
-    if isempty(obj.aero_cntr_pm)
+    if isempty(aero_cntr_pm_global)
         aero_cntr = 1/4;
         alphaCP = 3/4;
     else
@@ -307,71 +310,156 @@ if ismember(aerodynamics,{'strip_steady','strip_unsteady','BEM'})
     aeroOffset_skew_global = getSkewMat(aeroOffset_global);
       
     switch aerodynamics
-        %blade element momentum steady ==================================== TODO: bem unsteady
+        %=========================blade element momentum ==================
         case 'BEM' 
-            if ~isempty(Omega_G) 
-                BEMvar = partInformationStruct.(aeroPartName).BEMvar;
-                if ~isempty(SimObject.CUSTOM_free_states) && SimType.Parked
-                    BEMvar.IDLING = true;
-                else
-                    BEMvar.IDLING = false;
-                end
-                BEMvar.NskipAllowed = 6;
-                BEMvar.iter_a_max = 200;
-                BEMvar.eps_a = 1e-3;
-                BEMvar.eps_ap = 1e-3;
-                BEMvar.RealOnly = true;
-                BEMvar.polarMethod = 'linear';
+            %-----------------configurations-------------------%
+            %----------BEM (when rotating or idling)-----------%
+            %---BEM->dynamic stall (when rotating or idling)---%
+            %-----------dynamic stall (when parked)------------%
+            %--------------------------------------------------%
+            if ~SimType.Parked
                 
-                [a_global, ap_global, alpha_global, x_phi_global, cl_global, cd_global, cm_global, Vrel_c_global, iter_a_global] = deal([]);
+                %initialise blade variables
+                [a_global, ap_global, alpha_global, cl_global, cd_global, cm_global, Vrel_c_global] = deal([]);
                 
                 i = 0;
                 for aeroPartName_cell = aeroPartNames
                     i = 1 + i;
-                    aeroPartName = aeroPartName_cell{1};                                      
-                    alpha_root = partInformationStruct.(aeroPartName).alpha_root;
-                    aeroCoeff2D_part = partInformationStruct.(aeroPartName).aeroCoeff;
+                    aeroPartName = aeroPartName_cell{1};    
+                    Aero_part = partInformationStruct.(aeroPartName).Aero;
+                    Aero_part.BEMvar.IDLING = false;
+                    Aero_part.BEMvar.NskipAllowed = 6;
+                    Aero_part.BEMvar.iter_a_max = 200;
+                    Aero_part.BEMvar.eps_a = 1e-3;
+                    Aero_part.BEMvar.eps_ap = 1e-3;
+                    Aero_part.BEMvar.RealOnly = true;
+                    Aero_part.BEMvar.polarMethod = 'linear';
+                    
+                    aero_cntr_pm_part = partInformationStruct.(aeroPartName).aero_cntr_pm;
+                    if isempty(aero_cntr_pm_part)
+                        alphaCP = 3/4;
+                    else
+                        alphaCP = 1 - aero_cntr_pm_part; %TODO Check
+                    end
+                    
+                    aeroCoeff2D_part = Aero_part.aeroCoeff;
+                    R_A_G = partInformationStruct.(aeroPartName).R_A_G; 
                     chord_part = partInformationStruct.(aeroPartName).chord;
                     EAp_G_pm_part = partInformationStruct.(aeroPartName).EAp_G_pm;
                     dexAp_dt_G_pm_part = partInformationStruct.(aeroPartName).dEAp_dt_G_pm(:,1,:);
                     dGamma_dt_G_pm_part = partInformationStruct.(aeroPartName).dGamma_dt_G_pm;
                     beam_cntr_pm_part = partInformationStruct.(aeroPartName).beam_cntr_pm;
                     dGammaAlphaCP_dt_G_pm_part = (dGamma_dt_G_pm_part + bsxfun(@times,chord_part.*(alphaCP - beam_cntr_pm_part),dexAp_dt_G_pm_part));
-                    dvarTheta_dt_G_pm_part = partInformationStruct.(aeroPartName).dvarTheta_dt_G_pm;
                     Gamma_G_pm_part = partInformationStruct.(aeroPartName).Gamma_G_pm;
-                   
-                    omega_ = t*Omega_G(1)+2*pi/nflexParts_nonlinear*(i-1)-1;
-                    R_A_H = [1, 0, 0; 0, cos(omega_), -sin(omega_); 0, sin(omega_), cos(omega_)];
-                    
-                    
-                    R_A_W = obj.R_A_W;
-                    
-                    [a, ap, alpha, x_phi, cl, cd, cm, Vrel_c, iter_a] = ...
-                        aero.BEM_NING(Vinf, [], dGammaAlphaCP_dt_G_pm_part, alpha_root, aeroCoeff2D_part, chord_part, EAp_G_pm_part, R_G_A, R_A_W, OmegaSkew_G, dvarTheta_dt_G_pm_part, Gamma_G_pm_part, BEMvar, aeroPartName);
-                    
+                    %============================================================== 
+                    % global to aircraft (hub) rotation matrices for i'th blade
+                    az_ib = 2*pi/3*(i-1);           
+                    R_A_G_ib= r_matrix([1,0,0],az_ib).'*R_A_G;
+                                        
+                    Vinf_A = MultiProd_(R_A_G_ib, Vinf);
+                    dGammaAlphaCP_dt_A_pm_part = MultiProd_(R_A_G_ib,dGammaAlphaCP_dt_G_pm_part);
+                    Gamma_A_pm_part = MultiProd_(R_A_G_ib, Gamma_G_pm_part);
+                    EAp_A_pm_part = MultiProd_(R_A_G_ib,EAp_G_pm_part);
+                    %==============================================================
+                    [a, ap, alpha, ~, cl, cd, cm, Vrel_G, ~] = ...
+                        aero.BEM_NING(Vinf_A, [], dGammaAlphaCP_dt_A_pm_part, aeroCoeff2D_part, chord_part, EAp_A_pm_part, Omega_G(1), Gamma_A_pm_part, R_A_G_ib, BEMvar);
+                    %==============================================================
                     a_global = cat(3,a_global,permute(a,[3 2 1]));
                     ap_global = cat(3,ap_global,permute(ap,[3 2 1]));
                     alpha_global = cat(3,alpha_global,permute(alpha/180*pi,[3 2 1]));
-                    x_phi_global = cat(3,x_phi_global,permute(x_phi,[3 2 1]));
                     cl_global = cat(3,cl_global,permute(cl,[3 2 1]));
                     cd_global = cat(3,cd_global,permute(cd,[3 2 1]));
                     cm_global = cat(3,cm_global,permute(cm,[3 2 1]));
-                    Vrel_c_global = cat(3,Vrel_c_global,permute(Vrel_c,[1 3 2]));
-                    iter_a_global = cat(3,iter_a_global,permute(iter_a,[3 2 1]));  
+                    Vrel_G_global = cat(3,Vrel_c_global,Vrel_G);
+                    
                 end
-                xAp = EAp_G_pm_global(:,1,:);
-                yAp = EAp_G_pm_global(:,2,:);
-                zAp = EAp_G_pm_global(:,3,:);
+            else  
+                %if bem not invoked (i.e. for parked analyses)
+                Vrel_G_global = Vinf - dGammaAlphaCP_dt_G_pm_global;
+                vx3qrt = sum(Vrel_G_global.*EAp_G_pm_global(:,1,:),1);
+                vz3qrt = sum(Vrel_G_global.*EAp_G_pm_global(:,3,:),1);
+                alpha_global = atan(vz3qrt./vx3qrt);
+            end 
+            
+            %===================modified dynamic stall==============================
+            if SimType.dynamicstall   
                 
-                pdyn = 0.5*rho*Vrel_c_global.^2;
-
-                    Fqc = bsxfun(@times,pdyn.*chord_pm_global.*ApWidth_pm_global.*cl_global,xAp);
-                    Mqc = bsxfun(@times,pdyn.*chord_pm_global.*ApWidth_pm_global.*cm_global,yAp);
-                    Drag = bsxfun(@times,pdyn.*chord_pm_global.*ApWidth_pm_global.*cd_global,zAp);
-%                                         
-            else
-                error('No global rotation.')
+            [afthick_global]  = deal([]);    
+            i = 0;
+            for aeroPartName_cell = aeroPartNames
+                i = i+1;
+                aeroPartName = aeroPartName_cell{1};
+                
+                Aero_global = partInformationStruct.(aeroPartName).Aero;
+                afthick_global = cat(1,afthick_global,Aero_global.afthick); 
+                if i == 1
+                    static_stall_data_global = Aero_global.static_stall_data;
+                else
+                static_stall_data_global = cat(1,static_stall_data_global, Aero_global.static_stall_data(2:end,:));
+                end
             end
+                    %==============================================================
+                    afthick_global = permute(afthick_global, [3 2 1]);
+                    
+                    ds_ID = find(afthick_global<0.35);
+                    Nds   = length(ds_ID);
+                    
+                    Z3    = zeros(Nds,SimType.nBlades);
+                    Z31    = zeros(Nds,SimType.nBlades);
+                    ds = struct('X',zeros(4*Nds,SimType.nBlades),'b4',Z3,'cl_static',Z3,'cl0',Z3,'dcl0',Z3,'dalpha',Z3,'f',Z3...
+                        ,'tau_v',Z3,'cl0_d',Z3,'theta_d',Z3,'cl_d',Z31,'dcl',Z3,'d_dcl',Z3,'cl',Z3,'w1234_S',zeros(4*Nds,SimType.nBlades));
+
+                    ds.c1_ID        = 1:Nds;
+                    ds.c2_ID        = 1+Nds:2*Nds;
+                    ds.f_Id         = 2*Nds+1:3*Nds;
+                    ds.Thetav_Id    = 1+3*Nds:4*Nds;
+
+                    % Aerofoil profil dependent parameters (Vertol 23010-1.58) need more realistic values for each aerofoil -- %
+                    ds.A1  = 0.165;  ds.A2  = 0.335;          % A1,A2 Linear lift curve coefficients (Wagner)
+                    ds.w1r = 0.0455; ds.w2r = 0.3;            % w1,w2 dynamics pour delay when fully attached flow
+                    ds.w3r = 0.1;                             % Dynamic attachment degree dynamic (f=attachement degree)
+                    ds.w4r = 0.075;                           % Dynamic of LE vortex separation
+                    ds.alpha_v = 14.75; % ???? [***]          % Critical angle of attack at which the leading edge vortex detaches from the leading edge
+
+
+                    ds.alpha_ss       = cat(2,static_stall_data_global{ds_ID(1)+1,1});
+                    ds.cl0_ss         = cat(2,static_stall_data_global{ds_ID+1,2});
+                    ds.f_ss           = cat(2,static_stall_data_global{ds_ID+1,3});
+                    ds.cl_ss          = cat(2,static_stall_data_global{ds_ID+1,5});
+                    ds.alpha_stall    = cat(2,static_stall_data_global{ds_ID+1,6});
+                    ds.df_daoa_deg    = cat(2,static_stall_data_global{ds_ID+1,9});
+                    ds.dcl0_daoa_deg    = cat(2,static_stall_data_global{ds_ID+1,10});
+                    ds.dcld_daoa_deg    = cat(2,static_stall_data_global{ds_ID+1,11});
+                    ds.dDelCL_daoa_deg    = cat(2,static_stall_data_global{ds_ID+1,12});
+
+                    ds.B_ds     = [ds.A1*ones(Nds,1); ds.A2*ones(Nds,1); zeros(2*Nds,1)];
+
+                    ds.ds_ID = ds_ID;
+                    ds.Nds   = Nds;
+                    
+                    VrelMag = sqrt(sum(Vrel_G_global.^2));
+                    %==============================================================
+                    ds = DynStall_function(ds, VrelMag, chord_pm_global, alpha_global, delta_t,...
+                                             Nds, ds_ID, i, t, t_red, t_red1);
+                    cl_global = ds;
+                    %==============================================================
+                
+            end   
+                %==============================================================
+                vel = sum(Vrel_G_global.^2,1).^0.5;
+                Pdyn = 0.5*rho*vel.^2;
+                    
+                ca = cos(alpha_global);
+                sa = sin(alpha_global);
+                
+                LIFT = Pdyn.*chord_pm_global.*ApWidth_pm_global.*cl_global;
+                DRAG = Pdyn.*chord_pm_global.*ApWidth_pm_global.*cd_global;
+     
+                Fqc  = bsxfun(@times, LIFT.*ca + DRAG.*sa, EAp_G_pm_global(:,3,:));     
+                Mqc  = bsxfun(@times, Pdyn.*chord_pm_global.*ApWidth_pm_global.*cm_global , EAp_G_pm_global(:,2,:));   
+                Drag = bsxfun(@times, DRAG.*ca - LIFT.*sa, EAp_G_pm_global(:,1,:));
+%                                         
+            
         %=================================quasi steady strip theory=============================V3qrt,xAp,yAp,zAp    
         case 'strip_steady'
             
@@ -386,7 +474,7 @@ if ismember(aerodynamics,{'strip_steady','strip_unsteady','BEM'})
             AIC = AICs_global;
             C_D0 = 0;
             qsteady = true;
-            aeroCoeff2D = aeroCoeff2D_global;
+            aeroCoeff2D = Aero_global.aeroCoeff2D;
             
             [dQaero,Qaero,Fqc,Mqc,Drag,alpha_global,CL] = aero_stripTheory_usteady_LeishmanIndicial(Qaero,rho,Vinf,V3qrt,xAp,yAp,zAp,Omega,chord,ApWidth,AIC,C_D0,qsteady,aeroCoeff2D);
              
@@ -405,7 +493,7 @@ if ismember(aerodynamics,{'strip_steady','strip_unsteady','BEM'})
             AIC = AICs_global;
             C_D0 = 0;
             qsteady = false;
-            aeroCoeff2D = aeroCoeff2D_global;
+            aeroCoeff2D = Aero_global.aeroCoeff2D;
             
             [dQaero,Qaero,Fqc,Mqc,Drag,alpha_global] = aero_stripTheory_usteady_LeishmanIndicial(Qaero,rho,Vinf,V3qrt,xAp,yAp,zAp,Omega,chord,ApWidth,AIC,C_D0,qsteady,aeroCoeff2D);
             

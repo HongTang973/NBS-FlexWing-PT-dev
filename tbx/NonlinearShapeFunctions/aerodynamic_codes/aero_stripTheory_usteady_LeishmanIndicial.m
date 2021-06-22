@@ -139,15 +139,17 @@ else
     
     CL = permute(CL,[3 2 1]);
     CD = permute(CD,[3 2 1]);
-    CM = permute(CM,[3 2 1]);
+    CM = permute(CM,[3 2 1]); 
     
-    T = [cos(alpha), alpha.*0, sin(alpha);
-         alpha.*0, alpha.*0 + 1 alpha.*0;
-         -sin(alpha), alpha.*0, cos(alpha)];
+    ca = cos(alpha);
+    sa = sin(alpha);
     
-    Fqc  = bsxfun(@times, Pdyn.*chord.*width.*AIC.*CL , MultiProd_(T,zAp));     
-    Mqc  = bsxfun(@times, Pdyn.*chord.*width.*AIC.*CM , MultiProd_(T,yAp));   
-    Drag = bsxfun(@times, Pdyn.*chord.*width.*AIC.*(CD + C_D0) , MultiProd_(T,xAp));
+    LIFT = Pdyn.*chord.*width.*AIC.*CL;
+    DRAG = Pdyn.*chord.*width.*AIC.*CD;
+     
+    Fqc  = bsxfun(@times, LIFT.*ca + DRAG.*sa, zAp);     
+    Mqc  = bsxfun(@times, Pdyn.*chord.*width.*AIC.*CM , yAp);   
+    Drag = bsxfun(@times, DRAG.*ca - LIFT.*sa, xAp);
     
 end
 

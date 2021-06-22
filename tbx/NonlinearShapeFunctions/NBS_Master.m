@@ -16,6 +16,7 @@ classdef NBS_Master < handle
         CUSTOM_free_states                                                 %handle to a function that prescribes a mapping from a set of kinematic states to position/rotational quantities and their variations
         SimType = struct
         omega_
+        R_G_A_0
         StateInfo
                         StateMap_cell
                         StateMap
@@ -693,26 +694,45 @@ classdef NBS_Master < handle
         %populate any extra info required based on above request
         obj.QOI_Master.write_QOI_values('systemLevel','display',false);
         
-        writerObj = VideoWriter(fileName);
+        writerObj = VideoWriter(fileName,'MPEG-4');
+%         writerObj.Quality = 100;
         writerObj.FrameRate = framesPerSecond_closestDiscreteFit*playSpeed;
         open(writerObj);
         
-        figure;
-        set(gcf,'outerPosition',[100 100 800 800],'color',[1 1 1]);
+        f = figure('units','normalized','outerposition',[0 0 1 1]);
+        f.Color = [1 1 1];
+  
+        
+%         set(gcf,'outerPosition',[100 100 800 800],'color',[1 1 1]);
         pause(0.1);
         
         for i_ = 1:numel(Tidx)
             tidx = Tidx(i_);
             cla
+            obj.plotBounds = [-150 150; -150, 150; -150, 150];
             obj.draw('parts','all','Tidx',tidx,'qoiRequest',false,'newFig',false,varargin{:})
             set(gcf,'Renderer','zbuffer');
             ax = gca;
+            ax.XTickLabel = [];
+            ax.YTickLabel = [];
+            ax.ZTickLabel = [];
+            ax.TickDir = 'in';
+%             axis(ax, 'equal');
+%             set(ax,'ZLim', obj.plotBounds(1,:), 'YLim', obj.plotBounds(2,:), 'XLim', obj.plotBounds(3,:));
+            
+            set(ax,'Xdir','reverse');
             set(ax,'Units','pixels');
+            
+            lgt = light;
+            lgt.Position = [-1 -1 1]; 
+            
             pos = get(ax,'Position');
             marg = 30;
             rect = [-marg, -marg, pos(3)+2*marg, pos(4)+2*marg];
+     
             title(['t = ' num2str(t_(tidx))]);
             F = getframe(gca,rect);
+            
             writeVideo(writerObj,F);
         end
         close(gcf);
@@ -1300,7 +1320,7 @@ classdef NBS_Master < handle
         function [] = plot_2D_projections(Gamma,XLIM,YLIM,ZLIM,projectionFacesXYZ)
             GammaX = Gamma(1,:); GammaY = Gamma(2,:); GammaZ = Gamma(3,:);
             
-            XLIM_projection = XLIM(projectionFacesXYZ(1));
+            XLIM_projection = -XLIM(projectionFacesXYZ(1));
             YLIM_projection = YLIM(projectionFacesXYZ(2));
             ZLIM_projection = ZLIM(projectionFacesXYZ(3));
             

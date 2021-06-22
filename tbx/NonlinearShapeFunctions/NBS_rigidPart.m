@@ -44,6 +44,7 @@ classdef NBS_rigidPart < handle & matlab.mixin.Copyable
     c
         c_pm
     aero_cntr
+    aero_cntr_pm
     beam_cntr = 0.5
         beam_cntr_pm
     

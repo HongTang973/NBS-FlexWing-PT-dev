@@ -263,8 +263,8 @@ classdef QOI_Container < handle
                 figure(); hsp = subplot(1,1,1);
             end
             plot(hsp,xdata,ydata,varargin{:});
-            xlabel_str = [qoiObject_x.plotName_str qoiObject_x.units_str];
-            ylabel_str = [qoiObject_y.plotName_str qoiObject_y.units_str];
+            xlabel_str = ['$' qoiObject_x.plotName_str qoiObject_x.units_str '$'];
+            ylabel_str = ['$' qoiObject_y.plotName_str qoiObject_y.units_str '$'];
             if qoiObject_x.dim1>1
                 xlabel_str = strrep(xlabel_str,'#',['(' num2str(components{1}) ')']);
             else
@@ -275,12 +275,12 @@ classdef QOI_Container < handle
             else
                 ylabel_str = strrep(ylabel_str,'#','');
             end
-            xlabel(hsp,xlabel_str); ylabel(hsp,ylabel_str);
+            xlabel(hsp,xlabel_str,'interpreter','latex'); ylabel(hsp,ylabel_str,'interpreter','latex');
             title_str = {...
-                ['xdata: ' qoiObject_x.qoiName ', Component: ' num2str(components{1}) ', Sidx: ' sidx_str{1} ', Tidx: ' tidx_str{1}];
-                ['ydata: ' qoiObject_y.qoiName ', Component: ' num2str(components{2}) ', Sidx: ' sidx_str{2} ', Tidx: ' tidx_str{2}]};
-            title(hsp,title_str,'Interpreter','none');
-            
+                ['$','xdata: ' qoiObject_x.qoiName ', Component: ' num2str(components{1}) ', Sidx: ' sidx_str{1} ', Tidx: ' tidx_str{1},'$'];
+                ['$','ydata: ' qoiObject_y.qoiName ', Component: ' num2str(components{2}) ', Sidx: ' sidx_str{2} ', Tidx: ' tidx_str{2},'$']};
+            title(hsp,title_str,'Interpreter','latex');
+            set(hsp,'TickLabelInterpreter','latex')
         end
         
         

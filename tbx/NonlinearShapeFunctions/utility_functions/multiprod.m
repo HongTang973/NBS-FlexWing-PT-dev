@@ -205,8 +205,8 @@ end
          if sumOK, c = sum(a .* b, sumOK);
          else      c =     a .* b; end
      elseif sxtimesOK % SX + TIMES
-         if sumOK, c = sum(bsxfun(@times, a, b), sumOK);
-         else      c =     bsxfun(@times, a, b); end
+         if sumOK, c = sum((a.*b), sumOK);
+         else      c =     a.*b; end
      elseif mtimesOK % MTIMES (rarely used)
          c = a * b;
      end
