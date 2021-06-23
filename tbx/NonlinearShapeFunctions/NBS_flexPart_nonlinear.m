@@ -897,7 +897,7 @@ classdef NBS_flexPart_nonlinear < handle
             xi = [KAPPA_I - KAPPA_0_I];
             MOMENT_xi = -MultiProd_(Linear_Stiffness_Matrix{1}(1:3,1:3,:),xi);
             FORCE_xi = zeros(3,0,0);
-        else
+        else           
             xi = [KAPPA_I - KAPPA_0_I ; TAU - TAU_0];
             MOMENT_xi = -MultiProd_(Linear_Stiffness_Matrix{1},xi);
             FORCE_xi  = -MultiProd_(Linear_Stiffness_Matrix{2},xi);

@@ -382,69 +382,74 @@ if ismember(aerodynamics,{'strip_steady','strip_unsteady','BEM'})
             end 
             
             %===================modified dynamic stall==============================
-            if SimType.dynamicstall   
-                
-            [afthick_global]  = deal([]);    
-            i = 0;
-            for aeroPartName_cell = aeroPartNames
-                i = i+1;
-                aeroPartName = aeroPartName_cell{1};
-                
-                Aero_global = partInformationStruct.(aeroPartName).Aero;
-                afthick_global = cat(1,afthick_global,Aero_global.afthick); 
-                if i == 1
-                    static_stall_data_global = Aero_global.static_stall_data;
-                else
-                static_stall_data_global = cat(1,static_stall_data_global, Aero_global.static_stall_data(2:end,:));
+            if SimType.dsFLAG
+            
+                switch SimType.dsModel
+                    case 'Larsen' %4 states per strip
+                        [afthick_global]  = deal([]);
+                        i = 0;
+                        for aeroPartName_cell = aeroPartNames
+                            i = i+1;
+                            aeroPartName = aeroPartName_cell{1};
+                            
+                            Aero_global = partInformationStruct.(aeroPartName).Aero;
+                            afthick_global = cat(1,afthick_global,Aero_global.afthick);
+                            if i == 1
+                                static_stall_data_global = Aero_global.static_stall_data;
+                            else
+                                static_stall_data_global = cat(1,static_stall_data_global, Aero_global.static_stall_data(2:end,:));
+                            end
+                        end
+                        %==============================================================
+                        afthick_global = permute(afthick_global, [3 2 1]);
+                        
+                        ds_ID = find(afthick_global<0.35);
+                        Nds   = length(ds_ID);
+                        
+                        Z3    = zeros(Nds,SimType.nBlades);
+                        Z31    = zeros(Nds,SimType.nBlades);
+                        ds = struct('X',zeros(4*Nds,SimType.nBlades),'b4',Z3,'cl_static',Z3,'cl0',Z3,'dcl0',Z3,'dalpha',Z3,'f',Z3...
+                            ,'tau_v',Z3,'cl0_d',Z3,'theta_d',Z3,'cl_d',Z31,'dcl',Z3,'d_dcl',Z3,'cl',Z3,'w1234_S',zeros(4*Nds,SimType.nBlades));
+                        
+                        ds.c1_ID        = 1:Nds;
+                        ds.c2_ID        = 1+Nds:2*Nds;
+                        ds.f_Id         = 2*Nds+1:3*Nds;
+                        ds.Thetav_Id    = 1+3*Nds:4*Nds;
+                        
+                        % Aerofoil profil dependent parameters (Vertol 23010-1.58) need more realistic values for each aerofoil -- %
+                        ds.A1  = 0.165;  ds.A2  = 0.335;          % A1,A2 Linear lift curve coefficients (Wagner)
+                        ds.w1r = 0.0455; ds.w2r = 0.3;            % w1,w2 dynamics pour delay when fully attached flow
+                        ds.w3r = 0.1;                             % Dynamic attachment degree dynamic (f=attachement degree)
+                        ds.w4r = 0.075;                           % Dynamic of LE vortex separation
+                        ds.alpha_v = 14.75; % ???? [***]          % Critical angle of attack at which the leading edge vortex detaches from the leading edge
+                        
+                        
+                        ds.alpha_ss       = cat(2,static_stall_data_global{ds_ID(1)+1,1});
+                        ds.cl0_ss         = cat(2,static_stall_data_global{ds_ID+1,2});
+                        ds.f_ss           = cat(2,static_stall_data_global{ds_ID+1,3});
+                        ds.cl_ss          = cat(2,static_stall_data_global{ds_ID+1,5});
+                        ds.alpha_stall    = cat(2,static_stall_data_global{ds_ID+1,6});
+                        ds.df_daoa_deg    = cat(2,static_stall_data_global{ds_ID+1,9});
+                        ds.dcl0_daoa_deg    = cat(2,static_stall_data_global{ds_ID+1,10});
+                        ds.dcld_daoa_deg    = cat(2,static_stall_data_global{ds_ID+1,11});
+                        ds.dDelCL_daoa_deg    = cat(2,static_stall_data_global{ds_ID+1,12});
+                        
+                        ds.B_ds     = [ds.A1*ones(Nds,1); ds.A2*ones(Nds,1); zeros(2*Nds,1)];
+                        
+                        ds.ds_ID = ds_ID;
+                        ds.Nds   = Nds;
+                        
+                        VrelMag = sqrt(sum(Vrel_G_global.^2));
+                        %==============================================================
+                        ds = DynStall_function(ds, VrelMag, chord_pm_global, alpha_global, delta_t,...
+                            Nds, ds_ID, i, t, t_red, t_red1);
+                        cl_global = ds;
+                        %==============================================================
+                    case 'Oye' %one state per strip (dynamic only in stall)
+                        
+                        
                 end
             end
-                    %==============================================================
-                    afthick_global = permute(afthick_global, [3 2 1]);
-                    
-                    ds_ID = find(afthick_global<0.35);
-                    Nds   = length(ds_ID);
-                    
-                    Z3    = zeros(Nds,SimType.nBlades);
-                    Z31    = zeros(Nds,SimType.nBlades);
-                    ds = struct('X',zeros(4*Nds,SimType.nBlades),'b4',Z3,'cl_static',Z3,'cl0',Z3,'dcl0',Z3,'dalpha',Z3,'f',Z3...
-                        ,'tau_v',Z3,'cl0_d',Z3,'theta_d',Z3,'cl_d',Z31,'dcl',Z3,'d_dcl',Z3,'cl',Z3,'w1234_S',zeros(4*Nds,SimType.nBlades));
-
-                    ds.c1_ID        = 1:Nds;
-                    ds.c2_ID        = 1+Nds:2*Nds;
-                    ds.f_Id         = 2*Nds+1:3*Nds;
-                    ds.Thetav_Id    = 1+3*Nds:4*Nds;
-
-                    % Aerofoil profil dependent parameters (Vertol 23010-1.58) need more realistic values for each aerofoil -- %
-                    ds.A1  = 0.165;  ds.A2  = 0.335;          % A1,A2 Linear lift curve coefficients (Wagner)
-                    ds.w1r = 0.0455; ds.w2r = 0.3;            % w1,w2 dynamics pour delay when fully attached flow
-                    ds.w3r = 0.1;                             % Dynamic attachment degree dynamic (f=attachement degree)
-                    ds.w4r = 0.075;                           % Dynamic of LE vortex separation
-                    ds.alpha_v = 14.75; % ???? [***]          % Critical angle of attack at which the leading edge vortex detaches from the leading edge
-
-
-                    ds.alpha_ss       = cat(2,static_stall_data_global{ds_ID(1)+1,1});
-                    ds.cl0_ss         = cat(2,static_stall_data_global{ds_ID+1,2});
-                    ds.f_ss           = cat(2,static_stall_data_global{ds_ID+1,3});
-                    ds.cl_ss          = cat(2,static_stall_data_global{ds_ID+1,5});
-                    ds.alpha_stall    = cat(2,static_stall_data_global{ds_ID+1,6});
-                    ds.df_daoa_deg    = cat(2,static_stall_data_global{ds_ID+1,9});
-                    ds.dcl0_daoa_deg    = cat(2,static_stall_data_global{ds_ID+1,10});
-                    ds.dcld_daoa_deg    = cat(2,static_stall_data_global{ds_ID+1,11});
-                    ds.dDelCL_daoa_deg    = cat(2,static_stall_data_global{ds_ID+1,12});
-
-                    ds.B_ds     = [ds.A1*ones(Nds,1); ds.A2*ones(Nds,1); zeros(2*Nds,1)];
-
-                    ds.ds_ID = ds_ID;
-                    ds.Nds   = Nds;
-                    
-                    VrelMag = sqrt(sum(Vrel_G_global.^2));
-                    %==============================================================
-                    ds = DynStall_function(ds, VrelMag, chord_pm_global, alpha_global, delta_t,...
-                                             Nds, ds_ID, i, t, t_red, t_red1);
-                    cl_global = ds;
-                    %==============================================================
-                
-            end   
                 %==============================================================
                 vel = sum(Vrel_G_global.^2,1).^0.5;
                 Pdyn = 0.5*rho*vel.^2;

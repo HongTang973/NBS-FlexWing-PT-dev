@@ -22,12 +22,13 @@ else
     
     %if the mtimesx.mex exists then use it
     %else use multiprod.m
-    global mult3d_mex
-    if mult3d_mex
-        AB = mtimesx(A,B);
-    else
-        AB = multiprod(A,B);
-    end
+
+%     global mult3d_mex
+%     if mult3d_mex       
+%         AB = mtimesx(A,B);
+%     else
+        AB = pagemtimes(A,B); %faster than mtimesx
+%     end
     
 end
 
