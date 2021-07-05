@@ -1,3 +1,4 @@
+
 classdef NBS_Master < handle
 
     properties%\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
@@ -15,7 +16,8 @@ classdef NBS_Master < handle
         prescribedMotion_fnc                                               %handle to a function that prescribes an enforced motion of the aircraft reference point
         CUSTOM_free_states                                                 %handle to a function that prescribes a mapping from a set of kinematic states to position/rotational quantities and their variations
         SimType = struct
-        omega_
+        T
+        ff_h
         R_G_A_0
         StateInfo
                         StateMap_cell

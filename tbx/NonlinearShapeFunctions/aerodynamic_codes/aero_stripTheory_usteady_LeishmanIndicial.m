@@ -1,4 +1,4 @@
-function [dQaero,Qaero,Fqc,Mqc,Drag,alpha,CL] = aero_stripTheory_usteady_LeishmanIndicial(Qaero,rho,Vinf,V3qrt,xAp,yAp,zAp,Omega,chord,width,AIC,C_D0,qsteady,aeroCoeff2D)                                                                     
+function [dQaero,Qaero,Fqc,Mqc,Drag,alpha,CL] = aero_stripTheory_usteady_LeishmanIndicial(Qaero,rho,Vinf,V3qrt,xAp,yAp,zAp,Omega,chord,width,AIC,C_D0,aeroCoeff2D,qsteady)                                                                     
 %% coded implementation of Leishman's Indicial Response Method  - C.Howcroft
 % [use publish button to view latex comments]
 
@@ -48,8 +48,16 @@ d2alpha_dt2 = 0;
 % Dynamic Pressure
 Pdyn = 0.5*rho*velocity.^2;
 
+ 
 %Angle of attack of strip
-alpha = atan(vz3qrt./vx3qrt);
+alpha = atan(vz3qrt./vx3qrt); 
+% alpha = -atan2(vz3qrt,vx3qrt); 
+
+R_Ap_A = permute([xAp, yAp, zAp],[2 1 3]);
+X_A = [1;0;0];
+X_Ap = MultiProd_(R_Ap_A,X_A);
+phi = atan(X_Ap(3,:,:)./ X_Ap(1,:,:));
+phi_ = squeeze(phi*180/pi);
 
 %d[alpha]/dt
 dalpha_dt = sum(Omega.*yAp,1);
@@ -80,6 +88,7 @@ if nargin > 12 && qsteady
     Qaero = bsxfun(@times, b.*alpha./vx3qrt, 1./biCoeffs);
     dQaero = Qaero*0;
 else
+    aeroCoeff2D = 0;
     %%%
     % else get state derivative from ode
     %

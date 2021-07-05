@@ -1,3 +1,5 @@
+
+
 function output = f(varargin)
 
 if nargin == 0
@@ -243,7 +245,7 @@ end
 %==========================================================================
 if ~isempty(aerodynamics)
 
-if ismember(aerodynamics,{'strip_steady','strip_unsteady','BEM'})
+if ismember(aerodynamics,{'strip_steady','strip_unsteady','WT'})
     %TODO pre allocate aero matrices after the first iteration
     
     [EAp_G_pm_global,...
@@ -310,14 +312,19 @@ if ismember(aerodynamics,{'strip_steady','strip_unsteady','BEM'})
     aeroOffset_skew_global = getSkewMat(aeroOffset_global);
       
     switch aerodynamics
-        %=========================blade element momentum ==================
-        case 'BEM' 
-            %-----------------configurations-------------------%
-            %----------BEM (when rotating or idling)-----------%
-            %---BEM->dynamic stall (when rotating or idling)---%
-            %-----------dynamic stall (when parked)------------%
-            %--------------------------------------------------%
+        %========================= wind turbine aerodynamics ==================
+        case 'WT'
+            %-configurations--------------------------------------------------%
+            %                  [    INFLOW    ]             [  FORCES  ]      %
+            %                                                                 %
+            %                   ->--BYPASS-->-             > 2Dlookup         %
+            %--------------> OR               ------> OR   > DS(LARSEN/OYE)   %
+            %                   ->---BEM---->-             > Leishman         %
+            %                                                                 %
+            %-----------------------------------------------------------------%
+            
             if ~SimType.Parked
+                %====================== BEM ===============================
                 
                 %initialise blade variables
                 [a_global, ap_global, alpha_global, cl_global, cd_global, cm_global, Vrel_c_global] = deal([]);
@@ -325,15 +332,17 @@ if ismember(aerodynamics,{'strip_steady','strip_unsteady','BEM'})
                 i = 0;
                 for aeroPartName_cell = aeroPartNames
                     i = 1 + i;
-                    aeroPartName = aeroPartName_cell{1};    
+                    aeroPartName = aeroPartName_cell{1};
                     Aero_part = partInformationStruct.(aeroPartName).Aero;
-                    Aero_part.BEMvar.IDLING = false;
-                    Aero_part.BEMvar.NskipAllowed = 6;
-                    Aero_part.BEMvar.iter_a_max = 200;
-                    Aero_part.BEMvar.eps_a = 1e-3;
-                    Aero_part.BEMvar.eps_ap = 1e-3;
-                    Aero_part.BEMvar.RealOnly = true;
-                    Aero_part.BEMvar.polarMethod = 'linear';
+                    BEMvar = Aero_part.BEMvar;
+                    BEMvar.IDLING = false;
+                    BEMvar.NskipAllowed = 6;
+                    BEMvar.iter_a_max = 200;
+                    BEMvar.eps_a = 1e-3;
+                    BEMvar.eps_ap = 1e-3;
+                    BEMvar.RealOnly = true;
+                    BEMvar.polarMethod = 'linear';
+                    BEMvar.B = SimType.B;
                     
                     aero_cntr_pm_part = partInformationStruct.(aeroPartName).aero_cntr_pm;
                     if isempty(aero_cntr_pm_part)
@@ -342,8 +351,8 @@ if ismember(aerodynamics,{'strip_steady','strip_unsteady','BEM'})
                         alphaCP = 1 - aero_cntr_pm_part; %TODO Check
                     end
                     
-                    aeroCoeff2D_part = Aero_part.aeroCoeff;
-                    R_A_G = partInformationStruct.(aeroPartName).R_A_G; 
+                    aeroCoeff2D_part = Aero_part.aeroCoeff2D;
+                    R_A_G = partInformationStruct.(aeroPartName).R_A_G;
                     chord_part = partInformationStruct.(aeroPartName).chord;
                     EAp_G_pm_part = partInformationStruct.(aeroPartName).EAp_G_pm;
                     dexAp_dt_G_pm_part = partInformationStruct.(aeroPartName).dEAp_dt_G_pm(:,1,:);
@@ -351,18 +360,19 @@ if ismember(aerodynamics,{'strip_steady','strip_unsteady','BEM'})
                     beam_cntr_pm_part = partInformationStruct.(aeroPartName).beam_cntr_pm;
                     dGammaAlphaCP_dt_G_pm_part = (dGamma_dt_G_pm_part + bsxfun(@times,chord_part.*(alphaCP - beam_cntr_pm_part),dexAp_dt_G_pm_part));
                     Gamma_G_pm_part = partInformationStruct.(aeroPartName).Gamma_G_pm;
-                    %============================================================== 
+                    %==============================================================
                     % global to aircraft (hub) rotation matrices for i'th blade
-                    az_ib = 2*pi/3*(i-1);           
+                    az_ib = 2*pi/3*(i-1);
                     R_A_G_ib= r_matrix([1,0,0],az_ib).'*R_A_G;
-                                        
+                    
                     Vinf_A = MultiProd_(R_A_G_ib, Vinf);
                     dGammaAlphaCP_dt_A_pm_part = MultiProd_(R_A_G_ib,dGammaAlphaCP_dt_G_pm_part);
                     Gamma_A_pm_part = MultiProd_(R_A_G_ib, Gamma_G_pm_part);
                     EAp_A_pm_part = MultiProd_(R_A_G_ib,EAp_G_pm_part);
+                    
                     %==============================================================
                     [a, ap, alpha, ~, cl, cd, cm, Vrel_G, ~] = ...
-                        aero.BEM_NING(Vinf_A, [], dGammaAlphaCP_dt_A_pm_part, aeroCoeff2D_part, chord_part, EAp_A_pm_part, Omega_G(1), Gamma_A_pm_part, R_A_G_ib, BEMvar);
+                        aero.bem_ning(Vinf_A, [], dGammaAlphaCP_dt_A_pm_part, aeroCoeff2D_part, chord_part, EAp_A_pm_part, Omega_G(1), Gamma_A_pm_part, R_A_G_ib, BEMvar);
                     %==============================================================
                     a_global = cat(3,a_global,permute(a,[3 2 1]));
                     ap_global = cat(3,ap_global,permute(ap,[3 2 1]));
@@ -373,96 +383,175 @@ if ismember(aerodynamics,{'strip_steady','strip_unsteady','BEM'})
                     Vrel_G_global = cat(3,Vrel_c_global,Vrel_G);
                     
                 end
-            else  
+            else
                 %if bem not invoked (i.e. for parked analyses)
                 Vrel_G_global = Vinf - dGammaAlphaCP_dt_G_pm_global;
                 vx3qrt = sum(Vrel_G_global.*EAp_G_pm_global(:,1,:),1);
                 vz3qrt = sum(Vrel_G_global.*EAp_G_pm_global(:,3,:),1);
                 alpha_global = atan(vz3qrt./vx3qrt);
-            end 
-            
-            %===================modified dynamic stall==============================
-            if SimType.dsFLAG
-            
-                switch SimType.dsModel
-                    case 'Larsen' %4 states per strip
-                        [afthick_global]  = deal([]);
-                        i = 0;
-                        for aeroPartName_cell = aeroPartNames
-                            i = i+1;
-                            aeroPartName = aeroPartName_cell{1};
-                            
-                            Aero_global = partInformationStruct.(aeroPartName).Aero;
-                            afthick_global = cat(1,afthick_global,Aero_global.afthick);
-                            if i == 1
-                                static_stall_data_global = Aero_global.static_stall_data;
-                            else
-                                static_stall_data_global = cat(1,static_stall_data_global, Aero_global.static_stall_data(2:end,:));
-                            end
-                        end
-                        %==============================================================
-                        afthick_global = permute(afthick_global, [3 2 1]);
-                        
-                        ds_ID = find(afthick_global<0.35);
-                        Nds   = length(ds_ID);
-                        
-                        Z3    = zeros(Nds,SimType.nBlades);
-                        Z31    = zeros(Nds,SimType.nBlades);
-                        ds = struct('X',zeros(4*Nds,SimType.nBlades),'b4',Z3,'cl_static',Z3,'cl0',Z3,'dcl0',Z3,'dalpha',Z3,'f',Z3...
-                            ,'tau_v',Z3,'cl0_d',Z3,'theta_d',Z3,'cl_d',Z31,'dcl',Z3,'d_dcl',Z3,'cl',Z3,'w1234_S',zeros(4*Nds,SimType.nBlades));
-                        
-                        ds.c1_ID        = 1:Nds;
-                        ds.c2_ID        = 1+Nds:2*Nds;
-                        ds.f_Id         = 2*Nds+1:3*Nds;
-                        ds.Thetav_Id    = 1+3*Nds:4*Nds;
-                        
-                        % Aerofoil profil dependent parameters (Vertol 23010-1.58) need more realistic values for each aerofoil -- %
-                        ds.A1  = 0.165;  ds.A2  = 0.335;          % A1,A2 Linear lift curve coefficients (Wagner)
-                        ds.w1r = 0.0455; ds.w2r = 0.3;            % w1,w2 dynamics pour delay when fully attached flow
-                        ds.w3r = 0.1;                             % Dynamic attachment degree dynamic (f=attachement degree)
-                        ds.w4r = 0.075;                           % Dynamic of LE vortex separation
-                        ds.alpha_v = 14.75; % ???? [***]          % Critical angle of attack at which the leading edge vortex detaches from the leading edge
-                        
-                        
-                        ds.alpha_ss       = cat(2,static_stall_data_global{ds_ID(1)+1,1});
-                        ds.cl0_ss         = cat(2,static_stall_data_global{ds_ID+1,2});
-                        ds.f_ss           = cat(2,static_stall_data_global{ds_ID+1,3});
-                        ds.cl_ss          = cat(2,static_stall_data_global{ds_ID+1,5});
-                        ds.alpha_stall    = cat(2,static_stall_data_global{ds_ID+1,6});
-                        ds.df_daoa_deg    = cat(2,static_stall_data_global{ds_ID+1,9});
-                        ds.dcl0_daoa_deg    = cat(2,static_stall_data_global{ds_ID+1,10});
-                        ds.dcld_daoa_deg    = cat(2,static_stall_data_global{ds_ID+1,11});
-                        ds.dDelCL_daoa_deg    = cat(2,static_stall_data_global{ds_ID+1,12});
-                        
-                        ds.B_ds     = [ds.A1*ones(Nds,1); ds.A2*ones(Nds,1); zeros(2*Nds,1)];
-                        
-                        ds.ds_ID = ds_ID;
-                        ds.Nds   = Nds;
-                        
-                        VrelMag = sqrt(sum(Vrel_G_global.^2));
-                        %==============================================================
-                        ds = DynStall_function(ds, VrelMag, chord_pm_global, alpha_global, delta_t,...
-                            Nds, ds_ID, i, t, t_red, t_red1);
-                        cl_global = ds;
-                        %==============================================================
-                    case 'Oye' %one state per strip (dynamic only in stall)
-                        
-                        
-                end
             end
-                %==============================================================
-                vel = sum(Vrel_G_global.^2,1).^0.5;
-                Pdyn = 0.5*rho*vel.^2;
+            
+            vel = sum(Vrel_G_global.^2,1).^0.5;
+            Pdyn = 0.5*rho*vel.^2;
+            
+            %===================dynamic stall==============================
+            switch SimType.aeroForces
+                case 'dynamic stall'
                     
-                ca = cos(alpha_global);
-                sa = sin(alpha_global);
-                
-                LIFT = Pdyn.*chord_pm_global.*ApWidth_pm_global.*cl_global;
-                DRAG = Pdyn.*chord_pm_global.*ApWidth_pm_global.*cd_global;
-     
-                Fqc  = bsxfun(@times, LIFT.*ca + DRAG.*sa, EAp_G_pm_global(:,3,:));     
-                Mqc  = bsxfun(@times, Pdyn.*chord_pm_global.*ApWidth_pm_global.*cm_global , EAp_G_pm_global(:,2,:));   
-                Drag = bsxfun(@times, DRAG.*ca - LIFT.*sa, EAp_G_pm_global(:,1,:));
+                    switch SimType.dsModel
+                        
+                        %============LARSEN/NIELSEN========================
+                        case 'larsen' %4 states per strip
+                            [afthick_global]  = deal([]);
+                            i = 0;
+                            for aeroPartName_cell = aeroPartNames
+                                i = i+1;
+                                aeroPartName = aeroPartName_cell{1};
+                                
+                                Aero_part = partInformationStruct.(aeroPartName).Aero;
+                                afthick_global = cat(1,afthick_global,Aero_part.afthick);
+                                if i == 1
+                                    static_stall_data_global = Aero_part.static_stall_data;
+                                else
+                                    static_stall_data_global = cat(1,static_stall_data_global, Aero_part.static_stall_data(2:end,:));
+                                end
+                            end
+                            %==============================================================
+                            afthick_global = permute(afthick_global, [3 2 1]);
+                            
+                            ds_ID = find(afthick_global<0.35);
+                            Nds   = length(ds_ID);
+                            
+                            Z3    = zeros(Nds,SimType.nB);
+                            Z31    = zeros(Nds,SimType.nB);
+                            ds = struct('X',zeros(4*Nds,SimType.nB),'b4',Z3,'cl_static',Z3,'cl0',Z3,'dcl0',Z3,'dalpha',Z3,'f',Z3...
+                                ,'tau_v',Z3,'cl0_d',Z3,'theta_d',Z3,'cl_d',Z31,'dcl',Z3,'d_dcl',Z3,'cl',Z3,'w1234_S',zeros(4*Nds,SimType.nB));
+                            
+                            ds.c1_ID        = 1:Nds;
+                            ds.c2_ID        = 1+Nds:2*Nds;
+                            ds.f_Id         = 2*Nds+1:3*Nds;
+                            ds.Thetav_Id    = 1+3*Nds:4*Nds;
+                            
+                            % Aerofoil profil dependent parameters (Vertol 23010-1.58) need more realistic values for each aerofoil -- %
+                            ds.A1  = 0.165;  ds.A2  = 0.335;          % A1,A2 Linear lift curve coefficients (Wagner)
+                            ds.w1r = 0.0455; ds.w2r = 0.3;            % w1,w2 dynamics pour delay when fully attached flow
+                            ds.w3r = 0.1;                             % Dynamic attachment degree dynamic (f=attachement degree)
+                            ds.w4r = 0.075;                           % Dynamic of LE vortex separation
+                            ds.alpha_v = 14.75; % ???? [***]          % Critical angle of attack at which the leading edge vortex detaches from the leading edge
+                            
+                            
+                            ds.alpha_ss       = cat(2,static_stall_data_global{ds_ID(1)+1,1});
+                            ds.cl0_ss         = cat(2,static_stall_data_global{ds_ID+1,2});
+                            ds.f_ss           = cat(2,static_stall_data_global{ds_ID+1,3});
+                            ds.cl_ss          = cat(2,static_stall_data_global{ds_ID+1,5});
+                            ds.alpha_stall    = cat(2,static_stall_data_global{ds_ID+1,6});
+                            ds.df_daoa_deg    = cat(2,static_stall_data_global{ds_ID+1,9});
+                            ds.dcl0_daoa_deg    = cat(2,static_stall_data_global{ds_ID+1,10});
+                            ds.dcld_daoa_deg    = cat(2,static_stall_data_global{ds_ID+1,11});
+                            ds.dDelCL_daoa_deg    = cat(2,static_stall_data_global{ds_ID+1,12});
+                            
+                            ds.B_ds     = [ds.A1*ones(Nds,1); ds.A2*ones(Nds,1); zeros(2*Nds,1)];
+                            
+                            ds.ds_ID = ds_ID;
+                            ds.Nds   = Nds;
+                            
+                            VrelMag = sqrt(sum(Vrel_G_global.^2));
+                            
+                            %==============================================================
+                            ds = aero.larsen(ds, VrelMag, chord_pm_global, alpha_global, delta_t,...
+                                Nds, ds_ID, i, t, t_red, t_red1);
+                            cl_global = ds;
+                            
+                            
+                            %============OYE===================================
+                        case 'oye' %one state per strip (dynamic only in stall)
+                            out = aero.oye();
+                            
+                    end
+                    
+                case 'lookup2D'
+                    
+                    if SimType.Parked
+                        aeroCoeff2D = Aero_global.aeroCoeff2D;
+                        
+                        alpha_in_file = aeroCoeff2D(:,1,:);
+                        cl_in_file = aeroCoeff2D(:,2,:);
+                        cd_in_file = aeroCoeff2D(:,3,:);
+                        cm_in_file = aeroCoeff2D(:,4,:);
+                        
+                        Nseg = length(alpha_global);
+                        IDSeg = (1:Nseg)';
+                        Nrow_cl = size(cl_in_file,1);
+                        alpha_global = squeeze(alpha_global*180/pi);
+                        
+                        % --- Interpolate_LiftDrag
+                        L = alpha_in_file(2)-alpha_in_file(1);
+                        if all(isreal(alpha_global))
+                            Id          = ceil(alpha_global/L - alpha_in_file(1)/L);
+                            LinId      = Id + (IDSeg-1)*Nrow_cl; % Id + (find(NcId)-1)*Nrow_cl; % LinId = sub2ind(size(cl_in_file),Id,find(NcId))
+                            Gamma   = (alpha_global-alpha_in_file(Id))/L;
+                        else
+                            % for complex difference step
+                            %                                     aoa_EqC   = real(aoa) + imag(aoa);
+                            Id            = ceil(real(alpha_global)/L - alpha_in_file(1)/L); %ceil(aoa_EqC/L - alfa_in_file(1)/L);
+                            LinId        = Id + (IDSeg-1)*Nrow_cl;
+                            Gamma     = (alpha_global-alpha_in_file(Id))/L; %(real(aoa(NcId,ib))-alfa_in_file(Id))/L + (aoa(NcId,ib))/L;
+                        end
+                        
+                        cl_global  = (1-Gamma).*cl_in_file(LinId) + Gamma.*cl_in_file(LinId+1);
+                        cd_global = (1-Gamma).*cd_in_file(LinId) + Gamma.*cd_in_file(LinId+1);
+                        cm_global = (1-Gamma).*cm_in_file(LinId) + Gamma.*cm_in_file(LinId+1);  % positive moment = nose up convention
+                    end
+                    
+                    ca = cos(alpha_global);
+                    sa = sin(alpha_global);
+                    
+                    LIFT = Pdyn.*chord_pm_global.*ApWidth_pm_global.*cl_global;
+                    DRAG = Pdyn.*chord_pm_global.*ApWidth_pm_global.*cd_global;
+                    MOMENT = Pdyn.*chord_pm_global.*ApWidth_pm_global.*cm_global;
+                    
+                    F_N = LIFT.*ca + DRAG.*sa;
+                    F_A = DRAG.*ca - LIFT.*sa;
+                    F_M = MOMENT;
+                    
+                case 'leishman'
+                    
+                    
+                    if SimType.unsteady
+                        Qaero_idx = qAero_idx_global;
+                        Qaero = reshape(Q(Qaero_idx),2,1,[]);
+                        qsteady = false;
+                    else
+                        Qaero = [];
+                        qsteady = true;
+                    end
+                    if ~SimType.Parked
+                        vx3qrt = sum(Vrel_G_global.*EAp_G_pm_global(:,1,:),1);
+                    end
+                    dAoA = dvarTheta_dt_G_pm_global;
+                    CD_0 = 0;
+                    
+                    [dQaero,Qaero,cl_global,cm_global] = aero.leishman(Qaero,alpha_global,vx3qrt,EAp_G_pm_global(:,2,:),dAoA,chord_pm_global,qsteady);
+                    
+                    LIFT = Pdyn.*chord_pm_global.*ApWidth_pm_global.*cl_global;
+                    MOMENT = Pdyn.*chord_pm_global.*ApWidth_pm_global.*cm_global;
+                    DRAG = Pdyn.*chord_pm_global.*ApWidth_pm_global.*CD_0;
+                    
+                    F_N = LIFT;
+                    F_A = DRAG;
+                    F_M = MOMENT;
+                    
+                    if SimType.unsteady
+                        dQ_Aero(Qaero_idx,1) = dQaero(:);
+                    end
+                    
+            end
+            
+            %==============================================================
+            
+            Fqc  = bsxfun(@times, F_N, EAp_G_pm_global(:,3,:));
+            Mqc  = bsxfun(@times, F_M, EAp_G_pm_global(:,2,:));
+            Drag = bsxfun(@times, F_A, EAp_G_pm_global(:,1,:));
 %                                         
             
         %=================================quasi steady strip theory=============================V3qrt,xAp,yAp,zAp    
@@ -473,7 +562,7 @@ if ismember(aerodynamics,{'strip_steady','strip_unsteady','BEM'})
             xAp = EAp_G_pm_global(:,1,:);
             yAp = EAp_G_pm_global(:,2,:);
             zAp = EAp_G_pm_global(:,3,:);
-            Omega = dvarTheta_dt_G_pm_global;
+            dAoA = dvarTheta_dt_G_pm_global;
             chord = chord_pm_global;
             ApWidth = ApWidth_pm_global;
             AIC = AICs_global;
@@ -481,7 +570,7 @@ if ismember(aerodynamics,{'strip_steady','strip_unsteady','BEM'})
             qsteady = true;
             aeroCoeff2D = Aero_global.aeroCoeff2D;
             
-            [dQaero,Qaero,Fqc,Mqc,Drag,alpha_global,CL] = aero_stripTheory_usteady_LeishmanIndicial(Qaero,rho,Vinf,V3qrt,xAp,yAp,zAp,Omega,chord,ApWidth,AIC,C_D0,qsteady,aeroCoeff2D);
+            [dQaero,Qaero,Fqc,Mqc,Drag,alpha_global,CL] = aero_stripTheory_usteady_LeishmanIndicial(Qaero,rho,Vinf,V3qrt,xAp,yAp,zAp,dAoA,chord,ApWidth,AIC,C_D0,aeroCoeff2D,qsteady);
              
         case 'strip_unsteady'
             
@@ -492,7 +581,7 @@ if ismember(aerodynamics,{'strip_steady','strip_unsteady','BEM'})
             xAp = EAp_G_pm_global(:,1,:);
             yAp = EAp_G_pm_global(:,2,:);
             zAp = EAp_G_pm_global(:,3,:);
-            Omega = dvarTheta_dt_G_pm_global;
+            dAoA = dvarTheta_dt_G_pm_global;
             chord = chord_pm_global;
             ApWidth = ApWidth_pm_global;
             AIC = AICs_global;
@@ -500,7 +589,7 @@ if ismember(aerodynamics,{'strip_steady','strip_unsteady','BEM'})
             qsteady = false;
             aeroCoeff2D = Aero_global.aeroCoeff2D;
             
-            [dQaero,Qaero,Fqc,Mqc,Drag,alpha_global] = aero_stripTheory_usteady_LeishmanIndicial(Qaero,rho,Vinf,V3qrt,xAp,yAp,zAp,Omega,chord,ApWidth,AIC,C_D0,qsteady,aeroCoeff2D);
+            [dQaero,Qaero,Fqc,Mqc,Drag,alpha_global] = aero_stripTheory_usteady_LeishmanIndicial(Qaero,rho,Vinf,V3qrt,xAp,yAp,zAp,dAoA,chord,ApWidth,AIC,C_D0,aeroCoeff2D,qsteady);
             
              dQ_Aero(Qaero_idx,1) = dQaero(:);
             
@@ -609,7 +698,7 @@ else
     
     if ~isempty(harmonic_load)
         PvecAero_G_pm_global = zeros(3,1,nsAp);
-        harmonic_load_pm = sin(SimObject.omega_*t).*harmonic_load;
+        harmonic_load_pm = sin(SimObject.ff_h*t).*harmonic_load;
         %     PvecAero_G_pm_global(:,1,end) = PvecAero_G_pm_global(:,1,end) + harmonic_load_pm;
         PvecAero_G_pm_global = PvecAero_G_pm_global +  harmonic_load_pm;
     else
@@ -730,10 +819,12 @@ switch outputFormat
     
     if ~isempty(SimObject.aeroPartNames) && ~isempty(aerodynamics)
         QOI_Container.add_qoi('Aero_Forces_G' ,tidx,PvecAero_G_pm_global,'1:nsAp','AeroForce#_{[G]}','N','GlobalAeroQuantity',true);
+        PvecAero_A_pm_global = MultiProd_(R_G_A.',PvecAero_G_pm_global);
         QOI_Container.add_qoi('Aero_ForcePerSpan_G' ,tidx,PvecAero_G_pm_global./ApWidth_pm_global,'1:nsAp','AeroForcePerSpan#_{[G]}','N/m','GlobalAeroQuantity',true);
         QOI_Container.add_qoi('Aero_Forces_Gamma_G' ,tidx,PvecAero_Gamma_G,'1:nsAp','AeroForce \Gamma#_{[G]}','m');
-        QOI_Container.add_qoi('Aero_Moments_G' ,tidx,MvecAero_G_pm_global,'1:nsAp','AeroMoment#_{[G]}','Nm');
-        QOI_Container.add_qoi('Aero_MomentPerSpan_G' ,tidx,MvecAero_G_pm_global./ApWidth_pm_global,'1:nsAp','AeroMomentPerSpan#_{[G]}','N');
+        QOI_Container.add_qoi('Aero_Moments_G' ,tidx, MvecAero_G_pm_global,'1:nsAp','AeroMoment#_{[G]}','Nm','GlobalAeroQuantity',true);
+        MvecAero_A_pm_global = MultiProd_(R_G_A.',MvecAero_G_pm_global);
+        QOI_Container.add_qoi('Aero_MomentPerSpan_G' ,tidx, MvecAero_G_pm_global./ApWidth_pm_global,'1:nsAp','AeroMomentPerSpan#_{[G]}','N','GlobalAeroQuantity',true);
         QOI_Container.add_qoi('Net_Lift' ,tidx,sum(PvecAero_G_pm_global(3,1,:)),'1','NetLift','N');
         if exist('alpha_global','var')
             alpha_degrees = alpha_global*180/pi;

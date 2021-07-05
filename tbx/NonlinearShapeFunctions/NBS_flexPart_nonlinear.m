@@ -1,3 +1,4 @@
+
 classdef NBS_flexPart_nonlinear < handle
 
     properties
@@ -14,7 +15,7 @@ classdef NBS_flexPart_nonlinear < handle
      %...properties..... .........................
       %..................derived_properties.......
        %|---------------|-------------------------
-        s                                                                  %[m] spanwise evaluations points along the wing
+       s                                                                  %[m] spanwise evaluations points along the wing
         %               del_s                                              %[m] distance between neighbouring s points
         %               ns                                                 %[-] number of s points
         %               L                                                  %[m] total length of the wing
@@ -588,7 +589,7 @@ classdef NBS_flexPart_nonlinear < handle
             %             error('StiffnessMatrix property must have dimension 3x3 or 6x6');
             %         end
             
-            if strcmp(obj.NBS_Master.aerodynamics,'strip_unsteady')
+            if strcmp(obj.NBS_Master.aerodynamics,'strip_unsteady') || obj.NBS_Master.SimType.unsteady
                 obj.qAero.n = obj.nsAp*2;
                 obj.qAero.group = ['AeroStates_' obj.partName];
             end
@@ -1291,7 +1292,7 @@ classdef NBS_flexPart_nonlinear < handle
                     aeroPartNames = [aeroPartNames {flex_part_name}];
                 end
                 
-                if ismember(aerodynamics,{'strip_steady','strip_unsteady','BEM'})
+                if ismember(aerodynamics,{'strip_steady','strip_unsteady','WT'})
                     
                     E_G_pm = sample(E_G,Apm_idx,3);
                     dE_dt_G_pm = sample(dE_dt_G,Apm_idx,3);
