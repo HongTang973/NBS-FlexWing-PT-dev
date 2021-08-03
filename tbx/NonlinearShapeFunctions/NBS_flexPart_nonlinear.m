@@ -217,7 +217,7 @@ classdef NBS_flexPart_nonlinear < handle
     methods %constuctor and parameter methods
     
     function obj = NBS_flexPart_nonlinear(Master_Object,name,varargin)
-        obj.Parent = get_option(varargin,'Parent',[]);
+        obj.Parent = utility_functions.get_option(varargin,'Parent',[]);
         obj.partName = name;
         obj.NBS_Master = Master_Object;
         obj.NBS_Master.flexParts_nonlinear.(obj.partName) = obj;
@@ -232,7 +232,7 @@ classdef NBS_flexPart_nonlinear < handle
     
     function update_R_A_W(obj,varargin) %TODO check use of this method
         
-        SDA_CELL = get_option(varargin,'sweep_dihedral_alpha_deg',{});
+        SDA_CELL = utility_functions.get_option(varargin,'sweep_dihedral_alpha_deg',{});
         if isempty(SDA_CELL)
             varargin = [varargin , 'R_A_W' , obj.R_A_W];
         end
@@ -284,8 +284,8 @@ classdef NBS_flexPart_nonlinear < handle
         %O.shapeObject_bend, O.shapeObject_twist
         %O.B_custom_bend, O.B_custom_twist
         
-        halfShape = get_option(varargin,'halfShape',false); %options: 'false' / 'left' / 'right'
-        PLOT = get_option(varargin,'PLOT',false);
+        halfShape = utility_functions.get_option(varargin,'halfShape',false); %options: 'false' / 'left' / 'right'
+        PLOT = utility_functions.get_option(varargin,'PLOT',false);
         %setName = get_option(varargin,'setName',[]);
         setName = obj.partName;
         
@@ -397,9 +397,9 @@ classdef NBS_flexPart_nonlinear < handle
     
     function draw_part(obj,varargin)
         
-        Tidx = get_option(varargin,'Tidx',obj.NBS_Master.nt);
+        Tidx = utility_functions.get_option(varargin,'Tidx',obj.NBS_Master.nt);
         
-        request_qoi_write = get_option(varargin,'qoiRequest',true);
+        request_qoi_write = utility_functions.get_option(varargin,'qoiRequest',true);
         
         zRot_Edraw_cell_ = obj.zRot_Edraw_cell;
         assert(isa(zRot_Edraw_cell_,'cell'),'argument ''zRot_Edraw_cell'' must be a cell array');
@@ -411,7 +411,7 @@ classdef NBS_flexPart_nonlinear < handle
             zRot_Edraw = zRot_Edraw_cell_{1};
         end
         
-        zRmat_Edraw = r_matrix([0;0;1],reshape(zRot_Edraw,1,1,[]));
+        zRmat_Edraw = utility_functions.r_matrix([0;0;1],reshape(zRot_Edraw,1,1,[]));
         
         if isempty(obj.c)
             width = obj.w./cos(reshape(zRot_Edraw,1,1,[]));
@@ -444,7 +444,7 @@ classdef NBS_flexPart_nonlinear < handle
             obj.Parent.get_qoiValue(obj,'ez_G','Tidx',Tidx,'generate_QOIs',false)];
         
         E_draw_3D = reshape(E_draw,3,3,[]);
-        E_draw_3D_rotated = MultiProd_(E_draw_3D,zRmat_Edraw);
+        E_draw_3D_rotated = utility_functions.MultiProd_(E_draw_3D,zRmat_Edraw);
         
         E_draw = reshape(E_draw_3D_rotated,9,1,[]);
         
@@ -476,8 +476,8 @@ classdef NBS_flexPart_nonlinear < handle
             
             mass_resampling(obj);
             
-            transfm_nodes2aero = sampleMat(obj.s,obj.s_aero);
-            transfm_nodes2aeroMid = sampleMat(obj.s,obj.s_aeroMid);
+            transfm_nodes2aero = utility_functions.sampleMat(obj.s,obj.s_aero);
+            transfm_nodes2aeroMid = utility_functions.sampleMat(obj.s,obj.s_aeroMid);
             obj.Apn_idx = (1:obj.ns)*transfm_nodes2aero;
             obj.Apm_idx = (1:obj.ns)*transfm_nodes2aeroMid;
             
@@ -504,8 +504,8 @@ classdef NBS_flexPart_nonlinear < handle
                 ex_WE = [cs0.*cp0 + st0.*ss0.*sp0;- ss0.*cp0 + st0.*cs0.*sp0;-ct0.*sp0];
                 ez_WE = [cs0.*sp0 - st0.*ss0.*cp0;- ss0.*sp0 - st0.*cs0.*cp0; ct0.*cp0];
                 
-                E0_WE = MultiProd_([ex_WE ey_WE ez_WE],obj.TD);
-                E0_W_ = MultiProd_(obj.R_W_WE,MultiProd_(E0_WE,obj.R_W_WE_tr));
+                E0_WE = utility_functions.MultiProd_([ex_WE ey_WE ez_WE],obj.TD);
+                E0_W_ = utility_functions.MultiProd_(obj.R_W_WE,utility_functions.MultiProd_(E0_WE,obj.R_W_WE_tr));
             end
             %------------------------------------------------------------------
             %calculate aerodynamic panel reference frame
@@ -513,19 +513,19 @@ classdef NBS_flexPart_nonlinear < handle
             %E0_A = MultiProd_(O.R_A_W,E0_W);
             E0_aero_ref_W = E0_W_;
             if ~isempty(obj.EAp_W)
-                obj.EAp_I = MultiProd_(permute(E0_aero_ref_W,[2 1 3]),obj.EAp_W);
+                obj.EAp_I = utility_functions.MultiProd_(permute(E0_aero_ref_W,[2 1 3]),obj.EAp_W);
                 %if EAp_A is not provided, calculate aerodynamic reference frame
                 %via projection onto the wing surface.
             else
                 aero_ref_direction_A = [1;0;0];
                 aero_ref_direction_W = obj.R_A_W.'*aero_ref_direction_A;
-                aero_ref_direction_I = mult_Anmz_Bmp1(permute(E0_aero_ref_W,[2 1 3]),aero_ref_direction_W); %calculate the [1;0;0] vector in the intrinsic system
+                aero_ref_direction_I = utility_functions.mult_Anmz_Bmp1(permute(E0_aero_ref_W,[2 1 3]),aero_ref_direction_W); %calculate the [1;0;0] vector in the intrinsic system
                 aero_ref_projection_I = bsxfun(@times,[1;1;0],aero_ref_direction_I); %projection of the intrinsic [1;0;0] vector onto the wing plane
                 
                 %note: EAp aligns with free-stream direction
                 %regardless of which side of aircraft being considered
                 exAp_pr_I = bsxfun(@times,aero_ref_projection_I,1./sum(aero_ref_projection_I.^2).^0.5); %exAp_pr_I = normalised projection of the intrinsic [1;0;0] vector onto the wing plane
-                eyAp_pr_I = MultiProd_([0 -1 0;1 0 0;0 0 0],exAp_pr_I); %eyAp_pr_I = cross( [0;0;1] , exAp_pr_I )
+                eyAp_pr_I = utility_functions.MultiProd_([0 -1 0;1 0 0;0 0 0],exAp_pr_I); %eyAp_pr_I = cross( [0;0;1] , exAp_pr_I )
                 ezAp_pr_I = repmat([0;0;1],[1 1 size(exAp_pr_I,3)]); %ezAp_pr_I = [0;0;1]
                 
                 EAp_pr_I = [exAp_pr_I eyAp_pr_I ezAp_pr_I];
@@ -536,10 +536,10 @@ classdef NBS_flexPart_nonlinear < handle
                 end
                 if ~isempty(obj.alpha_A)
                     alpha_aero_ref_I = asin(aero_ref_direction_I(3,1,:)); %alpha value of the projected system EAp_pr before rotation
-                    obj.EAp_I = MultiProd_(r_matrix(eyAp_pr_I,obj.alpha_A*pi/180-alpha_aero_ref_I),EAp_pr_I);
+                    obj.EAp_I = utility_functions.MultiProd_(utility_functions.r_matrix(eyAp_pr_I,obj.alpha_A*pi/180-alpha_aero_ref_I),EAp_pr_I);
                     obj.alpha_I = [];
                 elseif ~isempty(obj.alpha_I)
-                    obj.EAp_I = MultiProd_(r_matrix(eyAp_pr_I,obj.alpha_I*pi/180),EAp_pr_I);
+                    obj.EAp_I = utility_functions.MultiProd_(utility_functions.r_matrix(eyAp_pr_I,obj.alpha_I*pi/180),EAp_pr_I);
                     obj.alpha_A = [];
                 end
                 
@@ -548,14 +548,14 @@ classdef NBS_flexPart_nonlinear < handle
             end
             
             %------------------------------------------------------------------
-            obj.c_pm = sample(obj.c,obj.Apm_idx,3);
-            obj.c_pn = sample(obj.c,obj.Apn_idx,3);
-            obj.beam_cntr_pm = sample(obj.beam_cntr,obj.Apm_idx,3);
-            obj.aero_cntr_pm = sample(obj.aero_cntr,obj.Apm_idx,3);
-            obj.beam_cntr_pn = sample(obj.beam_cntr,obj.Apn_idx,3);
+            obj.c_pm = utility_functions.sample(obj.c,obj.Apm_idx,3);
+            obj.c_pn = utility_functions.sample(obj.c,obj.Apn_idx,3);
+            obj.beam_cntr_pm = utility_functions.sample(obj.beam_cntr,obj.Apm_idx,3);
+            obj.aero_cntr_pm = utility_functions.sample(obj.aero_cntr,obj.Apm_idx,3);
+            obj.beam_cntr_pn = utility_functions.sample(obj.beam_cntr,obj.Apn_idx,3);
             obj.del_s_aero = diff(obj.s_aero);
-            obj.EAp_I_pm = sample(obj.EAp_I,obj.Apm_idx,3);
-            obj.EAp_I_pn = sample(obj.EAp_I,obj.Apn_idx,3);
+            obj.EAp_I_pm = utility_functions.sample(obj.EAp_I,obj.Apm_idx,3);
+            obj.EAp_I_pn = utility_functions.sample(obj.EAp_I,obj.Apn_idx,3);
             obj.ApWidths_pm = abs(obj.del_s_aero.*obj.EAp_I_pm(2,2,:));
             
             %--------------------
@@ -589,7 +589,7 @@ classdef NBS_flexPart_nonlinear < handle
             %             error('StiffnessMatrix property must have dimension 3x3 or 6x6');
             %         end
             
-            if strcmp(obj.NBS_Master.aerodynamics,'strip_unsteady') || obj.NBS_Master.SimType.unsteady
+            if strcmp(obj.NBS_Master.aerodynamics,'strip_unsteady') || (obj.NBS_Master.SimType.unsteady && strcmp(obj.NBS_Master.SimType.aeroForces, 'leishman')) 
                 obj.qAero.n = obj.nsAp*2;
                 obj.qAero.group = ['AeroStates_' obj.partName];
             end
@@ -648,7 +648,7 @@ classdef NBS_flexPart_nonlinear < handle
                 obj.alpha_root = val{1};
             else
                 obj.alpha_root = val;
-                Rinfo = rTransform_projection_to_Rmat(obj.sweep_root,obj.dihedral_root,'alphaXZdihedral',obj.alpha_root);
+                Rinfo = utility_functions.rTransform_projection_to_Rmat(obj.sweep_root,obj.dihedral_root,'alphaXZdihedral',obj.alpha_root);
                 obj.R_A_W = {Rinfo.rotationMatrix};
             end
         end
@@ -659,7 +659,7 @@ classdef NBS_flexPart_nonlinear < handle
                 obj.sweep_root = val{1};
             else
                 obj.sweep_root = val;
-                Rinfo = rTransform_projection_to_Rmat(obj.sweep_root,obj.dihedral_root,'alphaXZdihedral',obj.alpha_root);
+                Rinfo = utility_functions.rTransform_projection_to_Rmat(obj.sweep_root,obj.dihedral_root,'alphaXZdihedral',obj.alpha_root);
                 obj.R_A_W = {Rinfo.rotationMatrix};
             end
         end
@@ -670,7 +670,7 @@ classdef NBS_flexPart_nonlinear < handle
                 obj.dihedral_root = val{1};
             else
                 obj.dihedral_root = val;
-                Rinfo = rTransform_projection_to_Rmat(obj.sweep_root,obj.dihedral_root,'alphaXZdihedral',obj.alpha_root);
+                Rinfo = utility_functions.rTransform_projection_to_Rmat(obj.sweep_root,obj.dihedral_root,'alphaXZdihedral',obj.alpha_root);
                 obj.R_A_W = {Rinfo.rotationMatrix};
             end
         end
@@ -694,7 +694,7 @@ classdef NBS_flexPart_nonlinear < handle
             else
                 assert(isequal(size(Rmat),[3,3]) , 'property R_A_W must be a 3by3 rotation matrix');
                 obj.R_A_W = Rmat;
-                Rinfo = rTransform_Rmat_to_projection(Rmat);
+                Rinfo = utility_functions.rTransform_Rmat_to_projection(Rmat);
                 obj.alpha_root = {Rinfo.alphaXZdihedral_deg};
                 obj.sweep_root = {Rinfo.sweep_deg};
                 obj.dihedral_root = {Rinfo.dihedral_deg};
@@ -850,10 +850,10 @@ classdef NBS_flexPart_nonlinear < handle
     
     function R_A_W = return_R_A_W(varargin)
         
-        reflect_centre = get_option(varargin,'reflect',false);
-        SDA_CELL = get_option(varargin,'sweep_dihedral_alpha_deg',{0,0,0});
+        reflect_centre = utility_functions.get_option(varargin,'reflect',false);
+        SDA_CELL = utility_functions.get_option(varargin,'sweep_dihedral_alpha_deg',{0,0,0});
         [sweep_deg,dihedral_deg,alpha_deg] = deal(SDA_CELL{:});
-        R_A_W = get_option(varargin,'R_A_W',[]);
+        R_A_W = utility_functions.get_option(varargin,'R_A_W',[]);
         
         if isempty(R_A_W)
             Rinfo = rTransform_projection_to_Rmat(sweep_deg,dihedral_deg,'alphaXZdihedral',alpha_deg);
@@ -896,24 +896,24 @@ classdef NBS_flexPart_nonlinear < handle
     function [MOMENT_xi , FORCE_xi] = material_law( KAPPA_I , ~ , KAPPA_0_I , TAU , ~ , TAU_0 , Linear_Stiffness_Matrix , ~)
         if isempty(TAU)
             xi = [KAPPA_I - KAPPA_0_I];
-            MOMENT_xi = -MultiProd_(Linear_Stiffness_Matrix{1}(1:3,1:3,:),xi);
+            MOMENT_xi = -utility_functions.MultiProd_(Linear_Stiffness_Matrix{1}(1:3,1:3,:),xi);
             FORCE_xi = zeros(3,0,0);
         else           
             xi = [KAPPA_I - KAPPA_0_I ; TAU - TAU_0];
-            MOMENT_xi = -MultiProd_(Linear_Stiffness_Matrix{1},xi);
-            FORCE_xi  = -MultiProd_(Linear_Stiffness_Matrix{2},xi);
+            MOMENT_xi = -utility_functions.MultiProd_(Linear_Stiffness_Matrix{1},xi);
+            FORCE_xi  = -utility_functions.MultiProd_(Linear_Stiffness_Matrix{2},xi);
         end
     end
     
     function [MOMENT_dxidt , FORCE_dxidt] = damping_law( ~ , dKAPPA_dt_I , ~ , ~ , dTAU_dt , ~ , Linear_Damping_Matrix , ~)
         if isempty(dTAU_dt)
             dxidt = dKAPPA_dt_I;
-            MOMENT_dxidt = -MultiProd_(Linear_Damping_Matrix{1}(1:3,1:3,:),dxidt);
+            MOMENT_dxidt = -utility_functions.MultiProd_(Linear_Damping_Matrix{1}(1:3,1:3,:),dxidt);
             FORCE_dxidt  = zeros(3,0,0);
         else
             dxidt = [dKAPPA_dt_I ; dTAU_dt];
-            MOMENT_dxidt = -MultiProd_(Linear_Damping_Matrix{1},dxidt);
-            FORCE_dxidt  = -MultiProd_(Linear_Damping_Matrix{2},dxidt);
+            MOMENT_dxidt = -utility_functions.MultiProd_(Linear_Damping_Matrix{1},dxidt);
+            FORCE_dxidt  = -utility_functions.MultiProd_(Linear_Damping_Matrix{2},dxidt);
         end
     end
 
@@ -937,7 +937,7 @@ classdef NBS_flexPart_nonlinear < handle
             yidx3 = obj.temp_properties.yidx3;
             
             Gamma_Integration_Function = SimObject.Gamma_int_fnc;
-            gravAccVec = SimObject.grav_acc*SimObject.gravVec_G;
+            gravAccVec = SimObject.grav_acc.*SimObject.gravVec_G;
             aerodynamics = SimObject.aerodynamics;
             int_fnc = SimObject.int_fnc;
             
@@ -960,9 +960,9 @@ classdef NBS_flexPart_nonlinear < handle
             TD = obj.TD;
             
             %%% specification of rotational transforms
-            R_G_W = mult_Anm1_Bmpz(R_G_A,R_A_W);
+            R_G_W = utility_functions.mult_Anm1_Bmpz(R_G_A,R_A_W);
             if isempty(dR_G_A_dqe_Dim3x3x1xnqe), dR_G_W_dqr_Dim3x3x1xnqr = zeros(3,3,1,0);
-            else, dR_G_W_dqr_Dim3x3x1xnqr = MultiProd_(dR_G_A_dqe_Dim3x3x1xnqe,R_A_W); end
+            else, dR_G_W_dqr_Dim3x3x1xnqr = utility_functions.MultiProd_(dR_G_A_dqe_Dim3x3x1xnqe,R_A_W); end
             R_A_G = R_G_A.';
             
             Rs_W_WE_tr = [1;1;1];
@@ -1037,41 +1037,41 @@ classdef NBS_flexPart_nonlinear < handle
             %% Define Attitude Parmaeters + Spatial and Temporal derivatives
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             %~~ Euler angles referencing intrinsic system
-            th = mult_Anm1_Bmpz(Q(th_idx).',B_th)+obj.th0; %spanwise theta distribution      (1)x(1)x(ns)
-            si = mult_Anm1_Bmpz(Q(si_idx).',B_si)+obj.si0; %spanwise psi distribution        (1)x(1)x(ns)
-            ph = mult_Anm1_Bmpz(Q(ph_idx).',B_ph)+obj.ph0; %spanwise phi distribution        (1)x(1)x(ns)
+            th = utility_functions.mult_Anm1_Bmpz(Q(th_idx).',B_th)+obj.th0; %spanwise theta distribution      (1)x(1)x(ns)
+            si = utility_functions.mult_Anm1_Bmpz(Q(si_idx).',B_si)+obj.si0; %spanwise psi distribution        (1)x(1)x(ns)
+            ph = utility_functions.mult_Anm1_Bmpz(Q(ph_idx).',B_ph)+obj.ph0; %spanwise phi distribution        (1)x(1)x(ns)
             
             %~~ Angular temporal derivatives
-            dth_dt = mult_Anm1_Bmpz(Q(dth_idx).',B_th); %                            (1)x(1)x(ns)
-            dsi_dt = mult_Anm1_Bmpz(Q(dsi_idx).',B_si); %                            (1)x(1)x(ns)
-            dph_dt = mult_Anm1_Bmpz(Q(dph_idx).',B_ph); %                            (1)x(1)x(ns)
+            dth_dt = utility_functions.mult_Anm1_Bmpz(Q(dth_idx).',B_th); %                            (1)x(1)x(ns)
+            dsi_dt = utility_functions.mult_Anm1_Bmpz(Q(dsi_idx).',B_si); %                            (1)x(1)x(ns)
+            dph_dt = utility_functions.mult_Anm1_Bmpz(Q(dph_idx).',B_ph); %                            (1)x(1)x(ns)
             %~~ Angular spacial derivatives
-            dth_ds = mult_Anm1_Bmpz(Q(th_idx).',dB_th)+obj.dth_ds0; %                  (1)x(1)x(ns)
-            dsi_ds = mult_Anm1_Bmpz(Q(si_idx).',dB_si)+obj.dsi_ds0; %                  (1)x(1)x(ns)
-            dph_ds = mult_Anm1_Bmpz(Q(ph_idx).',dB_ph)+obj.dph_ds0; %                  (1)x(1)x(ns)
+            dth_ds = utility_functions.mult_Anm1_Bmpz(Q(th_idx).',dB_th)+obj.dth_ds0; %                  (1)x(1)x(ns)
+            dsi_ds = utility_functions.mult_Anm1_Bmpz(Q(si_idx).',dB_si)+obj.dsi_ds0; %                  (1)x(1)x(ns)
+            dph_ds = utility_functions.mult_Anm1_Bmpz(Q(ph_idx).',dB_ph)+obj.dph_ds0; %                  (1)x(1)x(ns)
             %~~ Angular dsdt derivatives
-            d2th_dsdt = mult_Anm1_Bmpz(Q(dth_idx).',dB_th); %                        (1)x(1)x(ns)
-            d2si_dsdt = mult_Anm1_Bmpz(Q(dsi_idx).',dB_si); %                        (1)x(1)x(ns)
-            d2ph_dsdt = mult_Anm1_Bmpz(Q(dph_idx).',dB_ph); %                        (1)x(1)x(ns)
+            d2th_dsdt = utility_functions.mult_Anm1_Bmpz(Q(dth_idx).',dB_th); %                        (1)x(1)x(ns)
+            d2si_dsdt = utility_functions.mult_Anm1_Bmpz(Q(dsi_idx).',dB_si); %                        (1)x(1)x(ns)
+            d2ph_dsdt = utility_functions.mult_Anm1_Bmpz(Q(dph_idx).',dB_ph); %                        (1)x(1)x(ns)
             %~~~~~~~~~~~~~~~~~~~~~
             
             
             %~~ Shear terms
-            tau_x = mult_Anm1_Bmpz(Q(Sx_idx).',B_Sx);
-            tau_y = mult_Anm1_Bmpz(Q(Sy_idx).',B_Sy);
-            tau_z = mult_Anm1_Bmpz(Q(Sz_idx).',B_Sz);
+            tau_x = utility_functions.mult_Anm1_Bmpz(Q(Sx_idx).',B_Sx);
+            tau_y = utility_functions.mult_Anm1_Bmpz(Q(Sy_idx).',B_Sy);
+            tau_z = utility_functions.mult_Anm1_Bmpz(Q(Sz_idx).',B_Sz);
             %~~ Shear temporal derivatives
-            dtau_x_dt = mult_Anm1_Bmpz(Q(dSx_idx).',B_Sx);
-            dtau_y_dt = mult_Anm1_Bmpz(Q(dSy_idx).',B_Sy);
-            dtau_z_dt = mult_Anm1_Bmpz(Q(dSz_idx).',B_Sz);
+            dtau_x_dt = utility_functions.mult_Anm1_Bmpz(Q(dSx_idx).',B_Sx);
+            dtau_y_dt = utility_functions.mult_Anm1_Bmpz(Q(dSy_idx).',B_Sy);
+            dtau_z_dt = utility_functions.mult_Anm1_Bmpz(Q(dSz_idx).',B_Sz);
             %~~ Shear spacial derivatives
-            dtau_x_ds = mult_Anm1_Bmpz(Q(Sx_idx).',dB_Sx);
-            dtau_y_ds = mult_Anm1_Bmpz(Q(Sy_idx).',dB_Sy);
-            dtau_z_ds = mult_Anm1_Bmpz(Q(Sz_idx).',dB_Sz);
+            dtau_x_ds = utility_functions.mult_Anm1_Bmpz(Q(Sx_idx).',dB_Sx);
+            dtau_y_ds = utility_functions.mult_Anm1_Bmpz(Q(Sy_idx).',dB_Sy);
+            dtau_z_ds = utility_functions.mult_Anm1_Bmpz(Q(Sz_idx).',dB_Sz);
             %~~ Shear dsdt derivatives
-            dtau_x_dsdy = mult_Anm1_Bmpz(Q(dSx_idx).',dB_Sx);
-            dtau_y_dsdy = mult_Anm1_Bmpz(Q(dSy_idx).',dB_Sy);
-            dtau_z_dsdy = mult_Anm1_Bmpz(Q(dSz_idx).',dB_Sz);
+            dtau_x_dsdy = utility_functions.mult_Anm1_Bmpz(Q(dSx_idx).',dB_Sx);
+            dtau_y_dsdy = utility_functions.mult_Anm1_Bmpz(Q(dSy_idx).',dB_Sy);
+            dtau_z_dsdy = utility_functions.mult_Anm1_Bmpz(Q(dSz_idx).',dB_Sz);
             %~~ Shear state derivatives
             
             if isempty(B_Sx_tr)
@@ -1150,7 +1150,7 @@ classdef NBS_flexPart_nonlinear < handle
             
             dR_G_W_dqe_Dim3x3x1xnqe = dR_G_W_dqr_Dim3x3x1xnqr;
             
-            [E_WE,E_W,E_G,dE_dqa_G_Dim3x3xnsxnqa,dE_dqe_G_Dim3x3xnsxnqe,dE_dt_W] = E_methods.get_E_group1(...
+            [E_WE,E_W,E_G,dE_dqa_G_Dim3x3xnsxnqa,dE_dqe_G_Dim3x3xnsxnqe,dE_dt_W] = static_method_groups.E_methods.get_E_group1(...
                 ...
                 st, ct,...
                 st_ss,st_cs,st_sp,st_cp,...
@@ -1182,7 +1182,7 @@ classdef NBS_flexPart_nonlinear < handle
             dvarTheta_dt_root_G_skew = OmegaSkew_G;
             d2varTheta_dt2_root_G_star = dOmega_dt_G_star;
             
-            [dvarTheta_dqa_G_Dim3x1xnsxnqa,dvarTheta_dt_G,d2varTheta_dt2_G_star] = varTheta_methods.get_varTheta_group1(...
+            [dvarTheta_dqa_G_Dim3x1xnsxnqa,dvarTheta_dt_G,d2varTheta_dt2_G_star] = static_method_groups.varTheta_methods.get_varTheta_group1(...
                 ...
                 ss, cs, ey_WE, dE_dt_W,...
                 ...
@@ -1200,11 +1200,12 @@ classdef NBS_flexPart_nonlinear < handle
             dvarTheta_dq_G_Dim3xnq2ndxns = permute(dvarTheta_dq_G_Dim3x1xnsxnq2nd,[1 4 3 2]);
             dvarTheta_dq_G_Dimnq2ndx3xns = permute(dvarTheta_dq_G_Dim3x1xnsxnq2nd,[4 1 3 2]);
             
-            dvarTheta_dt_G_skew = getSkewMat(dvarTheta_dt_G);
-            d2varTheta_dt2_G_star_skew = getSkewMat(d2varTheta_dt2_G_star);
+            dvarTheta_dt_G_skew = utility_functions.getSkewMat(dvarTheta_dt_G);
+            d2varTheta_dt2_G_star_skew = utility_functions.getSkewMat(d2varTheta_dt2_G_star);
             
-            dE_dt_G = MultiProd_(dvarTheta_dt_G_skew,E_G);
-            d2E_dt2_G_star = MultiProd_(d2varTheta_dt2_G_star_skew,E_G) + MultiProd_(dvarTheta_dt_G_skew,dE_dt_G);
+            dE_dt_G = utility_functions.MultiProd_(dvarTheta_dt_G_skew,E_G);
+            d2E_dt2_G_star = utility_functions.MultiProd_(d2varTheta_dt2_G_star_skew,E_G) + utility_functions.MultiProd_(dvarTheta_dt_G_skew,dE_dt_G);
+            
             
             
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1220,9 +1221,9 @@ classdef NBS_flexPart_nonlinear < handle
             dGamma_dt_root_G = drBarA_dt_G + dR_G_A_dt*wingRoot_offset_A;
             d2Gamma_dt2_root_G_star = d2rBarA_dt2_G_star + d2R_G_A_dt2_star*wingRoot_offset_A;
             
-            dGamma_dq_root_G_Dim3x1x1xnq2nd = cat(4,zeros(3,1,1,nqa+nqs) , drBarA_G_dqr_G_Dim3x1x1xnqr + MultiProd_(dR_G_A_dqe_Dim3x3x1xnqe,wingRoot_offset_A));
+            dGamma_dq_root_G_Dim3x1x1xnq2nd = cat(4,zeros(3,1,1,nqa+nqs) , drBarA_G_dqr_G_Dim3x1x1xnqr + utility_functions.MultiProd_(dR_G_A_dqe_Dim3x3x1xnqe,wingRoot_offset_A));
             
-            [Gamma_G,dGamma_dt_G,dGamma_dq_G_Dim3x1xnsxnq2nd,dGamma_m_dq_G_Dim3x1xnsxnq2nd,d2Gamma_dt2_G_star,d2Gamma_m_dt2_G_star] = Gamma_methods.get_Gamma_group1(...
+            [Gamma_G,dGamma_dt_G,dGamma_dq_G_Dim3x1xnsxnq2nd,dGamma_m_dq_G_Dim3x1xnsxnq2nd,d2Gamma_dt2_G_star,d2Gamma_m_dt2_G_star] = static_method_groups.Gamma_methods.get_Gamma_group1(...
                 Gamma_Integration_Function,del_s,ns,root_idx,...
                 E_W,dE_dt_G,d2E_dt2_G_star,E_G,dE_dq_G_Dim3x3xnsxnq2nd,...
                 tau_x,tau_y,tau_z,...
@@ -1242,7 +1243,7 @@ classdef NBS_flexPart_nonlinear < handle
             %% Calculation of Kappa curvature vectors
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             
-            [KAPPA_I,dKAPPA_dt_I,dKAPPA_dqa_I_tr_Dim1x3xnsxnqa] = kappa_methods.get_kappa_group1(...
+            [KAPPA_I,dKAPPA_dt_I,dKAPPA_dqa_I_tr_Dim1x3xnsxnqa] = static_method_groups.kappa_methods.get_kappa_group1(...
                 ...
                 st,ct,sp,cp,dth_ds,dsi_ds,dph_ds,nszrs,R_W_WE,B_th,B_si,B_ph,dB_th,dB_si,dB_ph,st_sp,st_cp,ct_sp,ct_cp,yidx2,TD,...
                 dzeta_a_dt_tr,d2th_dsdt,d2si_dsdt,d2ph_dsdt);
@@ -1270,10 +1271,10 @@ classdef NBS_flexPart_nonlinear < handle
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             
             PvecWeight_G = gravAccVec.*obj.ms;
-            massOffset_G = MultiProd_(E_G,massOffset_I);
+            massOffset_G = utility_functions.MultiProd_(E_G,massOffset_I);
                         
-            PvecApplied_G = obj.Pvec_appliedGlobal_G + MultiProd_(E_G,obj.Pvec_appliedLocal_I) + PvecWeight_G;
-            MvecApplied_G = obj.Mvec_appliedGlobal_G + MultiProd_(E_G,obj.Mvec_appliedLocal_I) + MultiProd_(getSkewMat(massOffset_G),PvecWeight_G);
+            PvecApplied_G = obj.Pvec_appliedGlobal_G + utility_functions.MultiProd_(E_G,obj.Pvec_appliedLocal_I) + PvecWeight_G;
+            MvecApplied_G = obj.Mvec_appliedGlobal_G + utility_functions.MultiProd_(E_G,obj.Mvec_appliedLocal_I) + utility_functions.MultiProd_(utility_functions.getSkewMat(massOffset_G),PvecWeight_G);
             
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             %% FlexPart_nonlinear Aerodynamic Loads PvecApplied_G, MvecApplied_G
@@ -1294,13 +1295,13 @@ classdef NBS_flexPart_nonlinear < handle
                 
                 if ismember(aerodynamics,{'strip_steady','strip_unsteady','WT'})
                     
-                    E_G_pm = sample(E_G,Apm_idx,3);
-                    dE_dt_G_pm = sample(dE_dt_G,Apm_idx,3);
+                    E_G_pm = utility_functions.sample(E_G,Apm_idx,3);
+                    dE_dt_G_pm = utility_functions.sample(dE_dt_G,Apm_idx,3);
                     % dGamma_dt_G_pm = sample(dGamma_dt_G,Apm_idx,3);
-                    dvarTheta_dt_G_pm = sample(dvarTheta_dt_G,Apm_idx,3);
+                    dvarTheta_dt_G_pm = utility_functions.sample(dvarTheta_dt_G,Apm_idx,3);
                     EAp_I_pm = obj.EAp_I_pm;
-                    EAp_G_pm = MultiProd_(E_G_pm,EAp_I_pm);
-                    dEAp_dt_G_pm = MultiProd_(dE_dt_G_pm,EAp_I_pm);
+                    EAp_G_pm = utility_functions.MultiProd_(E_G_pm,EAp_I_pm);
+                    dEAp_dt_G_pm = utility_functions.MultiProd_(dE_dt_G_pm,EAp_I_pm);
                     %dexAp_dt_G_pm = dEAp_dt_G_pm(:,1,:);
                     
                     %     dexAp_dt_G_pm = dEAp_dt_G_pm(:,1,:);
@@ -1312,16 +1313,16 @@ classdef NBS_flexPart_nonlinear < handle
                     partInformationStruct.(flex_part_name).nsAp = nsAp;
                     partInformationStruct.(flex_part_name).EAp_G_pm = EAp_G_pm;
                     partInformationStruct.(flex_part_name).dEAp_dt_G_pm = dEAp_dt_G_pm;
-                    partInformationStruct.(flex_part_name).Gamma_G_pm = sample(Gamma_G,Apm_idx,3);
-                    partInformationStruct.(flex_part_name).dGamma_dt_G_pm = sample(dGamma_dt_G,Apm_idx,3);
+                    partInformationStruct.(flex_part_name).Gamma_G_pm = utility_functions.sample(Gamma_G,Apm_idx,3);
+                    partInformationStruct.(flex_part_name).dGamma_dt_G_pm = utility_functions.sample(dGamma_dt_G,Apm_idx,3);
                     %partInformationStruct.(flex_part_name).dGammaAlphaCP_dt_G_pm = dGammaAlphaCP_dt_G_pm;
                     partInformationStruct.(flex_part_name).dvarTheta_dt_G_pm = dvarTheta_dt_G_pm;
                     partInformationStruct.(flex_part_name).chord = obj.c_pm;
                     partInformationStruct.(flex_part_name).ApWidth = obj.ApWidths_pm;
                     partInformationStruct.(flex_part_name).beam_cntr_pm = obj.beam_cntr_pm;
                     partInformationStruct.(flex_part_name).AIC = obj.AICs;
-                    partInformationStruct.(flex_part_name).dGamma_dq_G_pm = sample(dGamma_dq_G_Dim3x1xnsxnq2nd,Apm_idx,3);
-                    partInformationStruct.(flex_part_name).dvarTheta_dq_G_pm = sample(dvarTheta_dq_G_Dim3x1xnsxnq2nd,Apm_idx,3);
+                    partInformationStruct.(flex_part_name).dGamma_dq_G_pm = utility_functions.sample(dGamma_dq_G_Dim3x1xnsxnq2nd,Apm_idx,3);
+                    partInformationStruct.(flex_part_name).dvarTheta_dq_G_pm = utility_functions.sample(dvarTheta_dq_G_Dim3x1xnsxnq2nd,Apm_idx,3);
                     partInformationStruct.(flex_part_name).Aero = obj.Aero;
                     partInformationStruct.(flex_part_name).alpha_root = obj.alpha_root;
                     %PvecAero_G_pm = [];
@@ -1329,23 +1330,23 @@ classdef NBS_flexPart_nonlinear < handle
                     
                 elseif ismember(aerodynamics,{'VLM_steady'})
                     
-                    Gamma_G_pn = sample(Gamma_G,Apn_idx,3);
-                    Gamma_G_pm = sample(Gamma_G,Apm_idx,3);
-                    dGamma_dt_G_pm = sample(dGamma_dt_G,Apm_idx,3);
+                    Gamma_G_pn = utility_functions.sample(Gamma_G,Apn_idx,3);
+                    Gamma_G_pm = utility_functions.sample(Gamma_G,Apm_idx,3);
+                    dGamma_dt_G_pm = utility_functions.sample(dGamma_dt_G,Apm_idx,3);
                     aero_cntr_pn = 0.25;
                     control_point_pm = 0.75;
                     beam_cntr_pm = obj.beam_cntr_pm;
                     beam_cntr_pn = obj.beam_cntr_pn;
                     chord_pm = obj.c_pm;
                     chord_pn = obj.c_pn;
-                    E_G_pm = sample(E_G,Apm_idx,3);
-                    E_G_pn = sample(E_G,Apn_idx,3);
+                    E_G_pm = utility_functions.sample(E_G,Apm_idx,3);
+                    E_G_pn = utility_functions.sample(E_G,Apn_idx,3);
                     EAp_I_pm = obj.EAp_I_pm;
                     EAp_I_pn = obj.EAp_I_pn;
-                    EAp_G_pm = MultiProd_(E_G_pm,EAp_I_pm);
-                    EAp_G_pn = MultiProd_(E_G_pn,EAp_I_pn);
-                    dE_dt_G_pm = sample(dE_dt_G,Apm_idx,3);
-                    dEAp_dt_G_pm = MultiProd_(dE_dt_G_pm,EAp_I_pm);
+                    EAp_G_pm = utility_functions.MultiProd_(E_G_pm,EAp_I_pm);
+                    EAp_G_pn = utility_functions.MultiProd_(E_G_pn,EAp_I_pn);
+                    dE_dt_G_pm = utility_functions.sample(dE_dt_G,Apm_idx,3);
+                    dEAp_dt_G_pm = utility_functions.MultiProd_(dE_dt_G_pm,EAp_I_pm);
                     Pv = Gamma_G_pn + bsxfun(@times, (aero_cntr_pn - beam_cntr_pn).*chord_pn , EAp_G_pn(:,1,:) );
                     Pc = Gamma_G_pm + bsxfun(@times, (control_point_pm - beam_cntr_pm).*chord_pm , EAp_G_pm(:,1,:) );
                     PcNorm = EAp_G_pm(:,3,:);
@@ -1363,26 +1364,26 @@ classdef NBS_flexPart_nonlinear < handle
                     Apm_idx = obj.Apm_idx;
                     partInformationStruct.(flex_part_name).harmonic_load_global = obj.harmonic_load_global;
                     partInformationStruct.(flex_part_name).nsAp = nsAp;
-                    partInformationStruct.(flex_part_name).dGamma_dq_G_pm = sample(dGamma_dq_G_Dim3x1xnsxnq2nd,Apm_idx,3);
-                    partInformationStruct.(flex_part_name).dvarTheta_dq_G_pm = sample(dvarTheta_dq_G_Dim3x1xnsxnq2nd,Apm_idx,3);
+                    partInformationStruct.(flex_part_name).dGamma_dq_G_pm = utility_functions.sample(dGamma_dq_G_Dim3x1xnsxnq2nd,Apm_idx,3);
+                    partInformationStruct.(flex_part_name).dvarTheta_dq_G_pm = utility_functions.sample(dvarTheta_dq_G_Dim3x1xnsxnq2nd,Apm_idx,3);
                 
             end
             
             %==========================================================================
             %Virtual work terms from rotational kinetic energy contributions
-            [dW_dq_Kinetic_Rotation_ddqComponent,dW_dq_Kinetic_Rotation_remainder] = dPi_dq_Kinetic_Rotation.get_dPi_dq_Kinetic_Rotation(...
+            [dW_dq_Kinetic_Rotation_ddqComponent,dW_dq_Kinetic_Rotation_remainder] = static_method_groups.dPi_dq_Kinetic_Rotation.get_dPi_dq_Kinetic_Rotation(...
                 E_G, E_G_tr, I_varTheta,...
                 dvarTheta_dq_G_Dim3xnq2ndxns, dvarTheta_dq_G_Dimnq2ndx3xns,...
                 dvarTheta_dt_G,d2varTheta_dt2_G_star);
             %==========================================================================
             %Virtual work terms from translational kinetic energy contributions
-            [dW_dq_Kinetic_Translation_ddqComponent,dW_dq_Kinetic_Translation_remainder] = dPi_dq_Kinetic_Translation.get_dPi_dq_Kinetic_Translation(...
+            [dW_dq_Kinetic_Translation_ddqComponent,dW_dq_Kinetic_Translation_remainder] = static_method_groups.dPi_dq_Kinetic_Translation.get_dPi_dq_Kinetic_Translation(...
                 ms, dGamma_m_dq_G_Dim3xnq2ndxns, dGamma_m_dq_G_Dimnq2ndx3xns,...
                 d2Gamma_m_dt2_G_star);
             %==========================================================================
             %Virtual work terms from material deformation
-            dPi_dq_KAPPA = MultiProd_(dKAPPA_dqa_I_tr_Dim1x3xnsxnqa , MOMENT_xi + MOMENT_dxidt);
-            dPi_dq_SHEAR = MultiProd_(dTAU_dqs_tr     ,  FORCE_xi +  FORCE_dxidt);
+            dPi_dq_KAPPA = utility_functions.MultiProd_(dKAPPA_dqa_I_tr_Dim1x3xnsxnqa , MOMENT_xi + MOMENT_dxidt);
+            dPi_dq_SHEAR = utility_functions.MultiProd_(dTAU_dqs_tr     ,  FORCE_xi +  FORCE_dxidt);
             if isempty(dPi_dq_SHEAR)
                 dW_dq_xi = cat(4, SimObject.intVal(s, dPi_dq_KAPPA ,int_fnc) , zeros(1,1,1,nqr));
             else
@@ -1390,8 +1391,8 @@ classdef NBS_flexPart_nonlinear < handle
             end
             %==========================================================================
             %Virtual work terms from applied loads
-            dPi_dq_Fapplied = dotn(PvecApplied_G,dGamma_dq_G_Dim3x1xnsxnq2nd,1);
-            dPi_dq_Mapplied = dotn(MvecApplied_G,dvarTheta_dq_G_Dim3x1xnsxnq2nd,1);
+            dPi_dq_Fapplied = utility_functions.dotn(PvecApplied_G,dGamma_dq_G_Dim3x1xnsxnq2nd,1);
+            dPi_dq_Mapplied = utility_functions.dotn(MvecApplied_G,dvarTheta_dq_G_Dim3x1xnsxnq2nd,1);
             dW_dq_AppliedLoad = sum(dPi_dq_Fapplied + dPi_dq_Mapplied,3);
             %==========================================================================
             
@@ -1432,13 +1433,13 @@ classdef NBS_flexPart_nonlinear < handle
             
             if isequal(outputFormat,'qoi')
                 
-                QOI_Container = get_field(SimObject,['QOI_Master.QOIcontainers_struct.flexParts_nonlinear.' flex_part_name]);
+                QOI_Container = utility_functions.get_field(SimObject,['QOI_Master.QOIcontainers_struct.flexParts_nonlinear.' flex_part_name]);
                 
                 %Gamma_G = bsxfun(@plus,rBarA_G + R_G_A*wingRoot_offset_A,MultiProd_(R_G_W,Gamma_W));
                 QOI_Container.add_qoi('Gamma_G',tidx,Gamma_G,'1:ns','\Gamma#_{[G]}','m');
-                Gamma_A = bsxfun(@plus,Gamma_root_G,squeeze(MultiProd_(R_A_G,Gamma_G)));
+                Gamma_A = bsxfun(@plus,Gamma_root_G,squeeze(utility_functions.MultiProd_(R_A_G,Gamma_G)));
                 QOI_Container.add_qoi('Gamma_A',tidx,Gamma_A,'1:ns','\Gamma#_{[A]}','m');
-                Gamma_m_G = Gamma_G + MultiProd_(E_G,massOffset_I);
+                Gamma_m_G = Gamma_G + utility_functions.MultiProd_(E_G,massOffset_I);
                 QOI_Container.add_qoi('Gamma_m_G',tidx,Gamma_m_G,'1:ns','\Gamma_m#_{[G]}','m');
                 %dGamma_dt_G = squeeze(bsxfun(@plus,drBarA_dt_G,map_WtoG(dGamma_dt_W,R_G_W) + MultiProd_(dR_G_W_dt,Gamma_W)));
                 QOI_Container.add_qoi('dGamma_dt_G',tidx,dGamma_dt_G,'1:ns','d\Gamma#/dt_{[G]}','m/s');

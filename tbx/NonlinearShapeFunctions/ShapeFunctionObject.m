@@ -27,11 +27,11 @@ classdef ShapeFunctionObject
             
             %addpath('./utility_functions');
             
-            obj.s = get_option(varargin,'s',linspace(0,1,101)); obj.s = reshape(obj.s,1,[],1);
-            obj.BCs = get_option(varargin,'BCs',[0 1;1 1;1 1]);
-            nShapes = get_option(varargin,'nShapes',10);
-            obj.halfShape = get_option(varargin,'halfShape',false);
-            obj.setName = get_option(varargin,'setName',[]);
+            obj.s = utility_functions.get_option(varargin,'s',linspace(0,1,101)); obj.s = reshape(obj.s,1,[],1);
+            obj.BCs = utility_functions.get_option(varargin,'BCs',[0 1;1 1;1 1]);
+            nShapes = utility_functions.get_option(varargin,'nShapes',10);
+            obj.halfShape = utility_functions.get_option(varargin,'halfShape',false);
+            obj.setName = utility_functions.get_option(varargin,'setName',[]);
             obj.setHistory{1,3} = zeros(nShapes,1);
             
             ShapeSetTemplates = {...
@@ -164,7 +164,7 @@ classdef ShapeFunctionObject
                     dy_ds_custom(i_,:) = ([0 del_y] + [del_y 0]) ./ ([0 del_s] + [del_s 0]);
                 end
             end
-            sMat = sampleMat(s_custom,obj.s);
+            sMat = utility_functions.sampleMat(s_custom,obj.s);
             assert(max(abs(s_custom*sMat-obj.s)) < (max(obj.s)-min(obj.s))*1e-8 , 'error with custom function sampling matrix ''sMat''');
             
             yCustom = y_custom*sMat;

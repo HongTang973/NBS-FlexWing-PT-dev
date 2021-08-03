@@ -25,21 +25,21 @@ end
 
 %TODO - add generic inputParser;
 
-analysisType = get_option(varargin,'analysisType','dynamic');
-solver = get_option(varargin,'solver','ode15s');
-intFnc = get_option(varargin,'intFnc',[]);
-profileCode = get_option(varargin,'profileCode',false);
-SimObj = get_option(varargin,'fromObject',[]);
+analysisType = utility_functions.get_option(varargin,'analysisType','dynamic');
+solver = utility_functions.get_option(varargin,'solver','ode15s');
+intFnc = utility_functions.get_option(varargin,'intFnc',[]);
+profileCode = utility_functions.get_option(varargin,'profileCode',false);
+SimObj = utility_functions.get_option(varargin,'fromObject',[]);
 if strcmpi(analysisType,'dynamic')
-    displayWaitBar = get_option(varargin,'waitBar',true);
+    displayWaitBar = utility_functions.get_option(varargin,'waitBar',true);
 else
     displayWaitBar = false;
 end
-fHandle = get_option(varargin,'fHandle',@f);
-testCase = get_option(varargin,'testCase',[]);
+fHandle = utility_functions.get_option(varargin,'fHandle',@f);
+testCase = utility_functions.get_option(varargin,'testCase',[]);
 
 if strcmp(analysisType,'dynamic')
-delta_t = get_option(varargin,'delta_t',min((t2-t1)/400,1/20));
+delta_t = utility_functions.get_option(varargin,'delta_t',min((t2-t1)/400,1/20));
     tsteps = t1:delta_t:t2; %time steps at which output is requested
     t_end = tsteps(end); t_temp = tsteps(1);
 else
@@ -105,7 +105,7 @@ elseif isequal(analysisType,'static') %/////////////////////////////////static a
 
     options = optimoptions('fsolve','Display','iter','MaxIter',1e3,'MaxFunctionEvaluations',5000,'OutputFcn',@getQ_iter);
 
-    suppressIter = get_option(varargin,'suppressIter',false);
+    suppressIter = utility_functions.get_option(varargin,'suppressIter',false);
     if suppressIter, options.Display = 'none'; end
     
     Q_iter = [];

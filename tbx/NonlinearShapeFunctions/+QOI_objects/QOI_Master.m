@@ -21,12 +21,12 @@ classdef QOI_Master < handle
         
         function add_QOI_Container(obj,address,partObj)
             QOI_Container = QOI_objects.QOI_Container(obj,address,partObj);
-            set_field(obj,address,QOI_Container);
+            utility_functions.set_field(obj,address,QOI_Container);
             
             address_flat = address;
             address_flat = strrep(address_flat,'.QOIcontainers_struct.','');
             address_flat = ['QOIcontainers_flat.' strrep(address_flat,'.','___')];
-            set_field(obj,address_flat,QOI_Container);
+            utility_functions.set_field(obj,address_flat,QOI_Container);
             
             obj.QOIcontainers_cell = [obj.QOIcontainers_cell , {QOI_Container}];
             obj.QOIcontainers_array = [obj.QOIcontainers_array , QOI_Container];
@@ -34,7 +34,7 @@ classdef QOI_Master < handle
         
         function write_QOI_values(obj,qoiRequestSource,varargin)
             
-            Display = get_option(varargin,'display',true);
+            Display = utility_functions.get_option(varargin,'display',true);
             
 %             addpath('./utility_functions');
 %             addpath('./static_method_groups');

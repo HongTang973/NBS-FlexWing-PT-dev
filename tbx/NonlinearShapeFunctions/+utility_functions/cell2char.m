@@ -5,7 +5,7 @@ function charAry = cell2char(cell,varargin)
 %
 %e.g. cell2char({'t =',3,"seconds"},'parseChars',' ') -> 't = 3 seconds'
 
-parseChars = get_option(varargin,'parseChars','');
+parseChars = utility_functions.get_option(varargin,'parseChars','');
 
 if ~strcmp(class(cell),'cell'), cell = {cell}; end
 

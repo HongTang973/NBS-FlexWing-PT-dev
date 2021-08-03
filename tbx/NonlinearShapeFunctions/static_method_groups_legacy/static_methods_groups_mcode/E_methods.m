@@ -34,7 +34,7 @@ methods (Static = true)
         dE_dqa_G_3x3xnsxnqa = reshape(permute(dE_dqa_G_9qans,[1 4 3 2]),3,3,ns,[]);
         
         if ~isempty(dR_G_W_dqe_3x3x1xnqe)
-            dE_dqe_G_3x3xnsxnqe = MultiProd_(dR_G_W_dqe_3x3x1xnqe,E_W);
+            dE_dqe_G_3x3xnsxnqe = utility_functions.MultiProd_(dR_G_W_dqe_3x3x1xnqe,E_W);
             %dE_dqe_G = reshape([dE_dqe(1:3,:,:),dE_dqe(4:6,:,:),dE_dqe(7:9,:,:)],9,3,ns);
 %             dE_dqe_G = [...
 %                 reshape(dE_dqe_G_3nq_3(:,1,:),3,[],ns) ;...

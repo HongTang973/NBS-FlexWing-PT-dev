@@ -94,7 +94,7 @@ classdef QOI_Container < handle
                %qoi_ = qoi_.appendValue(value); %append 'value' to the qoi (using qoi method 'appendValue')
             end
             
-            isGlobalAeroQuantity = get_option(varargin,'GlobalAeroQuantity',false);
+            isGlobalAeroQuantity = utility_functions.get_option(varargin,'GlobalAeroQuantity',false);
             
             if isGlobalAeroQuantity && isa(obj.partObject,'NBS_Master') %if the qoi is a global aerodynamic quantity and obj is the Master object
                 NBS_Master_obj = obj.partObject;

@@ -8,8 +8,11 @@ function prescribed_motion = prescribedMotionFunc(SimObject,t)
     
     OmegaSkew_G = getSkewMat(Omega_G); dOmega_dtSkew_G = getSkewMat(dOmega_dt_G);
     
-    R_G_A = r_matrix(Beta_G);
-    dR_G_A_dt = OmegaSkew_G*R_G_A;
+    R_G_A_tilt = r_matrix(tilt);
+    R_G_A_azimuth = r_matrix(Beta_G);
+    
+    R_G_A = R_G_A_azimuth*R_G_A_tilt;
+    dR_G_A_dt = (OmegaSkew_G*R_G_A_azimuth)*R_G_A_tilt + R_G_A_azimuth*(OmegaSkew_G*R_G_A_tilt);
     d2R_G_A_dt2 = dOmega_dtSkew_G*R_G_A + OmegaSkew_G*OmegaSkew_G*R_G_A;
     
     prescribed_motion.Omega_G = Omega_G;
@@ -18,7 +21,7 @@ function prescribed_motion = prescribedMotionFunc(SimObject,t)
     prescribed_motion.R_G_A = R_G_A;
     prescribed_motion.dR_G_A_dt = dR_G_A_dt;
     prescribed_motion.d2R_G_A_dt2 = d2R_G_A_dt2;
-    prescribed_motion.rBarA_G = [0;0;0]; %Translation
+    prescribed_motion.rBarA_G = [0;0;5]; %Translation
     prescribed_motion.drBarA_dt_G = [0;0;0]; %Translational velocity
     prescribed_motion.d2rBarA_dt2_G = [0;0;0]; %Translational acceleration
 end

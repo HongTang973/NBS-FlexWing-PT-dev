@@ -16,9 +16,9 @@ classdef NBS_Master < handle
         prescribedMotion_fnc                                               %handle to a function that prescribes an enforced motion of the aircraft reference point
         CUSTOM_free_states                                                 %handle to a function that prescribes a mapping from a set of kinematic states to position/rotational quantities and their variations
         SimType = struct
-        T
+        T                                                                  %period of prescribed rotation
         ff_h
-        R_G_A_0
+        R_G_A_0                                                            %initial orientation
         StateInfo
                         StateMap_cell
                         StateMap
@@ -43,8 +43,8 @@ classdef NBS_Master < handle
         
                         FLAG_free_free                                     %[true/false] true if rigid body states included in problem
         
-        int_fnc = @integrate2_delxConst                                    %[function handle] integration function
-        Gamma_int_fnc = @int_midpointShooting                              %[function handle] integration function for Gamma quantities
+        int_fnc = @utility_functions.integrate2_delxConst                                    %[function handle] integration function
+        Gamma_int_fnc = @utility_functions.int_midpointShooting                              %[function handle] integration function for Gamma quantities
         plotBounds                                                         %[m] chosen plotBounds for 3D deflection plot
 
         %TODO recast fuselage, HTP and VTP as objects
@@ -108,16 +108,16 @@ classdef NBS_Master < handle
     methods %constuctor and parameter methods
         
     function obj = NBS_Master(varargin)
-        
-        package_dir = fileparts(mfilename('fullpath'));
-        addpath(fullfile(package_dir, 'utility_functions'));
-        addpath(fullfile(package_dir, 'static_method_groups'));
-        addpath(fullfile(package_dir, 'aerodynamic_codes'));
-        addpath(fullfile(package_dir, 'user_functions'));
+%         
+%         package_dir = fileparts(mfilename('fullpath'));
+%         addpath(fullfile(package_dir, 'utility_functions'));
+%         addpath(fullfile(package_dir, 'static_method_groups'));
+%         addpath(fullfile(package_dir, 'aerodynamic_codes'));
+%         addpath(fullfile(package_dir, 'user_functions'));
         
         obj.object_creation_date = datetime;
-        obj.ModelName = get_option(varargin,'Global',obj.ModelName);
-        obj.partName = get_option(varargin,'partName',obj.partName);
+        obj.ModelName = utility_functions.get_option(varargin,'Global',obj.ModelName);
+        obj.partName = utility_functions.get_option(varargin,'partName',obj.partName);
 %                                                                          obj.archive('f.m');
 %                                                                          obj.archive('NBS_Master.m');
 %                                                                          obj.archive('NBS_flexPart_nonlinear.m');
@@ -380,8 +380,8 @@ classdef NBS_Master < handle
             return
         end
         
-        axisHandle = get_option(varargin,'axisHandle',[]);
-        plotOptions = get_option(varargin,'plotOptions',{});
+        axisHandle = utility_functions.get_option(varargin,'axisHandle',[]);
+        plotOptions = utility_functions.get_option(varargin,'plotOptions',{});
         
         %example: O.generate_2dplot('halfWing',{'t',1,'1','1:nt'},{'Gamma_G',3,'ns','1:nt'})
         %qoiStructure: {qoiName,componentNumber,sidx,tidx}
@@ -446,7 +446,7 @@ classdef NBS_Master < handle
         
         function archive_file(O,fileAddress)
             file_contents = {};
-            [address_,fname_] = splitFilePath(fileAddress);
+            [address_,fname_] = utility_functions.splitFilePath(fileAddress);
             fid = fopen(fileAddress,'r');
             while feof(fid) ~= 1
                 fileLine = fgetl(fid);
@@ -485,9 +485,9 @@ classdef NBS_Master < handle
         %returns the specified qoi value for the current flexPart
         %user may specify Sidx and Tidx indices to return
         
-        Sidx = get_option(varargin,'Sidx',':');
-        Tidx = get_option(varargin,'Tidx',':');
-        generate_QOIs = get_option(varargin,'generate_QOIs',false);
+        Sidx = utility_functions.get_option(varargin,'Sidx',':');
+        Tidx = utility_functions.get_option(varargin,'Tidx',':');
+        generate_QOIs = utility_functions.get_option(varargin,'generate_QOIs',false);
         
         if ischar(PartObject), PartObject = obj.get_partObj(PartObject); end
         
@@ -538,13 +538,13 @@ classdef NBS_Master < handle
             return
         end
         
-        request_qoi_write = get_option(varargin,'qoiRequest',true);
-        plot_CoM = get_option(varargin,'plotCoM',false);
-        parts = get_option(varargin,'parts','all');
-        azimuth = get_option(varargin,'az',120);
-        elevation = get_option(varargin,'el',20);
-        AeroForce = get_option(varargin,'AeroForce',false);
-        newFig = get_option(varargin,'newFig',true);
+        request_qoi_write = utility_functions.get_option(varargin,'qoiRequest',true);
+        plot_CoM = utility_functions.get_option(varargin,'plotCoM',false);
+        parts = utility_functions.get_option(varargin,'parts','all');
+        azimuth = utility_functions.get_option(varargin,'az',120);
+        elevation = utility_functions.get_option(varargin,'el',20);
+        AeroForce = utility_functions.get_option(varargin,'AeroForce',false);
+        newFig = utility_functions.get_option(varargin,'newFig',true);
         
         if newFig
             figure;
@@ -554,8 +554,8 @@ classdef NBS_Master < handle
         %view(ax,[120 20]);
         
         %---------------------------------------
-        Tidxs = get_option(varargin,'Tidx',[]);
-        t_requests = get_option(varargin,'t',[]);
+        Tidxs = utility_functions.get_option(varargin,'Tidx',[]);
+        t_requests = utility_functions.get_option(varargin,'t',[]);
         
         if isempty(Tidxs) && isempty(t_requests), Tidxs = obj.nt; end
         
@@ -647,17 +647,17 @@ classdef NBS_Master < handle
         ax = gca;
         view(ax,[azimuth,elevation]);
         box on; grid on;
-        title(['System Parts: ' cell2char(parts,'parseChars',', ') ' , t = ' num2str(t_)]);
+        title(['System Parts: ' utility_functions.cell2char(parts,'parseChars',', ') ' , t = ' num2str(t_)]);
         
     end
     
     function generate_video(obj,varargin)
         
         %------------------------------------------------------------------
-        framesPerSecond = get_option(varargin,'framerate',20);
-        playSpeed = get_option(varargin,'playSpeed',1);
-        tBounds = get_option(varargin,'tBounds',[0,obj.nt]);
-        fileName = get_option(varargin,'fileName','video.avi');
+        framesPerSecond = utility_functions.get_option(varargin,'framerate',20);
+        playSpeed = utility_functions.get_option(varargin,'playSpeed',1);
+        tBounds = utility_functions.get_option(varargin,'tBounds',[0,obj.nt]);
+        fileName = utility_functions.get_option(varargin,'fileName','video.avi');
         
         [tidx_start,~] = obj.closestTidx(tBounds(1));
         [tidx_end,~] = obj.closestTidx(tBounds(2));
@@ -674,7 +674,7 @@ classdef NBS_Master < handle
         Tidx = tidx_start:(i_-1):tidx_end;
         Tidx_str = ['[' num2str(Tidx) ']'];
         %------------------------------------------------------------------
-        plot_CoM = get_option(varargin,'plotCoM',false);
+        plot_CoM = utility_functions.get_option(varargin,'plotCoM',false);
         if plot_CoM
             qoiRequest = {true,'CoM_G','1',Tidx_str};
         else
@@ -749,13 +749,13 @@ classdef NBS_Master < handle
     end
     
     function [] = plotShapes(obj,varargin)
-        output_detail = get_option(varargin,'output_detail','final_1');
+        output_detail = utility_functions.get_option(varargin,'output_detail','final_1');
         flexParts_nonlinear_names = fields(obj.flexParts_nonlinear);
         for i_ = 1:obj.nflexParts_nonlinear
             flexPartName = flexParts_nonlinear_names{i_};
-            shapeObject_bend = get_field(obj,['.flexParts_nonlinear.' flexPartName '.shapeObject_bend']);
+            shapeObject_bend = utility_functions.get_field(obj,['.flexParts_nonlinear.' flexPartName '.shapeObject_bend']);
             shapeObject_bend.plotShapes('output_detail',output_detail);
-            shapeObject_twist = get_field(obj,['.flexParts_nonlinear.' flexPartName '.shapeObject_twist']);
+            shapeObject_twist = utility_functions.get_field(obj,['.flexParts_nonlinear.' flexPartName '.shapeObject_twist']);
             shapeObject_twist.plotShapes('output_detail',output_detail);
         end
     end
@@ -785,7 +785,7 @@ classdef NBS_Master < handle
     
     function val = annoteState(obj,Q,varargin)
         
-        idx = get_option(varargin,'indices',':');
+        idx = utility_functions.get_option(varargin,'indices',':');
         
         val = table(Q);
         val.Row = obj.StateMap_cell(idx,1);
@@ -865,15 +865,15 @@ classdef NBS_Master < handle
         %mtimesx('LOOPS');
         %addpath(genpath('.')) <- add all subfolders to search path
         
-        analysisType = get_option(varargin,'analysisType','dynamic');
-        solver = get_option(varargin,'solver','ode15s');
-        intFnc = get_option(varargin,'intFnc',[]);
-        profileCode = get_option(varargin,'profileCode',false);
-        displayWaitBar = get_option(varargin,'waitBar',true);
-        fHandle = get_option(varargin,'fHandle',@f);
+        analysisType = utility_functions.get_option(varargin,'analysisType','dynamic');
+        solver = utility_functions.get_option(varargin,'solver','ode15s');
+        intFnc = utility_functions.get_option(varargin,'intFnc',[]);
+        profileCode = utility_functions.get_option(varargin,'profileCode',false);
+        displayWaitBar = utility_functions.get_option(varargin,'waitBar',true);
+        fHandle = utility_functions.get_option(varargin,'fHandle',@f);
         
         if strcmp(analysisType,'dynamic')
-            delta_t = get_option(varargin,'delta_t',min((t2-t1)/400,1/20));
+            delta_t = utility_functions.get_option(varargin,'delta_t',min((t2-t1)/400,1/20));
             tsteps = t1:delta_t:t2; %time steps at which output is requested
             t_end = tsteps(end); t_temp = tsteps(1);
         else
@@ -921,7 +921,7 @@ classdef NBS_Master < handle
             
         elseif isequal(analysisType,'static') %/////////////////////////////////static analysis/////////////////////
             
-            suppressIter = get_option(varargin,'suppressIter',false);
+            suppressIter = utility_functions.get_option(varargin,'suppressIter',false);
             %maxEvals = 200;
             options = optimoptions('fsolve','Display','iter','MaxIter',1e3,'MaxFunctionEvaluations',10000,'OutputFcn',@getQ_iter);
             
@@ -1191,15 +1191,15 @@ classdef NBS_Master < handle
         r = squeeze(r);
         if numel(beam_cntr)==1, beam_cntr(1:ns) = beam_cntr; end
         ns_draw = length(s_draw); L_ = s_draw(end);
-        CrossSectionProfiles_ = get_option(varargin,'CrossSectionProfiles','box');
-        CamLight = get_option(varargin,'camlight',[45,-90]);
-        idx_ribs_ = get_option(varargin,'idx_ribs',[]);
-        idx_intrinsic = get_option(varargin,'idx_intrinsic',[]);
-        XLIM = get_option(varargin,'XLIM',[]);
-        YLIM = get_option(varargin,'YLIM',[]);
-        ZLIM = get_option(varargin,'ZLIM',[]);
-        plotReferenceLine = get_option(varargin,'plotReferenceLine',true);
-        plot2DProjections = get_option(varargin,'plot2DProjections',[1,1,1]);
+        CrossSectionProfiles_ = utility_functions.get_option(varargin,'CrossSectionProfiles','box');
+        CamLight = utility_functions.get_option(varargin,'camlight',[45,-90]);
+        idx_ribs_ = utility_functions.get_option(varargin,'idx_ribs',[]);
+        idx_intrinsic = utility_functions.get_option(varargin,'idx_intrinsic',[]);
+        XLIM = utility_functions.get_option(varargin,'XLIM',[]);
+        YLIM = utility_functions.get_option(varargin,'YLIM',[]);
+        ZLIM = utility_functions.get_option(varargin,'ZLIM',[]);
+        plotReferenceLine = utility_functions.get_option(varargin,'plotReferenceLine',true);
+        plot2DProjections = utility_functions.get_option(varargin,'plot2DProjections',[1,1,1]);
         
         if length(w) == 1, w = ones(1,ns_draw)*w; end
         
@@ -1350,7 +1350,7 @@ classdef NBS_Master < handle
                 val = val_or_func;
             end
             assert(numel(val)==3,'uVec_freeStream must return a vector of length 3');
-            if ~eq_tol(norm(val),1,'relTol',1e-6)
+            if ~utility_functions.eq_tol(norm(val),1,'relTol',1e-6)
                 warning('uVec_freeStream did not return a unit vector')
             end
             

@@ -88,7 +88,7 @@ if nargin > 12 && qsteady
     Qaero = bsxfun(@times, b.*alpha./vx3qrt, 1./biCoeffs);
     dQaero = Qaero*0;
 else
-    aeroCoeff2D = 0;
+    aeroCoeff2D = [];
     %%%
     % else get state derivative from ode
     %

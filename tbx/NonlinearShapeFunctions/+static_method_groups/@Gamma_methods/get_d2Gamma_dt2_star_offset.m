@@ -1,0 +1,3 @@
+function d2Gamma_dt2_star_offset = get_d2Gamma_dt2_star_offset(d2Gamma_dt2_star,d2E_dt2_star,massOffset_I)
+d2Gamma_dt2_star_offset = d2Gamma_dt2_star + utility_functions.MultiProd_(d2E_dt2_star,massOffset_I);
+end

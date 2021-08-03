@@ -12,22 +12,22 @@ ez = Rmat(:,3);
 %calculate <sweep>
 %--------------------------------------------------------------------------
 planeNorm = [0;0;-1];
-Rinfo.sweep_deg = get_RotationInPlane(planeNorm,[0;1;0],ey)*180/pi;
+Rinfo.sweep_deg = utility_functions.get_RotationInPlane(planeNorm,[0;1;0],ey)*180/pi;
 
 %calculate <dihedral>
 %--------------------------------------------------------------------------
 planeNorm = [1;0;0];
-Rinfo.dihedral_deg = get_RotationInPlane(planeNorm,[0;1;0],ey)*180/pi;
+Rinfo.dihedral_deg = utility_functions.get_RotationInPlane(planeNorm,[0;1;0],ey)*180/pi;
 
 %calculate <alphaXZglobal>
 %--------------------------------------------------------------------------
 planeNorm = [0;1;0];
-Rinfo.alphaXZglobal_deg = get_RotationInPlane(planeNorm,[1;0;0],ex)*180/pi;
+Rinfo.alphaXZglobal_deg = utility_functions.get_RotationInPlane(planeNorm,[1;0;0],ex)*180/pi;
 
 %calculate <alphaXZdihedral>
 %--------------------------------------------------------------------------
 planeNorm = [0;cosd(Rinfo.dihedral_deg);sind(Rinfo.dihedral_deg)];
-Rinfo.alphaXZdihedral_deg = get_RotationInPlane(planeNorm,[1;0;0],ex)*180/pi;
+Rinfo.alphaXZdihedral_deg = utility_functions.get_RotationInPlane(planeNorm,[1;0;0],ex)*180/pi;
 
 end
 
