@@ -78,7 +78,6 @@ rho = SimObject.rho; %kg/m^3
 SimType = SimObject.SimType;
 FLAG_free_free = SimObject.FLAG_free_free;
 Gamma_Integration_Function = SimObject.Gamma_int_fnc;
-StateInfo = SimObject.StateInfo;
 qg2nd_idx = SimObject.qg2nd_idx;
 dqg2nd_idx = SimObject.dqg2nd_idx;
 nqg2nd = SimObject.nqg2nd;
@@ -98,10 +97,10 @@ if FLAG_free_free, nqr = 6; else, nqr = 0; end
 % qf = [qa;qs] - flexible states of 2nd order system
 %==============================================
 
-rT_idx  = StateInfo{'Index','qRigidT'}{:};
-rR_idx  = StateInfo{'Index','qRigidR'}{:};
-drT_idx = StateInfo{'Index','dqRigidT'}{:};
-drR_idx = StateInfo{'Index','dqRigidR'}{:};
+rT_idx  = SimObject.rT_idx;
+rR_idx  = SimObject.rR_idx;
+drT_idx = SimObject.drT_idx;
+drR_idx = SimObject.drR_idx;
 
 if FLAG_free_free
     
@@ -332,7 +331,7 @@ if ismember(aerodynamics,{'strip_steady','strip_unsteady'})
             qsteady = true;
             aeroCoeff2D = Aero_global.aeroCoeff2D;
             
-            [dQaero,Qaero,Fqc,Mqc,Drag,alpha_global,CL] = aero_stripTheory_usteady_LeishmanIndicial(Qaero,rho,Vinf,V3qrt,xAp,yAp,zAp,dAoA,chord,ApWidth,AIC,C_D0,aeroCoeff2D,qsteady);
+            [dQaero,Qaero,Fqc,Mqc,Drag,alpha_global,CL] = aerodynamic_codes.aero_stripTheory_usteady_LeishmanIndicial(Qaero,rho,Vinf,V3qrt,xAp,yAp,zAp,dAoA,chord,ApWidth,AIC,C_D0,aeroCoeff2D,qsteady);
              
         case 'strip_unsteady'
             
@@ -351,7 +350,7 @@ if ismember(aerodynamics,{'strip_steady','strip_unsteady'})
             qsteady = false;
             aeroCoeff2D = [];
             
-            [dQaero,Qaero,Fqc,Mqc,Drag,alpha_global] = aero_stripTheory_usteady_LeishmanIndicial(Qaero,rho,Vinf,V3qrt,xAp,yAp,zAp,dAoA,chord,ApWidth,AIC,C_D0,aeroCoeff2D,qsteady);
+            [dQaero,Qaero,Fqc,Mqc,Drag,alpha_global] = aerodynamic_codes.aero_stripTheory_usteady_LeishmanIndicial(Qaero,rho,Vinf,V3qrt,xAp,yAp,zAp,dAoA,chord,ApWidth,AIC,C_D0,aeroCoeff2D,qsteady);
             
              dQ_Aero(Qaero_idx,1) = dQaero(:);
             

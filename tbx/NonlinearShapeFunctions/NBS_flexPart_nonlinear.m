@@ -592,13 +592,7 @@ classdef NBS_flexPart_nonlinear < handle
             if strcmp(obj.NBS_Master.aerodynamics,'strip_unsteady') || (obj.NBS_Master.SimType.unsteady && strcmp(obj.NBS_Master.SimType.aeroForces, 'leishman')) 
                 obj.qAero.n = obj.nsAp*2;
                 obj.qAero.group = ['AeroStates_' obj.partName];
-            end
-            
-            
-            
-            
-            
-            
+            end           
             
             function mass_resampling(O)
                 %function uses O.mps, O.msDiscrete, O.I_varTheta_ps_I and O.I_varTheta_discrete_I
@@ -971,19 +965,19 @@ classdef NBS_flexPart_nonlinear < handle
             
             dqe_idx = partInformationStruct.(parentName).dq2nd_idx;
             
-            th_idx = SimObject.StateInfo{'Index',obj.qth.group}{:};
-            si_idx = SimObject.StateInfo{'Index',obj.qsi.group}{:};
-            ph_idx = SimObject.StateInfo{'Index',obj.qph.group}{:};
-            Sx_idx = SimObject.StateInfo{'Index',obj.qSx.group}{:};
-            Sy_idx = SimObject.StateInfo{'Index',obj.qSy.group}{:};
-            Sz_idx = SimObject.StateInfo{'Index',obj.qSz.group}{:};
+            th_idx = SimObject.th_idx;
+            si_idx = SimObject.si_idx;
+            ph_idx = SimObject.ph_idx;
+            Sx_idx = SimObject.Sx_idx;
+            Sy_idx = SimObject.Sy_idx;
+            Sz_idx = SimObject.Sz_idx;
             
-            dth_idx = SimObject.StateInfo{'Index',['d' obj.qth.group]}{:};
-            dsi_idx = SimObject.StateInfo{'Index',['d' obj.qsi.group]}{:};
-            dph_idx = SimObject.StateInfo{'Index',['d' obj.qph.group]}{:};
-            dSx_idx = SimObject.StateInfo{'Index',['d' obj.qSx.group]}{:};
-            dSy_idx = SimObject.StateInfo{'Index',['d' obj.qSy.group]}{:};
-            dSz_idx = SimObject.StateInfo{'Index',['d' obj.qSz.group]}{:};
+            dth_idx = SimObject.dth_idx;
+            dsi_idx = SimObject.dsi_idx;
+            dph_idx = SimObject.dph_idx;
+            dSx_idx = SimObject.dSx_idx;
+            dSy_idx = SimObject.dSy_idx;
+            dSz_idx = SimObject.dSz_idx;
             
             nqs = obj.nqs;
             nqa = obj.nqa;
@@ -1074,22 +1068,14 @@ classdef NBS_flexPart_nonlinear < handle
             dtau_z_dsdy = utility_functions.mult_Anm1_Bmpz(Q(dSz_idx).',dB_Sz);
             %~~ Shear state derivatives
             
-            if isempty(B_Sx_tr)
-                dtau_x_dqsx = zeros(1, 1, ns, 0);
+            if ~FLAG_shear
+                [dtau_x_dqsx, dtau_y_dqsy, dtau_z_dqsz] = deal(zeros(1, 1, ns, 0));
             else
                 dtau_x_dqsx = permute(B_Sx_tr,[1 4 3 2]);    % tau_x variation with respect to shear_x states
-            end
-            if isempty(B_Sy_tr)
-                dtau_y_dqsy = zeros(1, 1, ns, 0);
-            else
                 dtau_y_dqsy = permute(B_Sy_tr,[1 4 3 2]);    % tau_y variation with respect to shear_y states
-            end                
-            if isempty(B_Sz_tr)
-                dtau_z_dqsz = zeros(1, 1, ns, 0);
-            else
                 dtau_z_dqsz = permute(B_Sz_tr,[1 4 3 2]);    % tau_z variation with respect to shear_z states
-            end  
-            
+            end
+  
             nSx = numel(Sx_idx);
             nSy = numel(Sy_idx);
             nSz = numel(Sz_idx);

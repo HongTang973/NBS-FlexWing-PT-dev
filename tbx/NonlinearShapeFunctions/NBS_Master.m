@@ -84,7 +84,29 @@ classdef NBS_Master < handle
                         nParts
                         
         aeroPartNames = cell(0)
-                        
+        
+        
+            th_idx 
+            si_idx 
+            ph_idx 
+            Sx_idx 
+            Sy_idx
+            Sz_idx 
+            
+            dth_idx 
+            dsi_idx 
+            dph_idx 
+            dSx_idx 
+            dSy_idx 
+            dSz_idx 
+            
+            rT_idx  
+            rR_idx  
+            drT_idx
+            drR_idx  
+        
+        
+        
     end
     
     properties (SetAccess = {?NBS_Master,?NBS_flexPart_nonlinear,?NBS_rigidPart})
@@ -239,6 +261,26 @@ classdef NBS_Master < handle
         if obj.StateInfo.qRigidT{nStates_rowNum}==0, obj.FLAG_free_free = false; else, obj.FLAG_free_free = true; end
         
         obj.get_StateMap;
+        
+            obj.th_idx = obj.StateInfo{'Index','qth'}{:};
+            obj.si_idx = obj.StateInfo{'Index','qsi'}{:};
+            obj.ph_idx = obj.StateInfo{'Index','qph'}{:};
+            obj.Sx_idx = obj.StateInfo{'Index','qSx'}{:};
+            obj.Sy_idx = obj.StateInfo{'Index','qSy'}{:};
+            obj.Sz_idx = obj.StateInfo{'Index','qSz'}{:};
+            
+            obj.dth_idx = obj.StateInfo{'Index',['d' 'qth']}{:};
+            obj.dsi_idx = obj.StateInfo{'Index',['d' 'qsi']}{:};
+            obj.dph_idx = obj.StateInfo{'Index',['d' 'qph']}{:};
+            obj.dSx_idx = obj.StateInfo{'Index',['d' 'qSx']}{:};
+            obj.dSy_idx = obj.StateInfo{'Index',['d' 'qSy']}{:};
+            obj.dSz_idx = obj.StateInfo{'Index',['d' 'qSz']}{:};
+            
+            obj.rT_idx  = obj.StateInfo{'Index','qRigidT'}{:};
+            obj.rR_idx  = obj.StateInfo{'Index','qRigidR'}{:};
+            obj.drT_idx = obj.StateInfo{'Index','dqRigidT'}{:};
+            obj.drR_idx = obj.StateInfo{'Index','dqRigidR'}{:};
+        
         
     end
     
