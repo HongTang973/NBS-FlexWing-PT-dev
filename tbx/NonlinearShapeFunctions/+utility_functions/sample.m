@@ -23,6 +23,6 @@ dimensions_indices_dc = ones(1,Andim); dimensions_indices_dc(dim) = length(eval_
 indices_dc_rs = reshape(indices_dc,dimensions_indices_dc);
 
 %linear sampling of A matrix
-Asample = A(indices_fl{1:Andim}) + bsxfun(@times,Adiff(indices_fl_{1:Andim}),indices_dc_rs);
+Asample = A(indices_fl{1:Andim}) + Adiff(indices_fl_{1:Andim}).*indices_dc_rs;
 
 end

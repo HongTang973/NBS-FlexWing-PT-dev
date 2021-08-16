@@ -20,8 +20,8 @@ dE_dzeta_W  = reshape(static_method_groups.ct_methods.map_WEtoW_stackDim2(dE_dze
 dE_dzeta_G  = static_method_groups.ct_methods.map_WtoG(dE_dzeta_W,R_G_W);
 
 dE_dzeta_G_93 = reshape(dE_dzeta_G,9,3,ns);
-dE_dqa_G_9qans = bsxfun(@times,Ba_tr,dE_dzeta_G_93(:,yidx2,:));
+dE_dqa_G_9qans = Ba_tr.*dE_dzeta_G_93(:,yidx2,:);
 
 dE_dzeta_W_93 = reshape(dE_dzeta_W,9,3,ns);
-dE_dt_W_91ns = sum(bsxfun(@times,dzeta_a_dt_tr,dE_dzeta_W_93),2);
+dE_dt_W_91ns = sum(dzeta_a_dt_tr.*dE_dzeta_W_93,2);
 end

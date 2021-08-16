@@ -13,7 +13,7 @@ dxi_dzeta_I = utility_functions.MultiProd_(utility_functions.mult_Anmz_Bmp1(dxi_
 dxi_dzetads_I = utility_functions.MultiProd_(utility_functions.mult_Anmz_Bmp1(dxi_dzetads_IE,R_W_WE_tr),TD);
 %---------------------------------------
 
-dKAPPA_dq_I_tr = bsxfun(@times,[B_th;B_si;B_ph],dxi_dzeta_I(yidx2,:,:))+bsxfun(@times,[dB_th;dB_si;dB_ph],dxi_dzetads_I(yidx2,:,:));
+dKAPPA_dq_I_tr = ([B_th;B_si;B_ph].*dxi_dzeta_I(yidx2,:,:)) + ([dB_th;dB_si;dB_ph].*dxi_dzetads_I(yidx2,:,:));
 
 dKAPPA_dt_I_tr = utility_functions.MultiProd_(dzeta_a_dt_tr,dxi_dzeta_I)+...
     utility_functions.MultiProd_([d2th_dsdt,d2si_dsdt,d2ph_dsdt],dxi_dzetads_I);

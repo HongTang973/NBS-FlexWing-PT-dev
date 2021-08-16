@@ -3,7 +3,6 @@ function [ClosestValue,index] = closestValue(Array,Values)
 
     ColVec = Array(:);
     RowVec_request = reshape(Values,1,[]);
-    [~,index] = min(abs(bsxfun(@plus,ColVec,-RowVec_request)));
+    [~,index] = min(abs(ColVec,-RowVec_request));
     ClosestValue = Array(index);
 end
-

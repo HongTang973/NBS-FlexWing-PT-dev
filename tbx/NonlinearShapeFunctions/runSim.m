@@ -24,7 +24,7 @@ end
 %addpath(genpath('.')) <- add all subfolders to search path
 
 %TODO - add generic inputParser;
-
+clear f.m
 analysisType = utility_functions.get_option(varargin,'analysisType','dynamic');
 solver = utility_functions.get_option(varargin,'solver','ode15s');
 intFnc = utility_functions.get_option(varargin,'intFnc',[]);
@@ -54,15 +54,15 @@ if displayWaitBar, waitBar = waitbar(0,'Initialising','CreateCancelBtn',@cancelF
 
 if isempty(SimObj)
     if ~isempty(testCase)
-        
+
         SimObject = parameter_sets.(['testCase_' testCase]);
-        
+
     else
-        
+
     SimObject = parameter_sets.testCase_ClampedPatilHodgesWing();
-    
+
     end
-    
+
 else
     SimObject = SimObj;
 end
@@ -74,7 +74,7 @@ if isequal(analysisType,'none')
 end
 
 if isequal(analysisType,'dynamic') %//dynamic analysis/////////////////////
-    
+
 switch solver
     case 'NewmarkBeta'
 
@@ -107,7 +107,7 @@ elseif isequal(analysisType,'static') %/////////////////////////////////static a
 
     suppressIter = utility_functions.get_option(varargin,'suppressIter',false);
     if suppressIter, options.Display = 'none'; end
-    
+
     Q_iter = [];
 
 tic,
@@ -117,14 +117,14 @@ x0 = SimObject.IC(State_idx_static);
 
 [x,fval,~,output] = fsolve(fHandle, x0, options, State_idx_static,SimObject,analysisType);
 
-SimObject.Q = bsxfun(@times,SimObject.IC,[0,0]);
+SimObject.Q = SimObject.IC.*[0,0];
 SimObject.Q(State_idx_static,2) = x;
 
 runTime = toc; disp(['runTime: ' num2str(runTime)]);
 SimObject.runTime = runTime;
 SimObject.t = [0 1];
 SimObject.temp_properties.Q_iter = Q_iter;
-    
+
 end
 
 if profileCode
@@ -163,12 +163,12 @@ if displayWaitBar, close(waitBar); end
 
 %>>>>>>>>>>>>>>>>>>>>>>nested functions
 function out = getQ_iter(Q,optimValues,state,state_idx,SimObject,outputFormat)
-    
+
     if isequal(state,'iter')
         Q_iter = [Q_iter Q];
     end
     out = 0;
-    
+
 end
 
 function out = outputFunction(t,Q,flag,~,~)

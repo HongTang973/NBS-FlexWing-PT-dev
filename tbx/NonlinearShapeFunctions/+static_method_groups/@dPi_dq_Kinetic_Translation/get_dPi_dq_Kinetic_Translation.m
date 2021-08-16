@@ -6,7 +6,7 @@ function [dW_dq_Kinetic_Translation_ddqComponent,dW_dq_Kinetic_Translation_remai
 
 %---------- common terms -----------
 
-dGamma_m_dq_tr_ms = bsxfun(@times, dGamma_m_dq_G_Dimnq2ndx3xns, ms);
+dGamma_m_dq_tr_ms = dGamma_m_dq_G_Dimnq2ndx3xns.*ms;
 
 %-----------ddqComponent------------
 
