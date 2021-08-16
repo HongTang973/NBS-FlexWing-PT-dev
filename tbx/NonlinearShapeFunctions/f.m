@@ -144,7 +144,7 @@ elseif ~isempty(SimObject.CUSTOM_free_states)
     d2rBarA_dt2_G_star = [0;0;0];
     dOmega_dt_G_star = [0;0;0];
     BetaNorm_G = max(norm(Beta_G),1e-10);
-    OmegaSkew_G = getSkewMat(Omega_G); dOmega_dtSkew_G_star = getSkewMat(dOmega_dt_G_star);
+    OmegaSkew_G = utility_functions.getSkewMat(Omega_G); dOmega_dtSkew_G_star = utility_functions.getSkewMat(dOmega_dt_G_star);
     dR_G_A_dt = OmegaSkew_G*R_G_A;
     d2R_G_A_dt2_star = dOmega_dtSkew_G_star*R_G_A + OmegaSkew_G*OmegaSkew_G*R_G_A;
 
@@ -279,7 +279,7 @@ if ~isempty(aerodynamics)
 
                 aeroPartName = aeroPartName_cell{1};
                 aero_cntr_pm_global = cat(3,aero_cntr_pm_global,partInformationStruct.(aeroPartName).aero_cntr_pm);
-                Aero_global = partInformationStruct.(aeroPartName).Aero;
+                aeroData_global = partInformationStruct.(aeroPartName).aeroData;
                 nsAp = partInformationStruct.(aeroPartName).nsAp;
                 EAp_G_pm_global = cat(3,EAp_G_pm_global,partInformationStruct.(aeroPartName).EAp_G_pm);
                 dEAp_dt_G_pm_global = cat(3,dEAp_dt_G_pm_global,partInformationStruct.(aeroPartName).dEAp_dt_G_pm);
@@ -333,9 +333,10 @@ if ~isempty(aerodynamics)
                     AIC = AICs_global;
                     C_D0 = 0;
                     qsteady = true;
-                    aeroCoeff2D = Aero_global.aeroCoeff2D;
+                    aeroCoeff2D = aeroData_global.aeroCoeff2D;
 
-                    [~,~,Fqc,Mqc,Drag,alpha_global,CL] = aerodynamic_codes.aero_stripTheory_usteady_LeishmanIndicial(Qaero,rho,Vinf,V3qrt,xAp,yAp,zAp,dAoA,chord,ApWidth,AIC,C_D0,aeroCoeff2D,qsteady);
+                    [~,~,Fqc,Mqc,Drag,alpha_global] = aerodynamic_codes.aero_stripTheory_usteady_LeishmanIndicial(...
+                        Qaero,rho,Vinf,V3qrt,xAp,yAp,zAp,dAoA,chord,ApWidth,AIC,C_D0,aeroCoeff2D,qsteady);
 
                 case 'strip_unsteady'
 
@@ -354,7 +355,8 @@ if ~isempty(aerodynamics)
                     qsteady = false;
                     aeroCoeff2D = [];
 
-                    [dQaero,~,Fqc,Mqc,Drag,alpha_global] = aerodynamic_codes.aero_stripTheory_usteady_LeishmanIndicial(Qaero,rho,Vinf,V3qrt,xAp,yAp,zAp,dAoA,chord,ApWidth,AIC,C_D0,aeroCoeff2D,qsteady);
+                    [dQaero,~,Fqc,Mqc,Drag,alpha_global] = aerodynamic_codes.aero_stripTheory_usteady_LeishmanIndicial(...
+                        Qaero,rho,Vinf,V3qrt,xAp,yAp,zAp,dAoA,chord,ApWidth,AIC,C_D0,aeroCoeff2D,qsteady);
 
                     dQ_Aero(Qaero_idx,1) = dQaero(:);
 

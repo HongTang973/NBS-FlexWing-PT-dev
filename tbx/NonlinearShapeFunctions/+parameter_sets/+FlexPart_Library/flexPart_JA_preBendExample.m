@@ -97,5 +97,4 @@ O.s = s;
 O.th0 = th; O.si0 = si; O.ph0 = ph;
 O.dth_ds0 = dth_ds; O.dsi_ds0 = dsi_ds; O.dph_ds0 = dph_ds;
 O.KAPPA_0_I = kappa;
-
 end

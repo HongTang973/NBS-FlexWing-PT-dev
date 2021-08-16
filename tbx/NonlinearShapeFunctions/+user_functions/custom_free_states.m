@@ -22,12 +22,12 @@ function out = custom_free_states(SimObject,Q,t) %#ok<INUSD>
     %rotation in global system - custom state mapped to x component
     out.Beta_G = [q_custom;0;0];
     %rotation matrix of above rotation
-    out.R_G_A = r_matrix(out.Beta_G);
+    out.R_G_A = utility_functions.r_matrix(out.Beta_G);
     %rotational velocity in global system - custom rate state mapped to x component
     out.Omega_G = [dq_custom;0;0];
     
     %the derivative of the global to hub rotation matrix with respect to the rotational state
-    out.dR_G_A_dqr_Dim3x3x1xnqr = getSkewMat([1;0;0]) * out.R_G_A;
+    out.dR_G_A_dqr_Dim3x3x1xnqr = utility_functions.getSkewMat([1;0;0]) * out.R_G_A;
     %the derivative of the global rotation vector with respect to the rotational state
     out.dvarTheta_dqr_G_Dim3x1x1xnqr = reshape([1;0;0],3,1,1,[]);
     %the derivative of the global position vector with respect to the rotational state (zero)

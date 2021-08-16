@@ -258,27 +258,27 @@ classdef NBS_Master < handle
         %--------------------
 
         if obj.StateInfo.qRigidT{nStates_rowNum}==0, obj.FLAG_free_free = false; else, obj.FLAG_free_free = true; end
-
+        
         obj.get_StateMap;
-
-            obj.th_idx = obj.StateInfo{'Index','qth'}{:};
-            obj.si_idx = obj.StateInfo{'Index','qsi'}{:};
-            obj.ph_idx = obj.StateInfo{'Index','qph'}{:};
-            obj.Sx_idx = obj.StateInfo{'Index','qSx'}{:};
-            obj.Sy_idx = obj.StateInfo{'Index','qSy'}{:};
-            obj.Sz_idx = obj.StateInfo{'Index','qSz'}{:};
-
-            obj.dth_idx = obj.StateInfo{'Index',['d' 'qth']}{:};
-            obj.dsi_idx = obj.StateInfo{'Index',['d' 'qsi']}{:};
-            obj.dph_idx = obj.StateInfo{'Index',['d' 'qph']}{:};
-            obj.dSx_idx = obj.StateInfo{'Index',['d' 'qSx']}{:};
-            obj.dSy_idx = obj.StateInfo{'Index',['d' 'qSy']}{:};
-            obj.dSz_idx = obj.StateInfo{'Index',['d' 'qSz']}{:};
-
-            obj.rT_idx  = obj.StateInfo{'Index','qRigidT'}{:};
-            obj.rR_idx  = obj.StateInfo{'Index','qRigidR'}{:};
-            obj.drT_idx = obj.StateInfo{'Index','dqRigidT'}{:};
-            obj.drR_idx = obj.StateInfo{'Index','dqRigidR'}{:};
+        
+        obj.th_idx = obj.StateInfo{'Index',partObj.qth.group}{:};
+        obj.si_idx = obj.StateInfo{'Index',partObj.qsi.group}{:};
+        obj.ph_idx = obj.StateInfo{'Index',partObj.qph.group}{:};
+        obj.Sx_idx = obj.StateInfo{'Index',partObj.qSx.group}{:};
+        obj.Sy_idx = obj.StateInfo{'Index',partObj.qSy.group}{:};
+        obj.Sz_idx = obj.StateInfo{'Index',partObj.qSz.group}{:};
+        
+        obj.dth_idx = obj.StateInfo{'Index',['d' partObj.qth.group]}{:};
+        obj.dsi_idx = obj.StateInfo{'Index',['d' partObj.qsi.group]}{:};
+        obj.dph_idx = obj.StateInfo{'Index',['d' partObj.qph.group]}{:};
+        obj.dSx_idx = obj.StateInfo{'Index',['d' partObj.qSx.group]}{:};
+        obj.dSy_idx = obj.StateInfo{'Index',['d' partObj.qSy.group]}{:};
+        obj.dSz_idx = obj.StateInfo{'Index',['d' partObj.qSz.group]}{:};
+        
+        obj.rT_idx  = obj.StateInfo{'Index','qRigidT'}{:};
+        obj.rR_idx  = obj.StateInfo{'Index','qRigidR'}{:};
+        obj.drT_idx = obj.StateInfo{'Index','dqRigidT'}{:};
+        obj.drR_idx = obj.StateInfo{'Index','dqRigidR'}{:};
 
 
     end

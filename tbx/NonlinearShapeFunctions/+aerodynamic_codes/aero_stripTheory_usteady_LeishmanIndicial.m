@@ -1,4 +1,4 @@
-function [dQaero,Qaero,Fqc,Mqc,Drag,alpha,CL] = aero_stripTheory_usteady_LeishmanIndicial(Qaero,rho,Vinf,V3qrt,xAp,yAp,zAp,Omega,chord,width,AIC,C_D0,aeroCoeff2D,qsteady)
+function [dQaero,Qaero,Fqc,Mqc,Drag,alpha] = aero_stripTheory_usteady_LeishmanIndicial(Qaero,rho,Vinf,V3qrt,xAp,yAp,zAp,Omega,chord,width,AIC,C_D0,aeroCoeff2D,qsteady)
 %% coded implementation of Leishman's Indicial Response Method  - C.Howcroft
 % [use publish button to view latex comments]
 
@@ -102,7 +102,7 @@ if isempty(aeroCoeff2D)
     % Circulatory Component
     %
     % $$C_{Lc} = 2\pi\alpha\psi(0) + 2\pi\frac{v_x}{b}\sum_{i=1}^{N} a_i b_i \xi_i$$
-    C_Lc = 2*pi*alpha*psi_0 + 2*pi*vx3qrt./b.*sum(aiCoeffs.*biCoeffs.*Qaero) , 1 );
+    C_Lc = 2*pi*alpha*psi_0 + 2*pi*vx3qrt./b.*sum(aiCoeffs.*biCoeffs.*Qaero,1);
 
     %%%
     % Non-circulatory Component

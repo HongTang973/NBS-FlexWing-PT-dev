@@ -55,7 +55,7 @@ classdef NBS_flexPart_nonlinear < handle
         aero_cntr = 0.25;                                                  %[-] assumed aero centres for each panel (percentage of chord)
         aero_cntr_pm
 
-        Aero = struct();
+        aeroData = struct();
         beam_cntr                                                          %[-] beam centre locations (percentage of chord)
                         beam_cntr_pm                                       %[-] beam centre sampled at aero panel mid points
                         beam_cntr_pn                                       %[-] beam centre sampled at aero panel nodal points
@@ -612,7 +612,11 @@ classdef NBS_flexPart_nonlinear < handle
                     obj.qAero.group = ['AeroStates_' obj.partName];
                 end
             end
-
+             
+            if ~isfield(obj.aeroData, 'aeroCoeff2D')
+                obj.aeroData.aeroCoeff2D = [];
+            end
+            
             function mass_resampling(O)
                 %function uses O.mps, O.msDiscrete, O.I_varTheta_ps_I and O.I_varTheta_discrete_I
                 %to return the aggregated quantities O.ms, O.I_varTheta and O.massOffset_I
@@ -1288,7 +1292,7 @@ classdef NBS_flexPart_nonlinear < handle
                     partInformationStruct.(flex_part_name).AIC = obj.AICs;
                     partInformationStruct.(flex_part_name).dGamma_dq_G_pm = utility_functions.sample(dGamma_dq_G_Dim3x1xnsxnq2nd,Apm_idx,3);
                     partInformationStruct.(flex_part_name).dvarTheta_dq_G_pm = utility_functions.sample(dvarTheta_dq_G_Dim3x1xnsxnq2nd,Apm_idx,3);
-                    partInformationStruct.(flex_part_name).Aero = obj.Aero;
+                    partInformationStruct.(flex_part_name).aeroData = obj.aeroData;
                     %PvecAero_G_pm = [];
                     %MvecAero_G_pm = [];
 
