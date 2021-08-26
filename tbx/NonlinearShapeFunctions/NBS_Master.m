@@ -15,7 +15,7 @@ classdef NBS_Master < handle
         aerodynamics                                                       %[-] aerodynamics switch
         prescribedMotion_fnc                                               %handle to a function that prescribes an enforced motion of the aircraft reference point
         CUSTOM_free_states                                                 %handle to a function that prescribes a mapping from a set of kinematic states to position/rotational quantities and their variations
-        SimType = struct
+        sim = struct
         T                                                                  %period of prescribed rotation
         ff_h
         R_G_A_0                                                            %initial orientation
@@ -1206,7 +1206,7 @@ classdef NBS_Master < handle
     end
 
     methods %special copy method
-        function obj_copy = copy(obj) %#ok<MANU>
+        function obj_copy = copy(obj) 
             %bit of a workaround!
             %produce a deep copy of the object 'obj' preserving all handle structures within the object but severing all links between 'obj_copy' and 'obj'
             %accomplished via save and reload operation on obj

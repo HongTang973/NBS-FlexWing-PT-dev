@@ -103,7 +103,7 @@ end
 
 elseif isequal(analysisType,'static') %/////////////////////////////////static analysis/////////////////////
 
-    options = optimoptions('fsolve','Display','iter','MaxIter',1e3,'MaxFunctionEvaluations',5000,'OutputFcn',@getQ_iter);
+    options = optimoptions('fsolve','Display','iter','MaxIter',1e3,'MaxFunctionEvaluations',1000,'OutputFcn',@getQ_iter);
 
     suppressIter = utility_functions.get_option(varargin,'suppressIter',false);
     if suppressIter, options.Display = 'none'; end
@@ -115,7 +115,7 @@ tic,
 State_idx_static = [SimObject.qg2nd_idx(:) ; SimObject.qg1st_idx(:)];
 x0 = SimObject.IC(State_idx_static);
 
-[x,fval,~,output] = fsolve(fHandle, x0, options, State_idx_static,SimObject,analysisType);
+[x,fval,exitFLAG,output] = fsolve(fHandle, x0, options, State_idx_static,SimObject,analysisType);
 
 SimObject.Q = SimObject.IC.*[0,0];
 SimObject.Q(State_idx_static,2) = x;
@@ -124,7 +124,9 @@ runTime = toc; disp(['runTime: ' num2str(runTime)]);
 SimObject.runTime = runTime;
 SimObject.t = [0 1];
 SimObject.temp_properties.Q_iter = Q_iter;
-
+SimObject.temp_properties.exitFLAG = exitFLAG;
+SimObject.temp_properties.fval = fval;
+SimObject.temp_properties.output = output.message;
 end
 
 if profileCode

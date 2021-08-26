@@ -598,16 +598,16 @@ classdef NBS_flexPart_nonlinear < handle
 
 
             if strcmp(obj.NBS_Master.aerodynamics,'WT')
-                if strcmp(obj.NBS_Master.SimType.aeroForces, 'leishman') && obj.NBS_Master.SimType.unsteady
+                if strcmp(obj.NBS_Master.sim.aeroForces, 'leishman') && obj.NBS_Master.sim.unsteady
                     obj.qAero.n = obj.nsAp*2;
                     obj.qAero.group = ['AeroStates_' obj.partName];
                 end
-                if strcmp(obj.NBS_Master.SimType.aeroForces, 'oye') && obj.NBS_Master.SimType.unsteady
+                if strcmp(obj.NBS_Master.sim.aeroForces, 'oye') 
                     obj.qAero.n = obj.nsAp*1;
                     obj.qAero.group = ['AeroStates_' obj.partName];
                 end
 
-                if strcmp(obj.NBS_Master.SimType.aeroForces, 'larsen')
+                if strcmp(obj.NBS_Master.sim.aeroForces, 'larsen')
                     obj.qAero.n = obj.nsAp*4;
                     obj.qAero.group = ['AeroStates_' obj.partName];
                 end
@@ -1235,11 +1235,12 @@ classdef NBS_flexPart_nonlinear < handle
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             %% FlexPart_nonlinear Applied Loads from PvecApplied_G, MvecApplied_G, Gravitational Acceleration
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%             Omega_G = repmat([0;0;2*pi/SimObject.T], [1 1 obj.ns]);
-%             RvecApplied_G = - utility_functions.crossn(2*obj.ms.*Omega_G, dGamma_dt_G, 1) - utility_functions.crossn(obj.ms.*Omega_G,utility_functions.crossn(Omega_G, Gamma_G, 1),1);
-%             PvecWeight_G = RvecApplied_G;
-
+            if SimObject.sim.parked
             PvecWeight_G = SimObject.grav_acc.*SimObject.gravVec_G.*obj.ms;
+            else
+            Omega_G = repmat([0;0;2*pi/SimObject.T], [1 1 obj.ns]);
+            PvecWeight_G = - utility_functions.crossn(2*obj.ms.*Omega_G, dGamma_dt_G, 1) - utility_functions.crossn(obj.ms.*Omega_G,utility_functions.crossn(Omega_G, Gamma_G, 1),1);
+            end            
             massOffset_G = utility_functions.MultiProd_(E_G,massOffset_I);
 
             PvecApplied_G = obj.Pvec_appliedGlobal_G + utility_functions.MultiProd_(E_G,obj.Pvec_appliedLocal_I) + PvecWeight_G;
