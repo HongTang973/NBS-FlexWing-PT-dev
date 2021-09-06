@@ -15,7 +15,7 @@ classdef NBS_flexPart_nonlinear < handle
      %...properties..... .........................
       %..................derived_properties.......
        %|---------------|-------------------------
-       s                                                                  %[m] spanwise evaluations points along the wing
+        s                                                                  %[m] spanwise evaluations points along the wing
         %               del_s                                              %[m] distance between neighbouring s points
         %               ns                                                 %[-] number of s points
         %               L                                                  %[m] total length of the wing
@@ -202,7 +202,7 @@ classdef NBS_flexPart_nonlinear < handle
 %                        BdB
 %                        dBB
                        %onsB, onsdB
-        qth,qsi,qph,qSx,qSy,qSz,qAero
+        qth,qsi,qph,qSx,qSy,qSz,qAero,nQAero
         nqs, nqa, nq2nd
     end
 
@@ -598,18 +598,23 @@ classdef NBS_flexPart_nonlinear < handle
 
 
             if strcmp(obj.NBS_Master.aerodynamics,'WT')
-                if strcmp(obj.NBS_Master.sim.aeroForces, 'leishman') && obj.NBS_Master.sim.unsteady
+                if strcmp(obj.NBS_Master.sim.aeroForces, 'leishman') && obj.NBS_Master.sim.FLAG_unsteady
                     obj.qAero.n = obj.nsAp*2;
                     obj.qAero.group = ['AeroStates_' obj.partName];
                 end
-                if strcmp(obj.NBS_Master.sim.aeroForces, 'oye') 
-                    obj.qAero.n = obj.nsAp*1;
+                if strcmp(obj.NBS_Master.sim.aeroForces, 'dynamic stall') 
+                    if strcmp(obj.NBS_Master.sim.dsModel, 'oye')
+                    obj.nQAero = 1;
+                    obj.qAero.n = obj.nsAp*obj.nQAero;
                     obj.qAero.group = ['AeroStates_' obj.partName];
+                    elseif strcmp(obj.NBS_Master.sim.dsModel, 'larsen')
+                    obj.nQAero = 4;
+                    obj.qAero.n = obj.nsAp*obj.nQAero;
+                    obj.qAero.group = ['AeroStates_' obj.partName];   
+                    end
                 end
-
-                if strcmp(obj.NBS_Master.sim.aeroForces, 'larsen')
-                    obj.qAero.n = obj.nsAp*4;
-                    obj.qAero.group = ['AeroStates_' obj.partName];
+                if obj.NBS_Master.sim.FLAG_dw
+                    obj.qAero.n = obj.qAero.n + obj.qAero.n*2;
                 end
             end
              
@@ -1235,12 +1240,12 @@ classdef NBS_flexPart_nonlinear < handle
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             %% FlexPart_nonlinear Applied Loads from PvecApplied_G, MvecApplied_G, Gravitational Acceleration
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            if SimObject.sim.parked
-            PvecWeight_G = SimObject.grav_acc.*SimObject.gravVec_G.*obj.ms;
+            if SimObject.sim.FLAG_parked
+                PvecWeight_G = SimObject.grav_acc.*SimObject.gravVec_G.*obj.ms;
             else
-            Omega_G = repmat([0;0;2*pi/SimObject.T], [1 1 obj.ns]);
-            PvecWeight_G = - utility_functions.crossn(2*obj.ms.*Omega_G, dGamma_dt_G, 1) - utility_functions.crossn(obj.ms.*Omega_G,utility_functions.crossn(Omega_G, Gamma_G, 1),1);
-            end            
+                Omega_G = repmat([0;0;2*pi/SimObject.T], [1 1 obj.ns]);
+                PvecWeight_G = - utility_functions.crossn(2*obj.ms.*Omega_G, dGamma_dt_G, 1) - utility_functions.crossn(obj.ms.*Omega_G,utility_functions.crossn(Omega_G, Gamma_G, 1),1);
+            end
             massOffset_G = utility_functions.MultiProd_(E_G,massOffset_I);
 
             PvecApplied_G = obj.Pvec_appliedGlobal_G + utility_functions.MultiProd_(E_G,obj.Pvec_appliedLocal_I) + PvecWeight_G;
@@ -1294,8 +1299,11 @@ classdef NBS_flexPart_nonlinear < handle
                     partInformationStruct.(flex_part_name).dGamma_dq_G_pm = utility_functions.sample(dGamma_dq_G_Dim3x1xnsxnq2nd,Apm_idx,3);
                     partInformationStruct.(flex_part_name).dvarTheta_dq_G_pm = utility_functions.sample(dvarTheta_dq_G_Dim3x1xnsxnq2nd,Apm_idx,3);
                     partInformationStruct.(flex_part_name).aeroData = obj.aeroData;
-                    %PvecAero_G_pm = [];
-                    %MvecAero_G_pm = [];
+                         F_SUM = utility_functions.sample(PvecApplied_G, Apm_idx,3);
+                         M_SUM = utility_functions.sample(MvecApplied_G, Apm_idx,3);
+            
+                    partInformationStruct.(flex_part_name).F_SUM = F_SUM;
+                    partInformationStruct.(flex_part_name).M_SUM = M_SUM;
 
                     case {'VLM_steady'}
 
@@ -1373,8 +1381,7 @@ classdef NBS_flexPart_nonlinear < handle
             dM_dq_part = ...
                 + dW_dq_Kinetic_Rotation_ddqComponent...
                 + dW_dq_Kinetic_Translation_ddqComponent;
-
-
+            
             partInformationStruct.(flex_part_name).E_G = E_G;
             partInformationStruct.(flex_part_name).R_A_G = R_A_G;
             partInformationStruct.(flex_part_name).R_A_W = obj.R_A_W;
@@ -1404,6 +1411,7 @@ classdef NBS_flexPart_nonlinear < handle
 
                 %Gamma_G = bsxfun(@plus,rBarA_G + R_G_A*wingRoot_offset_A,MultiProd_(R_G_W,Gamma_W));
                 QOI_Container.add_qoi('Gamma_G',tidx,Gamma_G,'1:ns','\Gamma#_{[G]}','m');
+                QOI_Container.add_qoi('MOMENT_xi',tidx,MOMENT_xi,'1:ns','\MOMENT_xi','N');
                 Gamma_A = Gamma_root_G + squeeze(utility_functions.MultiProd_(R_A_G,Gamma_G));
                 QOI_Container.add_qoi('Gamma_A',tidx,Gamma_A,'1:ns','\Gamma#_{[A]}','m');
                 Gamma_m_G = Gamma_G + utility_functions.MultiProd_(E_G,massOffset_I);
