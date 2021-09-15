@@ -89,7 +89,7 @@ end
     methods
     
     function obj = NBS_rigidPart(Master_Object,name,varargin)
-        obj.Parent = get_option(varargin,'Parent',[]);
+        obj.Parent = utility_functions.get_option(varargin,'Parent',[]);
         obj.partName = name;
         obj.NBS_Master = Master_Object;
         obj.NBS_Master.rigidParts.(obj.partName) = obj;
@@ -106,15 +106,15 @@ end
         if obj.isAero, obj.NBS_Master.aeroPartNames{end+1} = obj.partName; end
         
         obj.s_aeroMid = (obj.s_aero(2:end)+obj.s_aero(1:end-1))/2;
-        transfm_nodes2aero = sampleMat(obj.s,obj.s_aero);
-        transfm_nodes2aeroMid = sampleMat(obj.s,obj.s_aeroMid);
+        transfm_nodes2aero = utility_functions.sampleMat(obj.s,obj.s_aero);
+        transfm_nodes2aeroMid = utility_functions.sampleMat(obj.s,obj.s_aeroMid);
         obj.Apn_idx = (1:obj.ns)*transfm_nodes2aero;
         obj.Apm_idx = (1:obj.ns)*transfm_nodes2aeroMid;
         
         obj.EAp_I_pm = repmat(obj.EAp_I,1,1,numel(obj.s_aeroMid));
-        obj.c_pm = sample(obj.c,obj.Apm_idx,3);
+        obj.c_pm = utility_functions.sample(obj.c,obj.Apm_idx,3);
         obj.beam_cntr = bsxfun(@plus, obj.beam_cntr , obj.s*0);
-        obj.beam_cntr_pm = sample(obj.beam_cntr,obj.Apm_idx,3);
+        obj.beam_cntr_pm = utility_functions.sample(obj.beam_cntr,obj.Apm_idx,3);
         obj.del_s_aero = diff(obj.s_aero);
         obj.ApWidths_pm = abs(obj.del_s_aero.*obj.EAp_I_pm(2,2,:));
         
@@ -127,16 +127,16 @@ end
         %--------------------
         
         if strcmp(obj.NBS_Master.aerodynamics,'strip_unsteady')
-            obj.qAero.n = (obj.nAnodes-1)*2;
+            obj.qAero.n = (obj.nAnodes-1)*1;
             obj.qAero.group = ['AeroStates_' obj.partName];
         end
     end
     
     function draw_part(obj,varargin)
         
-        Tidx = get_option(varargin,'Tidx',obj.NBS_Master.nt);
+        Tidx = utility_functions.get_option(varargin,'Tidx',obj.NBS_Master.nt);
         
-        request_qoi_write = get_option(varargin,'qoiRequest',false);
+        request_qoi_write = utility_functions.get_option(varargin,'qoiRequest',false);
         
         %optional intrinsic z rotation applied to E_draw triads
         %zRot_Edraw_cell = get_option(varargin,'zRot_Edraw',{zeros(1,1,obj.ns)});
@@ -152,7 +152,7 @@ end
             zRot_Edraw = zRot_Edraw_cell_{1};
         end
         
-        zRmat_Edraw = r_matrix([0;0;1],reshape(zRot_Edraw,1,1,[]));
+        zRmat_Edraw = utility_functions.r_matrix([0;0;1],reshape(zRot_Edraw,1,1,[]));
         
         width = obj.w./cos(reshape(zRot_Edraw,1,1,[]));
         
@@ -192,7 +192,7 @@ end
         
         E_G = repmat(R_G_W , 1,1,obj.ns);
         
-        E_Gdraw = MultiProd_(E_G,zRmat_Edraw);
+        E_Gdraw = utility_functions.MultiProd_(E_G,zRmat_Edraw);
         
 %         E_draw_3D = repmat(R_G_C*obj.R_C_W , 1,1,obj.ns);
 %         E_draw_3D_rotated = MultiProd_(E_draw_3D,zRmat_Edraw);
@@ -297,8 +297,8 @@ end
         
         R_G_W = R_G_C*R_C_W;
         dR_G_W_dt = dR_G_C_dt*R_C_W + R_G_C*dR_C_W_dt;
-        dR_G_W_dqC = MultiProd_(R_G_C,dR_C_W_dqC);
-        dR_G_W_dqe = MultiProd_(dR_G_C_dqe,R_C_W);
+        dR_G_W_dqC = utility_functions.MultiProd_(R_G_C,dR_C_W_dqC);
+        dR_G_W_dqe = utility_functions.MultiProd_(dR_G_C_dqe,R_C_W);
         dR_G_W_dq = cat(4,dR_G_W_dqC , dR_G_W_dqe);
         d2R_G_W_dt2_star = d2R_G_C_dt2_star*R_C_W + R_G_C*d2R_C_W_dt2_star;
         
@@ -313,21 +313,21 @@ end
         Gamma_root_G = partInformationStruct.(parentName).Gamma_G(:,1,parentConnIdx) + R_G_C*connectionOffset_C;
         dGamma_dt_root_G = partInformationStruct.(parentName).dGamma_dt_G(:,1,parentConnIdx) + dR_G_C_dt*connectionOffset_C;
         d2Gamma_dt2_root_G_star = partInformationStruct.(parentName).d2Gamma_dt2_G_star(:,1,parentConnIdx) + d2R_G_C_dt2_star*connectionOffset_C;
-        dGamma_dqe_root_G_Dim3x1x1xnqe = partInformationStruct.(parentName).dGamma_dq_G(:,:,parentConnIdx,:) + MultiProd_(dR_G_C_dqe,connectionOffset_C);
+        dGamma_dqe_root_G_Dim3x1x1xnqe = partInformationStruct.(parentName).dGamma_dq_G(:,:,parentConnIdx,:) + utility_functions.MultiProd_(dR_G_C_dqe,connectionOffset_C);
         dGamma_dqC_root_G_Dim3x1x1xnqC = zeros(3,1,1,nqC);
         dGamma_dq_root_G_Dim3x1x1xnq = cat(4, dGamma_dqC_root_G_Dim3x1x1xnqC , dGamma_dqe_root_G_Dim3x1x1xnqe);
         
-        Gamma_G = bsxfun(@plus, Gamma_root_G , MultiProd_(R_G_W,Gamma_W));
-        dGamma_dt_G = bsxfun(@plus, dGamma_dt_root_G , MultiProd_(dR_G_W_dt,Gamma_W));
-        d2Gamma_dt2_G_star = bsxfun(@plus, d2Gamma_dt2_root_G_star , MultiProd_(d2R_G_W_dt2_star,Gamma_W));
-        d2Gamma_m_dt2_G_star = bsxfun(@plus, d2Gamma_dt2_root_G_star , MultiProd_(d2R_G_W_dt2_star,massOffset_W));
-        dGamma_dq_G_Dim3x1xnsxnq2nd = bsxfun(@plus, dGamma_dq_root_G_Dim3x1x1xnq , MultiProd_(dR_G_W_dq,Gamma_W));
-        dGamma_m_dq_G_Dim3x1x1xnq2nd = bsxfun(@plus, dGamma_dq_root_G_Dim3x1x1xnq , MultiProd_(dR_G_W_dq,massOffset_W));
+        Gamma_G = bsxfun(@plus, Gamma_root_G , utility_functions.MultiProd_(R_G_W,Gamma_W));
+        dGamma_dt_G = bsxfun(@plus, dGamma_dt_root_G , utility_functions.MultiProd_(dR_G_W_dt,Gamma_W));
+        d2Gamma_dt2_G_star = bsxfun(@plus, d2Gamma_dt2_root_G_star , utility_functions.MultiProd_(d2R_G_W_dt2_star,Gamma_W));
+        d2Gamma_m_dt2_G_star = bsxfun(@plus, d2Gamma_dt2_root_G_star , utility_functions.MultiProd_(d2R_G_W_dt2_star,massOffset_W));
+        dGamma_dq_G_Dim3x1xnsxnq2nd = bsxfun(@plus, dGamma_dq_root_G_Dim3x1x1xnq , utility_functions.MultiProd_(dR_G_W_dq,Gamma_W));
+        dGamma_m_dq_G_Dim3x1x1xnq2nd = bsxfun(@plus, dGamma_dq_root_G_Dim3x1x1xnq , utility_functions.MultiProd_(dR_G_W_dq,massOffset_W));
         
         dvarTheta_dt_root_G = R_G_C*depsilon_dt_C + partInformationStruct.(parentName).dvarTheta_dt_G(:,1,parentConnIdx);
         d2varTheta_dt2_root_G_star = partInformationStruct.(parentName).d2varTheta_dt2_G_star(:,1,parentConnIdx);
         dvarTheta_dqe_root_G_Dim3x1x1xnqe = partInformationStruct.(parentName).dvarTheta_dq_G(:,:,parentConnIdx,:);
-        dvarTheta_dqC_root_G_Dim3x1x1xnqC = MultiProd_(R_G_C,depsilon_dqC_C);
+        dvarTheta_dqC_root_G_Dim3x1x1xnqC = utility_functions.MultiProd_(R_G_C,depsilon_dqC_C);
         dvarTheta_dq_root_G_Dim3x1x1xnq = cat(4 , dvarTheta_dqC_root_G_Dim3x1x1xnqC , dvarTheta_dqe_root_G_Dim3x1x1xnqe);
         
         dvarTheta_dt_G = repmat(dvarTheta_dt_root_G,1,1,ns);
@@ -355,14 +355,14 @@ end
         PvecWeight_G = gravAccVec.*obj.Mu;
         % massOffset_G = MultiProd_(E_G,massOffset_I);
         
-        PvecApplied_G = bsxfun(@plus, obj.Pvec_appliedGlobal_G , MultiProd_(E_G,obj.Pvec_appliedLocal_I) );
-        MvecApplied_G = bsxfun(@plus, obj.Mvec_appliedGlobal_G , MultiProd_(E_G,obj.Mvec_appliedLocal_I) );
+        PvecApplied_G = bsxfun(@plus, obj.Pvec_appliedGlobal_G , utility_functions.MultiProd_(E_G,obj.Pvec_appliedLocal_I) );
+        MvecApplied_G = bsxfun(@plus, obj.Mvec_appliedGlobal_G , utility_functions.MultiProd_(E_G,obj.Mvec_appliedLocal_I) );
         
         %==========================================================================
         %Virtual work terms from applied loads
         dPi_dq_Fapplied = dotn(PvecApplied_G,dGamma_dq_G_Dim3x1xnsxnq2nd,1);
         dPi_dq_Mapplied = dotn(MvecApplied_G,dvarTheta_dq_G_Dim3x1xnsxnq2nd,1);
-        dPi_dq_Grav = dotn(PvecWeight_G,dGamma_m_dq_G_Dim3x1x1xnq2nd,1);
+        dPi_dq_Grav = utility_functions.dotn(PvecWeight_G,dGamma_m_dq_G_Dim3x1x1xnq2nd,1);
         dW_dq_AppliedLoad = sum(dPi_dq_Fapplied + dPi_dq_Mapplied,3) + dPi_dq_Grav;
         %==========================================================================
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -408,12 +408,12 @@ end
                 
                 Apm_idx = obj.Apm_idx;
                 nAmid = obj.nAnodes - 1;
-                E_G_pm = sample(E_G,Apm_idx,3);
-                dE_dt_G_pm = sample(dE_dt_G,Apm_idx,3);
-                dvarTheta_dt_G_pm = sample(dvarTheta_dt_G,Apm_idx,3);
+                E_G_pm = utility_functions.sample(E_G,Apm_idx,3);
+                dE_dt_G_pm = utility_functions.sample(dE_dt_G,Apm_idx,3);
+                dvarTheta_dt_G_pm = utility_functions.sample(dvarTheta_dt_G,Apm_idx,3);
                 EAp_I_pm = obj.EAp_I_pm;
-                EAp_G_pm = MultiProd_(E_G_pm,EAp_I_pm);
-                dEAp_dt_G_pm = MultiProd_(dE_dt_G_pm,EAp_I_pm);
+                EAp_G_pm = utility_functions.MultiProd_(E_G_pm,EAp_I_pm);
+                dEAp_dt_G_pm = utility_functions.MultiProd_(dE_dt_G_pm,EAp_I_pm);
                 
                 partInformationStruct.(rigid_part_name).nsAp = obj.nAnodes-1;
                 partInformationStruct.(rigid_part_name).EAp_G_pm = EAp_G_pm;
@@ -426,8 +426,8 @@ end
                 partInformationStruct.(rigid_part_name).ApWidth = obj.ApWidths_pm;
                 partInformationStruct.(rigid_part_name).beam_cntr_pm = obj.beam_cntr_pm;
                 partInformationStruct.(rigid_part_name).AIC = obj.AICs;
-                partInformationStruct.(rigid_part_name).dGamma_dq_G_pm = sample(dGamma_dq_G_Dim3x1xnsxnq2nd,Apm_idx,3);
-                partInformationStruct.(rigid_part_name).dvarTheta_dq_G_pm = sample(dvarTheta_dq_G_Dim3x1xnsxnq2nd,Apm_idx,3);
+                partInformationStruct.(rigid_part_name).dGamma_dq_G_pm = utility_functions.sample(dGamma_dq_G_Dim3x1xnsxnq2nd,Apm_idx,3);
+                partInformationStruct.(rigid_part_name).dvarTheta_dq_G_pm = utility_functions.sample(dvarTheta_dq_G_Dim3x1xnsxnq2nd,Apm_idx,3);
                 if ~isempty(obj.qAero)
                     partInformationStruct.(rigid_part_name).qAero_idx = SimObject.StateInfo{'Index',obj.qAero.group}{:};
                 else
@@ -436,23 +436,23 @@ end
                 
             elseif ismember(aerodynamics,{'VLM_steady'})
                 
-                Gamma_G_pn = sample(Gamma_G,Apn_idx,3);
-                Gamma_G_pm = sample(Gamma_G,Apm_idx,3);
-                dGamma_dt_G_pm = sample(dGamma_dt_G,Apm_idx,3);
+                Gamma_G_pn = utility_functions.sample(Gamma_G,Apn_idx,3);
+                Gamma_G_pm = utility_functions.sample(Gamma_G,Apm_idx,3);
+                dGamma_dt_G_pm = utility_functions.sample(dGamma_dt_G,Apm_idx,3);
                 aero_cntr_pn = 0.25;
                 control_point_pm = 0.75;
                 beam_cntr_pm = obj.beam_cntr_pm;
                 beam_cntr_pn = obj.beam_cntr_pn;
                 chord_pm = obj.c_pm;
                 chord_pn = obj.c_pn;
-                E_G_pm = sample(E_G,Apm_idx,3);
-                E_G_pn = sample(E_G,Apn_idx,3);
+                E_G_pm = utility_functions.sample(E_G,Apm_idx,3);
+                E_G_pn = utility_functions.sample(E_G,Apn_idx,3);
                 EAp_I_pm = obj.EAp_I_pm;
                 EAp_I_pn = obj.EAp_I_pn;
-                EAp_G_pm = MultiProd_(E_G_pm,EAp_I_pm);
-                EAp_G_pn = MultiProd_(E_G_pn,EAp_I_pn);
-                dE_dt_G_pm = sample(dE_dt_G,Apm_idx,3);
-                dEAp_dt_G_pm = MultiProd_(dE_dt_G_pm,EAp_I_pm);
+                EAp_G_pm = utility_functions.MultiProd_(E_G_pm,EAp_I_pm);
+                EAp_G_pn = utility_functions.MultiProd_(E_G_pn,EAp_I_pn);
+                dE_dt_G_pm = utility_functions.sample(dE_dt_G,Apm_idx,3);
+                dEAp_dt_G_pm = utility_functions.MultiProd_(dE_dt_G_pm,EAp_I_pm);
                 Pv = Gamma_G_pn + bsxfun(@times, (aero_cntr_pn - beam_cntr_pn).*chord_pn , EAp_G_pn(:,1,:) );
                 Pc = Gamma_G_pm + bsxfun(@times, (control_point_pm - beam_cntr_pm).*chord_pm , EAp_G_pm(:,1,:) );
                 PcNorm = EAp_G_pm(:,3,:);

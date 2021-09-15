@@ -208,7 +208,7 @@ classdef QOI_Container < handle
         
         
         
-        function [] = generate_2dplot(obj,axisHandle,qoiNames,components,sidx_str,tidx_str,varargin)
+        function [] = generate_2dplot(obj,axisHandle,qoiNames,components,sidx_str,tidx_str,figureName,varargin)
             
             %note: if axisHandle is blank, data will be drawn to a new figure
             
@@ -260,7 +260,7 @@ classdef QOI_Container < handle
             if ~isempty(axisHandle)
                 hsp = axisHandle;
             else
-                figure(); hsp = subplot(1,1,1);
+                figure('WindowStyle','docked','DockControls','on','Name',figureName); hsp = subplot(1,1,1);
             end
             plot(hsp,xdata,ydata,varargin{:});
             xlabel_str = ['$' qoiObject_x.plotName_str qoiObject_x.units_str '$'];

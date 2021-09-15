@@ -120,7 +120,7 @@ x0 = SimObject.IC(State_idx_static);
 SimObject.Q = SimObject.IC.*[0,0];
 SimObject.Q(State_idx_static,2) = x;
 
-runTime = toc; disp(['runTime: ' num2str(runTime)]);
+runTime = toc; %disp(['runTime: ' num2str(runTime)]);
 SimObject.runTime = runTime;
 SimObject.t = [0 1];
 SimObject.temp_properties.Q_iter = Q_iter;

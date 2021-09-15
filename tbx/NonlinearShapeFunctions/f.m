@@ -417,6 +417,7 @@ if ~isempty(aerodynamics)
             end
             
             %%
+                        
             if ~sim.FLAG_parked
                 Omega_G = repmat([0;0;2*pi/SimObject.T], [1 1 obj.nsAp]);
                 V_Omega = - utility_functions.crossn(Omega_G,Gamma_G_pm_global,1);
@@ -459,7 +460,7 @@ if ~isempty(aerodynamics)
                     aeroPartName = aeroPartName_cell{1};
                     aeroData_part = partInformationStruct.(aeroPartName).aeroData;
                     BEMvar = aeroData_part.BEMvar;
-                                        
+                    BEMvar.IDLING = sim.FLAG_idling;                    
                     aero_cntr_pm_part = partInformationStruct.(aeroPartName).aero_cntr_pm;
                     if isempty(aero_cntr_pm_part)
                         alphaCP = 3/4;
@@ -467,11 +468,12 @@ if ~isempty(aerodynamics)
                         alphaCP = 1 - aero_cntr_pm_part; %TODO Check
                     end
                     
+                    
                     switch BEMvar.polarMethod
                         case 'linear'
                             aeroCoeff2D_part = aeroData_part.aeroCoeff2D;
                         case 'spline'
-                            aeroCoeff2D_part = aeroData_part.aeroFit;
+                            aeroCoeff2D_part = aeroData_part.oye.fit;
                     end                   
                                        
                     R_A_G = partInformationStruct.(aeroPartName).R_A_G;
@@ -488,11 +490,15 @@ if ~isempty(aerodynamics)
                     
                     Gamma_G_pm_part = partInformationStruct.(aeroPartName).Gamma_G_pm;
                     
-                    R = sqrt(Gamma_G_pn_global(1,:,:).^2 ...
+                    r = sqrt(Gamma_G_pn_global(1,:,:).^2 ...
                                     + Gamma_G_pn_global(2,:,:).^2 ...
                                     + Gamma_G_pn_global(3,:,:).^2);
-                    r_tip = (R - Gamma_G_pn_global)./Gamma_G_pn_global;
-                    r_hub = (Gamma_G_pn_global - 3)./Gamma_G_pn_global;
+                    R = r(end);
+                    r_tip = (R - r)./r;
+                    r_hub = (r - 3)./r;
+                    r_tip = 0.5*(r_tip(2:end)+r_tip(1:end-1));
+                    r_hub = 0.5*(r_hub(2:end)+r_hub(1:end-1));
+                    BEMvar.losses = squeeze([r_tip; r_hub]).';
                     %==============================================================
                     % global to aircraft (hub) rotation matrices for i'th blade
                     az_ib = 2*pi/BEMvar.B*(i-1);
@@ -528,17 +534,16 @@ if ~isempty(aerodynamics)
             vel = sum(Vrel_G_global.^2,1).^0.5;
             Pdyn = 0.5*rho*vel.^2;
             
-            
             if sim.FLAG_dw
                 Qaero_idx_dw = qAero_idx_global(nsAp*obj.nQAero + 1:end);
-                Qaero = reshape(Q(Qaero_idx_dw),2,1,[]);
+                Qaero = reshape(Q(Qaero_idx_dw),4,1,[]);
                 
-                x_qs = - a_global .* Vrel_G_global(3,:,:) - ap_global .* Vrel_G_global(1,:,:);
-                [dx_qs_dt, dtau_1_dt] = deal(0);
-                [d2x_dt2, dx_dt] = aero.dynamicWake.oye(Qaero, x_qs, dx_qs_dt, dtau_1_dt, V_Free, obj.s_aeroMid, obj.L, a_global, ap_global);
+                W_qs = Vrel_G_global - (Vinf - dGammaAlphaCP_dt_G_pm_global);
+                dW_qs_dt = 0;         
+                dtau_1_dt = 0;
+                [x, dx_dt] = aero.dynamicWake.oye(Qaero, W_qs, dW_qs_dt, dtau_1_dt, V_Free, obj.s_aeroMid, obj.L, a_global, ap_global);
                 
-                dQaero = [d2x_dt2; dx_dt];
-                
+                dQaero = [x; dx_dt];
                 dQ_Aero(Qaero_idx_dw,1) = dQaero(:);
             end
             
@@ -624,7 +629,7 @@ if ~isempty(aerodynamics)
                             Qaero = reshape(Q(Qaero_idx),1,1,[]);
                             end 
                             
-                            [dQaero, Qaero, cl_global, cd_global, cm_global] = aero.dynamicStall.oye(Qaero, vel, chord_pm_global, alpha_global, oyeCoeff);
+                            [dQaero, ~, cl_global, cd_global, cm_global] = aero.dynamicStall.oye(Qaero, vel, chord_pm_global, alpha_global, oyeCoeff, sim.aeroInterp_method);
                           
                             LIFT = Pdyn.*chord_pm_global.*ApWidth_pm_global.*AICs_global.*cl_global;
                             DRAG = Pdyn.*chord_pm_global.*ApWidth_pm_global.*AICs_global.*cd_global;
@@ -889,6 +894,7 @@ switch outputFormat
         CoM_info = [CoM_info_flexPart_nonlinear , CoM_info_rigidPart];
         aircraftMass = sum(CoM_info(1,:));
         QOI_Container.add_qoi('aircraftMass',tidx,aircraftMass,'1','Aircraft Mass','kg');
+        
         CoM_G = sum(bsxfun(@times,CoM_info(1,:),CoM_info(2:4,:)),2)/aircraftMass;
         QOI_Container.add_qoi('CoM_G',tidx,CoM_G,'1','CoM#_{[G]}','m');
         QOI_Container.add_qoi('R_G_A_flat',tidx,reshape(R_G_A,[9 1]),'1','R_{G,A}#','');
@@ -902,12 +908,16 @@ switch outputFormat
         nsAp = size(PvecAero_G_pm_global,3);
         
         if ~isempty(SimObject.aeroPartNames) && ~isempty(aerodynamics)
+%             QOI_Container.add_qoi('C_p', tidx,cp,'1','C_p','[]');
+%             QOI_Container.add_qoi('dCp_da', tidx,dcp_da,'1','dC_{p}/da','[]');
+            QOI_Container.add_qoi('EAp_G', tidx,reshape(EAp_G_pm_global,9,1,[]),'1:nsAp','EAp_{[G]}','[]','GlobalAeroQuantity',true);
+            QOI_Container.add_qoi('Gamma_G_pm', tidx,Gamma_G_pm_global,'1:nsAp','Gamma_{[G]}_pm','[]','GlobalAeroQuantity',true);
             QOI_Container.add_qoi('Aero_Forces_G' ,tidx,PvecAero_G_pm_global,'1:nsAp','AeroForce#_{[G]}','N','GlobalAeroQuantity',true);
-            QOI_Container.add_qoi('Aero_ForcePerSpan_G' ,tidx,PvecAero_G_pm_global./ApWidth_pm_global,'1:nsAp','AeroForcePerSpan#_{[G]}','N/m','GlobalAeroQuantity',true);
-            QOI_Container.add_qoi('Aero_Forces_Gamma_G' ,tidx,PvecAero_Gamma_G,'1:nsAp','AeroForce \Gamma#_{[G]}','m');
-            QOI_Container.add_qoi('Aero_Moments_G' ,tidx, MvecAero_G_pm_global,'1:nsAp','AeroMoment#_{[G]}','Nm','GlobalAeroQuantity',true);
-            QOI_Container.add_qoi('Aero_MomentPerSpan_G' ,tidx, MvecAero_G_pm_global./ApWidth_pm_global,'1:nsAp','AeroMomentPerSpan#_{[G]}','N','GlobalAeroQuantity',true);
-            QOI_Container.add_qoi('Net_Lift' ,tidx,sum(PvecAero_G_pm_global(3,1,:)),'1','NetLift','N');
+            QOI_Container.add_qoi('Aero_ForcePerSpan_G', tidx,PvecAero_G_pm_global./ApWidth_pm_global,'1:nsAp','AeroForcePerSpan#_{[G]}','N/m','GlobalAeroQuantity',true);
+            QOI_Container.add_qoi('Aero_Forces_Gamma_G', tidx, PvecAero_Gamma_G,'1:nsAp','AeroForce \Gamma#_{[G]}','m');
+            QOI_Container.add_qoi('Aero_Moments_G',tidx, MvecAero_G_pm_global,'1:nsAp','AeroMoment#_{[G]}','Nm','GlobalAeroQuantity',true);
+            QOI_Container.add_qoi('Aero_MomentPerSpan_G', tidx, MvecAero_G_pm_global./ApWidth_pm_global,'1:nsAp','AeroMomentPerSpan#_{[G]}','N','GlobalAeroQuantity',true);
+            QOI_Container.add_qoi('Net_Lift', tidx, sum(PvecAero_G_pm_global(3,1,:)),'1','NetLift','N');
             if exist('alpha_global','var')
                 alpha_degrees = alpha_global*180/pi;
                 QOI_Container.add_qoi('Angle_Of_Attack' ,tidx,reshape(alpha_degrees,1,1,[]),'1:nsAp','Angle Of Attack','deg');

@@ -152,7 +152,17 @@ classdef NBS_Master < handle
         obj.allParts_cell{end+1} = obj;
         obj.allParts_struct.(obj.partName) = obj;
     end
-
+    
+    function set_flex_properties(obj)
+        obj.aeroPartNames = [];
+        for partObj_ = obj.allParts_cell
+            partObj = partObj_{1};
+            if ~isa(partObj,'NBS_Master')
+                partObj.set_dependent_properties;
+            end
+        end
+    end
+    
     function set_dependent_properties(obj)
 
         %call the set_dependent_properties methods of all aircraft sub parts
@@ -236,8 +246,25 @@ classdef NBS_Master < handle
             nStatesInGroup = obj.StateInfo.(StateGroup){nStates_rowNum};
             if nStatesInGroup==0
                 idx = [];
+                if any(strcmp(StateSet,{'qth','qsi','qph','qSx','qSy','qSz'}))
+                    StateGroup_ = StateGroup(2:end);
+                    obj.([StateGroup_,'_idx']) = idx;
+                elseif any(strcmp(StateSet,{'dqth','dqsi','dqph','dqSx','dqSy','dqSz'}))
+                    StateGroup_ = [StateGroup(1), StateGroup(3:end)];
+                    obj.([StateGroup_,'_idx']) = idx;
+                elseif strcmp(StateSet,{'qAero'})
+                end
+                
             else
                 idx = (1:nStatesInGroup) + idx_counter;
+                if any(strcmp(StateSet,{'qth','qsi','qph','qSx','qSy','qSz'}))
+                    StateGroup_ = StateGroup(2:end);
+                    obj.([StateGroup_,'_idx']) = idx;
+                elseif any(strcmp(StateSet,{'dqth','dqsi','dqph','dqSx','dqSy','dqSz'}))
+                    StateGroup_ = [StateGroup(1), StateGroup(3:end)];
+                    obj.([StateGroup_,'_idx']) = idx;
+                elseif strcmp(StateSet,{'qAero'})
+                end
                 idx_counter = idx(end);
             end
             obj.StateInfo.(StateGroup){Index_rowNum} = idx;
@@ -261,24 +288,28 @@ classdef NBS_Master < handle
         
         obj.get_StateMap;
         
-        obj.th_idx = obj.StateInfo{'Index',partObj.qth.group}{:};
-        obj.si_idx = obj.StateInfo{'Index',partObj.qsi.group}{:};
-        obj.ph_idx = obj.StateInfo{'Index',partObj.qph.group}{:};
-        obj.Sx_idx = obj.StateInfo{'Index',partObj.qSx.group}{:};
-        obj.Sy_idx = obj.StateInfo{'Index',partObj.qSy.group}{:};
-        obj.Sz_idx = obj.StateInfo{'Index',partObj.qSz.group}{:};
+%         if ~any(strcmp(StateGroup, {'qRigidT','qRigidR','dqRigidT','dqRigidR'}))
+%         obj.th_idx = obj.StateInfo{'Index',partObj.qth.group}{:};
+%         obj.si_idx = obj.StateInfo{'Index',partObj.qsi.group}{:};
+%         obj.ph_idx = obj.StateInfo{'Index',partObj.qph.group}{:};
+%         obj.Sx_idx = obj.StateInfo{'Index',partObj.qSx.group}{:};
+%         obj.Sy_idx = obj.StateInfo{'Index',partObj.qSy.group}{:};
+%         obj.Sz_idx = obj.StateInfo{'Index',partObj.qSz.group}{:};
+%         
+%         obj.dth_idx = obj.StateInfo{'Index',['d' partObj.qth.group]}{:};
+%         obj.dsi_idx = obj.StateInfo{'Index',['d' partObj.qsi.group]}{:};
+%         obj.dph_idx = obj.StateInfo{'Index',['d' partObj.qph.group]}{:};
+%         obj.dSx_idx = obj.StateInfo{'Index',['d' partObj.qSx.group]}{:};
+%         obj.dSy_idx = obj.StateInfo{'Index',['d' partObj.qSy.group]}{:};
+%         obj.dSz_idx = obj.StateInfo{'Index',['d' partObj.qSz.group]}{:};
+%         
+%         obj.rT_idx  = obj.StateInfo{'Index','qRigidT'}{:};
+%         obj.rR_idx  = obj.StateInfo{'Index','qRigidR'}{:};
+%         obj.drT_idx = obj.StateInfo{'Index','dqRigidT'}{:};
+%         obj.drR_idx = obj.StateInfo{'Index','dqRigidR'}{:};
+%         end
         
-        obj.dth_idx = obj.StateInfo{'Index',['d' partObj.qth.group]}{:};
-        obj.dsi_idx = obj.StateInfo{'Index',['d' partObj.qsi.group]}{:};
-        obj.dph_idx = obj.StateInfo{'Index',['d' partObj.qph.group]}{:};
-        obj.dSx_idx = obj.StateInfo{'Index',['d' partObj.qSx.group]}{:};
-        obj.dSy_idx = obj.StateInfo{'Index',['d' partObj.qSy.group]}{:};
-        obj.dSz_idx = obj.StateInfo{'Index',['d' partObj.qSz.group]}{:};
-        
-        obj.rT_idx  = obj.StateInfo{'Index','qRigidT'}{:};
-        obj.rR_idx  = obj.StateInfo{'Index','qRigidR'}{:};
-        obj.drT_idx = obj.StateInfo{'Index','dqRigidT'}{:};
-        obj.drR_idx = obj.StateInfo{'Index','dqRigidR'}{:};
+
 
 
     end
@@ -423,7 +454,7 @@ classdef NBS_Master < handle
 
         axisHandle = utility_functions.get_option(varargin,'axisHandle',[]);
         plotOptions = utility_functions.get_option(varargin,'plotOptions',{});
-
+        figureName = utility_functions.get_option(varargin,'figureName','');
         %example: O.generate_2dplot('halfWing',{'t',1,'1','1:nt'},{'Gamma_G',3,'ns','1:nt'})
         %qoiStructure: {qoiName,componentNumber,sidx,tidx}
         [qoiName_x,componentNumber_x,SpatialIndices_x,TemporalIndices_x] = qoiStructure_x{:};
@@ -459,7 +490,7 @@ classdef NBS_Master < handle
             {qoiName_x;qoiName_y},...
             {componentNumber_x;componentNumber_y},...
             {SpatialIndices_x;SpatialIndices_y},...
-            {TemporalIndices_x;TemporalIndices_y},plotOptions{:});
+            {TemporalIndices_x;TemporalIndices_y},figureName,plotOptions{:});
 
     end
 
@@ -586,9 +617,9 @@ classdef NBS_Master < handle
         elevation = utility_functions.get_option(varargin,'el',20);
         AeroForce = utility_functions.get_option(varargin,'AeroForce',false);
         newFig = utility_functions.get_option(varargin,'newFig',true);
-
+        figureName = utility_functions.get_option(varargin,'figureName','');
         if newFig
-            figure;
+            figure('WindowStyle','docked','DockControls','on','Name',figureName);
         end
         %AppliedForce = get_option(varargin,'AppliedForce',false);
 

@@ -597,26 +597,32 @@ classdef NBS_flexPart_nonlinear < handle
                 end
 
 
-            if strcmp(obj.NBS_Master.aerodynamics,'WT')
-                if strcmp(obj.NBS_Master.sim.aeroForces, 'leishman') && obj.NBS_Master.sim.FLAG_unsteady
-                    obj.qAero.n = obj.nsAp*2;
-                    obj.qAero.group = ['AeroStates_' obj.partName];
-                end
-                if strcmp(obj.NBS_Master.sim.aeroForces, 'dynamic stall') 
-                    if strcmp(obj.NBS_Master.sim.dsModel, 'oye')
-                    obj.nQAero = 1;
-                    obj.qAero.n = obj.nsAp*obj.nQAero;
-                    obj.qAero.group = ['AeroStates_' obj.partName];
-                    elseif strcmp(obj.NBS_Master.sim.dsModel, 'larsen')
-                    obj.nQAero = 4;
-                    obj.qAero.n = obj.nsAp*obj.nQAero;
-                    obj.qAero.group = ['AeroStates_' obj.partName];   
+                if strcmp(obj.NBS_Master.aerodynamics,'WT')
+                    
+                    if obj.NBS_Master.sim.FLAG_unsteady
+                        obj.qAero.n = 0;
+                        obj.qAero.group = ['AeroStates_' obj.partName];
+                        
+                        if strcmp(obj.NBS_Master.sim.aeroForces, 'leishman')
+                            obj.qAero.n = obj.nsAp*2;
+                            obj.qAero.group = ['AeroStates_' obj.partName];
+                        end
+                        if strcmp(obj.NBS_Master.sim.aeroForces, 'dynamic stall')
+                            if strcmp(obj.NBS_Master.sim.dsModel, 'oye')
+                                obj.nQAero = 1;
+                                obj.qAero.n = obj.nsAp*obj.nQAero;
+                                obj.qAero.group = ['AeroStates_' obj.partName];
+                            elseif strcmp(obj.NBS_Master.sim.dsModel, 'larsen')
+                                obj.nQAero = 4;
+                                obj.qAero.n = obj.nsAp*obj.nQAero;
+                                obj.qAero.group = ['AeroStates_' obj.partName];
+                            end
+                        end
+                        if obj.NBS_Master.sim.FLAG_dw
+                            obj.qAero.n = obj.qAero.n + obj.qAero.n*4;
+                        end
                     end
                 end
-                if obj.NBS_Master.sim.FLAG_dw
-                    obj.qAero.n = obj.qAero.n + obj.qAero.n*2;
-                end
-            end
              
             if ~isfield(obj.aeroData, 'aeroCoeff2D')
                 obj.aeroData.aeroCoeff2D = [];
@@ -1272,11 +1278,13 @@ classdef NBS_flexPart_nonlinear < handle
                     case {'strip_steady','strip_unsteady','WT'}
                     E_G_pm = utility_functions.sample(E_G,Apm_idx,3);
                     dE_dt_G_pm = utility_functions.sample(dE_dt_G,Apm_idx,3);
+                    d2E_dt2_G_star_pm = utility_functions.sample(d2E_dt2_G_star,Apm_idx,3);
                     % dGamma_dt_G_pm = sample(dGamma_dt_G,Apm_idx,3);
                     dvarTheta_dt_G_pm = utility_functions.sample(dvarTheta_dt_G,Apm_idx,3);
                     EAp_I_pm = obj.EAp_I_pm;
                     EAp_G_pm = utility_functions.MultiProd_(E_G_pm,EAp_I_pm);
                     dEAp_dt_G_pm = utility_functions.MultiProd_(dE_dt_G_pm,EAp_I_pm);
+                    d2EAp_dt2_G_star_pm = utility_functions.MultiProd_(d2E_dt2_G_star_pm,EAp_I_pm);
                     %dexAp_dt_G_pm = dEAp_dt_G_pm(:,1,:);
 
                     %     dexAp_dt_G_pm = dEAp_dt_G_pm(:,1,:);
@@ -1287,7 +1295,9 @@ classdef NBS_flexPart_nonlinear < handle
                     partInformationStruct.(flex_part_name).nsAp = nsAp;
                     partInformationStruct.(flex_part_name).EAp_G_pm = EAp_G_pm;
                     partInformationStruct.(flex_part_name).dEAp_dt_G_pm = dEAp_dt_G_pm;
+                    partInformationStruct.(flex_part_name).d2EAp_dt2_G_star_pm = d2EAp_dt2_G_star_pm;
                     partInformationStruct.(flex_part_name).Gamma_G_pm = utility_functions.sample(Gamma_G,Apm_idx,3);
+                    partInformationStruct.(flex_part_name).d2Gamma_dt2_G_star_pm = utility_functions.sample(d2Gamma_dt2_G_star,Apm_idx,3);;
                     partInformationStruct.(flex_part_name).Gamma_G_pn = utility_functions.sample(Gamma_G,Apn_idx,3);
                     partInformationStruct.(flex_part_name).dGamma_dt_G_pm = utility_functions.sample(dGamma_dt_G,Apm_idx,3);
                     %partInformationStruct.(flex_part_name).dGammaAlphaCP_dt_G_pm = dGammaAlphaCP_dt_G_pm;
