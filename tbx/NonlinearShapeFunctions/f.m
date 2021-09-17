@@ -393,7 +393,7 @@ if ~isempty(aerodynamics)
                 EAp_G_pm_global = cat(3,EAp_G_pm_global,partInformationStruct.(aeroPartName).EAp_G_pm);
                 dEAp_dt_G_pm_global = cat(3,dEAp_dt_G_pm_global,partInformationStruct.(aeroPartName).dEAp_dt_G_pm);
                 Gamma_G_pm_global = cat(3,Gamma_G_pm_global,partInformationStruct.(aeroPartName).Gamma_G_pm);
-                Gamma_G_pn_global = cat(3,Gamma_G_pn_global,partInformationStruct.(aeroPartName).Gamma_G_pn);
+%                 Gamma_G_pn_global = cat(3,Gamma_G_pn_global,partInformationStruct.(aeroPartName).Gamma_G_pn);
                 dGamma_dt_G_pm_global = cat(3,dGamma_dt_G_pm_global,partInformationStruct.(aeroPartName).dGamma_dt_G_pm);
                 %dGammaAlphaCP_dt_G_pm_global = cat(3,dGammaAlphaCP_dt_G_pm_global,partInformationStruct.(aeroPartName).dGammaAlphaCP_dt_G_pm);
                 dvarTheta_dt_G_pm_global = cat(3,dvarTheta_dt_G_pm_global,partInformationStruct.(aeroPartName).dvarTheta_dt_G_pm);
@@ -419,7 +419,7 @@ if ~isempty(aerodynamics)
             %%
                         
             if ~sim.FLAG_parked
-                Omega_G = repmat([0;0;2*pi/SimObject.T], [1 1 obj.nsAp]);
+                Omega_G = repmat([0;0;2*pi/SimObject.T], [1 1 nsAp]);
                 V_Omega = - utility_functions.crossn(Omega_G,Gamma_G_pm_global,1);
                 V_Free = SimObject.V* uVec_freeStream_G;
                 Vinf = V_Omega + V_Free;
@@ -451,7 +451,8 @@ if ~isempty(aerodynamics)
                 %====================== BEM ===============================
                 
                 %initialise rotor variables
-                [a_global, ap_global, alpha_global, cl_global, cd_global, cm_global, Vrel_c_global] = deal([]);
+                [a_global, ap_global, alpha_global, cl_global, cd_global, cm_global,...
+                    Urel_G_global,Vrel_A_global,Urel_A_global, Gamma_A_pm_global, Gamma_A_pn_global] = deal([]);
                 
                 %initialise blade variables
                 i = 0;
@@ -460,7 +461,7 @@ if ~isempty(aerodynamics)
                     aeroPartName = aeroPartName_cell{1};
                     aeroData_part = partInformationStruct.(aeroPartName).aeroData;
                     BEMvar = aeroData_part.BEMvar;
-                    BEMvar.IDLING = sim.FLAG_idling;                    
+                    BEMvar.IDLING = sim.FLAG_idling;
                     aero_cntr_pm_part = partInformationStruct.(aeroPartName).aero_cntr_pm;
                     if isempty(aero_cntr_pm_part)
                         alphaCP = 3/4;
@@ -474,54 +475,81 @@ if ~isempty(aerodynamics)
                             aeroCoeff2D_part = aeroData_part.aeroCoeff2D;
                         case 'spline'
                             aeroCoeff2D_part = aeroData_part.oye.fit;
-                    end                   
-                                       
+                    end
+                    
                     R_A_G = partInformationStruct.(aeroPartName).R_A_G;
+                    R_G_A = R_A_G.';
                     chord_part = partInformationStruct.(aeroPartName).chord;
                     EAp_G_pm_part = partInformationStruct.(aeroPartName).EAp_G_pm;
                     dexAp_dt_G_pm_part = partInformationStruct.(aeroPartName).dEAp_dt_G_pm(:,1,:);
                     dGamma_dt_G_pm_part = partInformationStruct.(aeroPartName).dGamma_dt_G_pm;
-                    beam_cntr_pm_part = partInformationStruct.(aeroPartName).beam_cntr_pm;                   
-                    
+                    beam_cntr_pm_part = partInformationStruct.(aeroPartName).beam_cntr_pm;
+                    Gamma_G_pn_part = partInformationStruct.(aeroPartName).Gamma_G_pn;
                     dGammaAlphaCP_dt_G_pm_part = dGamma_dt_G_pm_part + chord_part.*(alphaCP - beam_cntr_pm_part).*dexAp_dt_G_pm_part;
-                    
-                    %                     dGammaAlphaAC_dt_G_pm_part = ...%bsxfun(@plus,drBarA_dt_G,...
-                    %                     (dGamma_dt_G_pm_part + bsxfun(@times,chord_pm_part.*(aero_cntr - beam_cntr_pm_part),dexAp_dt_G_pm_part));
-                    
                     Gamma_G_pm_part = partInformationStruct.(aeroPartName).Gamma_G_pm;
                     
-                    r = sqrt(Gamma_G_pn_global(1,:,:).^2 ...
-                                    + Gamma_G_pn_global(2,:,:).^2 ...
-                                    + Gamma_G_pn_global(3,:,:).^2);
-                    R = r(end);
-                    r_tip = (R - r)./r;
-                    r_hub = (r - 3)./r;
-                    r_tip = 0.5*(r_tip(2:end)+r_tip(1:end-1));
-                    r_hub = 0.5*(r_hub(2:end)+r_hub(1:end-1));
-                    BEMvar.losses = squeeze([r_tip; r_hub]).';
                     %==============================================================
                     % global to aircraft (hub) rotation matrices for i'th blade
                     az_ib = 2*pi/BEMvar.B*(i-1);
                     R_A_G_ib= utility_functions.r_matrix([0,0,1],az_ib).'*R_A_G;
-                    
                     Vinf_A = utility_functions.MultiProd_(R_A_G_ib, Vinf);
                     dGammaAlphaCP_dt_A_pm_part = utility_functions.MultiProd_(R_A_G_ib,dGammaAlphaCP_dt_G_pm_part);
                     Gamma_A_pm_part = utility_functions.MultiProd_(R_A_G_ib, Gamma_G_pm_part);
+                    Gamma_A_pn_part = utility_functions.MultiProd_(R_A_G_ib, Gamma_G_pn_part);
+                    r_A_pm_part = vecnorm(Gamma_A_pm_part,2);
                     EAp_A_pm_part = utility_functions.MultiProd_(R_A_G_ib,EAp_G_pm_part);
+                    Vrel_A_part = Vinf_A - dGammaAlphaCP_dt_A_pm_part;
                     
+                    r_ = vecnorm(Gamma_A_pn_part,2); R = r_(end);
+                    r_tip = (R - r_)./r_; r_hub = (r_ - 3)./r_;
+                    r_tip = 0.5*(r_tip(2:end)+r_tip(1:end-1));
+                    r_hub = 0.5*(r_hub(2:end)+r_hub(1:end-1));
+                    BEMvar.losses = squeeze([r_tip; r_hub]).';
                     %==============================================================
-                    [a, ap, alpha, ~, cl, cd, cm, Vrel_G, ~] = ...
-                        aero.bem_ning(Vinf_A, [], dGammaAlphaCP_dt_A_pm_part, aeroCoeff2D_part, chord_part, EAp_A_pm_part, Omega_G, Gamma_A_pm_part, R_A_G_ib, BEMvar);
+                    [a_part, ap_part, alpha_part, ~, cl_part, cd_part, cm_part, Urel_G_part, Urel_A_part,~] = ...
+                        aero.bem_ning(Vrel_A_part, aeroCoeff2D_part, chord_part, EAp_A_pm_part, r_A_pm_part, R_A_G_ib, BEMvar);
                     %==============================================================
-                    a_global = cat(3,a_global,permute(a,[3 2 1]));
-                    ap_global = cat(3,ap_global,permute(ap,[3 2 1]));
-                    alpha_global = cat(3,alpha_global,permute(alpha/180*pi,[3 2 1]));
-                    cl_global = cat(3,cl_global,permute(cl,[3 2 1]));
-                    cd_global = cat(3,cd_global,permute(cd,[3 2 1]));
-                    cm_global = cat(3,cm_global,permute(cm,[3 2 1]));
-                    Vrel_G_global = cat(3,Vrel_c_global,Vrel_G);
-                    
+                    a_global = cat(3,a_global,permute(a_part,[3 2 1]));
+                    ap_global = cat(3,ap_global,permute(ap_part,[3 2 1]));
+                    alpha_global = cat(3,alpha_global,permute(alpha_part/180*pi,[3 2 1]));
+                    cl_global = cat(3,cl_global,permute(cl_part,[3 2 1]));
+                    cd_global = cat(3,cd_global,permute(cd_part,[3 2 1]));
+                    cm_global = cat(3,cm_global,permute(cm_part,[3 2 1]));
+                    Urel_G_global = cat(3,Urel_G_global,Urel_G_part);
+                    Urel_A_global = cat(3,Urel_A_global,Urel_A_part); %POST INDUCTION
+                    Vrel_A_global = cat(3,Vrel_A_global,Vrel_A_part); %PRE INDUCTION
+                    Gamma_A_pm_global  = cat(3,Gamma_A_pm_global,Gamma_A_pm_part);
+                    Gamma_A_pn_global  = cat(3,Gamma_A_pn_global,Gamma_A_pn_part);
                 end
+                
+                if sim.FLAG_dw
+                    Qaero_idx_dw = qAero_idx_global(nsAp*obj.nQAero + 1:end);
+                    switch sim.dwDetail
+                        case 'full'
+                            Qaero = reshape(Q(Qaero_idx_dw),4,1,[]);
+                        case 'simple'
+                            Qaero = reshape(Q(Qaero_idx_dw),2,1,[]);
+                    end
+                    %i.e. if no bem then W_qs = 0 CHECK
+                    
+                    R_A_pn_global = norm(Gamma_A_pn_global(:,:,end));
+                    wxqs_A_global = Urel_A_global(1,:,:) - Vrel_A_global(1,:,:);
+                    wzqs_A_global = Urel_A_global(3,:,:) - Vrel_A_global(3,:,:);
+                    wqs_A_global = [wxqs_A_global; wzqs_A_global];
+                    dwqs_dt = 0; dtau1_dt = 0;
+                    [dQaero,  Qaero] = aero.dynamicWake.oye(Qaero, wqs_A_global, dwqs_dt, dtau1_dt, Vrel_A_global(3,:,:), vecnorm(Gamma_A_pm_global,2), R_A_pn_global, a_global, nsAp, sim.dwDetail);
+                    dQ_Aero(Qaero_idx_dw,1) = dQaero(:);
+                    
+                    Urel_A_global = [Qaero(1,:,:) + Vrel_A_global(1,:,:);
+                        Vrel_A_global(2,:,:);
+                        Qaero(2,:,:) + Vrel_A_global(3,:,:)];
+                    Urel_G_global = utility_functions.MultiProd_(R_G_A, Urel_A_global);
+                    ux1qrt = sum(Urel_G_global.*EAp_G_pm_global(:,1,:),1);
+                    uz1qrt = sum(Urel_G_global.*EAp_G_pm_global(:,3,:),1);
+                    alpha_global = atan(uz1qrt./ux1qrt);
+                end
+                vel = sum(Urel_G_global.^2,1).^0.5;
+                Pdyn = 0.5*rho*vel.^2;
             else
                 %if bem not invoked (i.e. for parked analyses)
                 Vrel_G_global = Vinf - dGammaAlphaCP_dt_G_pm_global;
@@ -529,24 +557,10 @@ if ~isempty(aerodynamics)
                 vz1qrt = sum(Vrel_G_global.*EAp_G_pm_global(:,3,:),1);
                 alpha_global = atan(vz1qrt./vx1qrt);
                 %                 alpha_deg = alpha_global*180/pi
+                vel = sum(Vrel_G_global.^2,1).^0.5;
+                Pdyn = 0.5*rho*vel.^2;
             end
-            
-            vel = sum(Vrel_G_global.^2,1).^0.5;
-            Pdyn = 0.5*rho*vel.^2;
-            
-            if sim.FLAG_dw
-                Qaero_idx_dw = qAero_idx_global(nsAp*obj.nQAero + 1:end);
-                Qaero = reshape(Q(Qaero_idx_dw),4,1,[]);
-                
-                W_qs = Vrel_G_global - (Vinf - dGammaAlphaCP_dt_G_pm_global);
-                dW_qs_dt = 0;         
-                dtau_1_dt = 0;
-                [x, dx_dt] = aero.dynamicWake.oye(Qaero, W_qs, dW_qs_dt, dtau_1_dt, V_Free, obj.s_aeroMid, obj.L, a_global, ap_global);
-                
-                dQaero = [x; dx_dt];
-                dQ_Aero(Qaero_idx_dw,1) = dQaero(:);
-            end
-            
+
             %===================dynamic stall==============================
             switch sim.aeroForces
                 case 'dynamic stall'
@@ -730,7 +744,7 @@ if ~isempty(aerodynamics)
                     dAoA = dvarTheta_dt_G_pm_global;
                     CD_0 = 0;
                     
-                    [dQaero,Qaero,cl_global,cm_global] = aero.leishman(Qaero,alpha_global,vx3qrt,EAp_G_pm_global(:,2,:),dAoA,chord_pm_global,qsteady);
+                    [dQaero,~,cl_global,cm_global] = aero.leishman(Qaero,alpha_global,vx3qrt,EAp_G_pm_global(:,2,:),dAoA,chord_pm_global,qsteady);
                     
                     LIFT = Pdyn.*chord_pm_global.*ApWidth_pm_global.*AICs_global.*cl_global;
                     MOMENT = Pdyn.*chord_pm_global.*ApWidth_pm_global.*AICs_global.*cm_global;
@@ -877,16 +891,16 @@ switch outputFormat
         output = residual;
         
     case 'r_dr_dq'
-        d2q_dt2 = extraInput.d2q_dt2;
-        beta2 = extraInput.beta2;
-        gamma2 = extraInput.gamma2;
-        delta_t = extraInput.delta_t;
-        residual = -M*d2q_dt2-w-K-C+dPiF_dq+dPiM_dq;
-        Jacobian_flag = 'dr_dq';
+%         d2q_dt2 = extraInput.d2q_dt2;
+%         beta2 = extraInput.beta2;
+%         gamma2 = extraInput.gamma2;
+%         delta_t = extraInput.delta_t;
+%         residual = -M*d2q_dt2-w-K-C+dPiF_dq+dPiM_dq;
+%         Jacobian_flag = 'dr_dq';
         
     case 'jac'
         
-        Jacobian_flag = 'jac';
+%         Jacobian_flag = 'jac';
         
     case 'qoi'
         

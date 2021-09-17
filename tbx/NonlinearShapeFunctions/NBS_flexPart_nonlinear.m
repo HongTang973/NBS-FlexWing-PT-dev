@@ -619,7 +619,22 @@ classdef NBS_flexPart_nonlinear < handle
                             end
                         end
                         if obj.NBS_Master.sim.FLAG_dw
-                            obj.qAero.n = obj.qAero.n + obj.qAero.n*4;
+                            if strcmp(obj.NBS_Master.sim.aeroForces, 'lookup 2D')
+                                obj.nQAero = 0;
+                                switch obj.NBS_Master.sim.dwDetail
+                                    case 'full'
+                                        obj.qAero.n = obj.nsAp*4;
+                                    case 'simple'
+                                        obj.qAero.n = obj.nsAp*2;
+                                end
+                            else                              
+                                switch obj.NBS_Master.sim.dwDetail
+                                    case 'full'
+                                        obj.qAero.n = obj.qAero.n + obj.nsAp*4;
+                                    case 'simple'
+                                        obj.qAero.n = obj.qAero.n + obj.nsAp*2;
+                                end
+                            end
                         end
                     end
                 end
