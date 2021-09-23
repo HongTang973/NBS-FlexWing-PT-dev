@@ -625,14 +625,14 @@ classdef NBS_flexPart_nonlinear < handle
                                     case 'full'
                                         obj.qAero.n = obj.nsAp*4;
                                     case 'simple'
-                                        obj.qAero.n = obj.nsAp*2;
+                                        obj.qAero.n = 1;
                                 end
                             else                              
                                 switch obj.NBS_Master.sim.dwDetail
                                     case 'full'
                                         obj.qAero.n = obj.qAero.n + obj.nsAp*4;
                                     case 'simple'
-                                        obj.qAero.n = obj.qAero.n + obj.nsAp*2;
+                                        obj.qAero.n = obj.qAero.n + 1;
                                 end
                             end
                         end
@@ -1449,6 +1449,7 @@ classdef NBS_flexPart_nonlinear < handle
                 QOI_Container.add_qoi('th',tidx,th*180/pi,'1:ns','\theta','deg');
                 QOI_Container.add_qoi('si',tidx,si*180/pi,'1:ns','\psi','deg');
                 QOI_Container.add_qoi('ph',tidx,ph*180/pi,'1:ns','\phi','deg');
+                QOI_Container.add_qoi('dph_dt',tidx,dph_dt*180/pi,'1:ns','d\phi/dt','deg');
                 QOI_Container.add_qoi('KAPPA_I',tidx,KAPPA_I,'1:ns','\Kappa#_{[I]}','rad/m');
                 QOI_Container.add_qoi('PvecApplied_G',tidx,PvecApplied_G,'1:ns','P#_{Applied[G]}','N');
                 QOI_Container.add_qoi('MvecApplied_G',tidx,MvecApplied_G,'1:ns','M#_{Applied[G]}','N');
