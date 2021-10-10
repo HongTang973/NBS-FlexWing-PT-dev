@@ -74,7 +74,7 @@ if isequal(analysisType,'none')
 end
 
 if isequal(analysisType,'dynamic') %//dynamic analysis/////////////////////
-
+SimObject.FLAG_static = false;
 switch solver
     case 'NewmarkBeta'
 
@@ -94,7 +94,7 @@ tic
 options = odeset('OutputFcn',@outputFunction,'BDF','off','relTol',1e-5);
 [t,u] = ode15s(fHandle, tsteps, SimObject.IC, options, SimObject,'dQ');
 
-runTime = toc; disp(['runTime: ' num2str(runTime)]);
+runTime = toc; disp(['   runTime: ' num2str(runTime)]);
 SimObject.runTime = runTime;
 SimObject.t = t.';
 SimObject.Q = u.';
@@ -102,8 +102,8 @@ SimObject.Q = u.';
 end
 
 elseif isequal(analysisType,'static') %/////////////////////////////////static analysis/////////////////////
-
-    options = optimoptions('fsolve','Display','iter','MaxIter',1e3,'MaxFunctionEvaluations',1000,'OutputFcn',@getQ_iter);
+    SimObject.FLAG_static = true;
+    options = optimoptions('fsolve','Algorithm','levenberg-marquardt','Display','iter','MaxIter',1e3,'MaxFunctionEvaluations',1000,'OutputFcn',@getQ_iter);
 
     suppressIter = utility_functions.get_option(varargin,'suppressIter',false);
     if suppressIter, options.Display = 'none'; end
@@ -115,12 +115,12 @@ tic,
 State_idx_static = [SimObject.qg2nd_idx(:) ; SimObject.qg1st_idx(:)];
 x0 = SimObject.IC(State_idx_static);
 
-[x,fval,exitFLAG,output] = fsolve(fHandle, x0, options, State_idx_static,SimObject,analysisType);
+[x,fval,exitFLAG,output] = fsolve(fHandle, x0, options,State_idx_static,SimObject,analysisType);
 
 SimObject.Q = SimObject.IC.*[0,0];
 SimObject.Q(State_idx_static,2) = x;
 
-runTime = toc; %disp(['runTime: ' num2str(runTime)]);
+runTime = toc; %disp(['   runTime: ' num2str(runTime)]);
 SimObject.runTime = runTime;
 SimObject.t = [0 1];
 SimObject.temp_properties.Q_iter = Q_iter;
@@ -141,7 +141,7 @@ end
 %% //////////////////////////////////////////////////////// Post Processing
 if displayWaitBar, waitbar(1,waitBar,'Post Processing'); end
 
-profile on;
+% profile on;
 SimObject.initialise_QOI_Master();
 SimObject.initialise_qois();
 SimObject.QOI_Master.write_QOI_values('default','display',false);

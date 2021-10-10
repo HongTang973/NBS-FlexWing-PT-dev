@@ -62,6 +62,7 @@ classdef NBS_Master < handle
 
         %temporary parameters of any data type
         %can be cleared at the end of the analysis
+        FLAG_static
         runTime
         profileStructure
         object_creation_date

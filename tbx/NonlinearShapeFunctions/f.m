@@ -38,20 +38,20 @@ if strcmp(varargin{4},'static')
     Q = SimObject.IC*0;
     Q(qStatic_idx) = qStatic;
 else
-    [t,Q,SimObject,outputFormat] = varargin{:};
-    if isequal(outputFormat,'qoi'), tidx = varargin{5}; end
+    [t,Q,SimObject,outputFormat] = varargin{:};       
+    if isequal(outputFormat,'qoi'), tidx = varargin{5}; end    
 end
-
+FLAG_static = SimObject.FLAG_static;
 % Q =                                                                            %[temp,temp1,temp2,temp3,temp4,str,Struct,Cell,Table] = deal([]); %#ok<ASGLU> %workspace variables used only for debugging
 
 % global mult3d_mex
 % mult3d_mex = SimObject.mult3d_mex;
-persistent global_counter
-if isempty(global_counter)
-    global_counter = 0;
-else
-    global_counter = 1;
-end
+% persistent global_counter
+% if isempty(global_counter)
+%     global_counter = 0;
+% else
+%     global_counter = 1;
+% end
 
 % int_fnc = SimObject.int_fnc;
 aeroPartNames = SimObject.aeroPartNames;
@@ -84,7 +84,7 @@ qg2nd_idx = SimObject.qg2nd_idx;
 dqg2nd_idx = SimObject.dqg2nd_idx;
 nqg2nd = SimObject.nqg2nd;
 nQ = numel(Q);
-dQ_Aero = zeros(nQ,1,SimObject.nParts);
+[dQ_Aero, Q_Aero] = deal(zeros(nQ,1,SimObject.nParts));
 
 % if FLAG_free_free, nqr = 6; else, nqr = 0; end
 
@@ -538,12 +538,22 @@ if ~isempty(aerodynamics)
                             wn_bar_qs = 1./R_A_pn_global.*trapz(squeeze(r_A_pm_global),squeeze(wqs_A_global(2,:,:)));
                             vn_bar_qs = 1./R_A_pn_global.*trapz(squeeze(r_A_pm_global),Vrel_A_global(3,:,:));
                             a_bar_qs = 1./R_A_pn_global.*trapz(squeeze(r_A_pm_global),squeeze(a_global));
-                    end                    
-                    [dQaero,  ~, Urel_A_global] = aero.dynamicWake.oye(Qaero, Vrel_A_global,...
+                    end   
+                    if FLAG_static
+                        switch sim.dwDetail
+                            case 'full' % 4 states per strip
+                                Qaero = wqs_A_global;
+                            case 'simple'
+                                Qaero = wn_bar_qs;
+                        end
+                    end
+                    [dQaero,  Qaero, Urel_A_global] = aero.dynamicWake.oye(Qaero, Vrel_A_global,...
                         wqs_A_global, dwqs_dt, dtau1_dt, Vrel_A_global(3,:,:), r_A_pm_global,...
                         R_A_pn_global, a_global, nsAp, wn_bar_qs, a_bar_qs, vn_bar_qs, sim.dwDetail);
+                    
+                    
                     dQ_Aero(Qaero_idx_dw,1) = dQaero(:);
-
+                    Q_Aero(Qaero_idx_dw,1) = Qaero(:);
                     Urel_G_global = utility_functions.MultiProd_(R_G_A, Urel_A_global);
                     ux1qrt = sum(Urel_G_global.*EAp_G_pm_global(:,1,:),1);
                     uz1qrt = sum(Urel_G_global.*EAp_G_pm_global(:,3,:),1);
@@ -636,15 +646,16 @@ if ~isempty(aerodynamics)
                             oyeCoeff = aeroData_global.oye;
                             
                             if sim.FLAG_dw
-                            Qaero_idx = qAero_idx_global(1:nsAp*obj.nQAero);
-                            Qaero = reshape(Q(Qaero_idx),1,1,[]);   
-                            else    
-                            Qaero_idx = qAero_idx_global;
-                            Qaero = reshape(Q(Qaero_idx),1,1,[]);
-                            end 
-                            
-                            [dQaero, ~, cl_global, cd_global, cm_global] = aero.dynamicStall.oye(Qaero, vel, chord_pm_global, alpha_global, oyeCoeff, sim.aeroInterp_method);
+                                Qaero_idx = qAero_idx_global(1:nsAp*obj.nQAero);
+                                Qaero = reshape(Q(Qaero_idx),1,1,[]);
+                            else
+                                Qaero_idx = qAero_idx_global;
+                                Qaero = reshape(Q(Qaero_idx),1,1,[]);
+                            end
+
+                            [dQaero, Qaero, cl_global, cd_global, cm_global] = aero.dynamicStall.oye(Qaero, vel, chord_pm_global, alpha_global, oyeCoeff, sim.aeroInterp_method, FLAG_static);
                             dQ_Aero(Qaero_idx,1) = dQaero(:);
+                            Q_Aero(Qaero_idx,1) = Qaero(:);
                             
                             LIFT = Pdyn.*chord_pm_global.*ApWidth_pm_global.*AICs_global.*cl_global;
                             DRAG = Pdyn.*chord_pm_global.*ApWidth_pm_global.*AICs_global.*cd_global;
@@ -875,10 +886,12 @@ switch outputFormat
         
     case 'static'
         
-        % output = Q*0; %initialise 1st order static residual vector
+%         output = Q*0; %initialise 1st order static residual vector
+%         output(qg2nd_idx) = dW_dqg_sum;
+%         output = output + sum(Q_Aero,3);
         
         output = dW_dqg_sum;
-        
+
         %    dW_dqg_static_sum = sum(dW_dqg_static,3);
         %    output = dW_dqg_static_sum;
         
