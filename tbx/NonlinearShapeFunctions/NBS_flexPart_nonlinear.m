@@ -1261,12 +1261,18 @@ classdef NBS_flexPart_nonlinear < handle
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             %% FlexPart_nonlinear Applied Loads from PvecApplied_G, MvecApplied_G, Gravitational Acceleration
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            if SimObject.sim.FLAG_parked
-                PvecWeight_G = SimObject.grav_acc.*SimObject.gravVec_G.*obj.ms;
-            else
-                Omega_G = repmat([0;0;2*pi/SimObject.T], [1 1 obj.ns]);
-                PvecWeight_G = - utility_functions.crossn(2*obj.ms.*Omega_G, dGamma_dt_G, 1) - utility_functions.crossn(obj.ms.*Omega_G,utility_functions.crossn(Omega_G, Gamma_G, 1),1);
+            switch SimObject.sim.operation
+                case 'fixed'
+                    if SimObject.sim.FLAG_parked
+                        PvecWeight_G = SimObject.grav_acc.*SimObject.gravVec_G.*obj.ms;
+                    else
+                        Omega_G = repmat([0;0;2*pi/SimObject.T], [1 1 obj.ns]);
+                        PvecWeight_G = - utility_functions.crossn(2*obj.ms.*Omega_G, dGamma_dt_G, 1) - utility_functions.crossn(obj.ms.*Omega_G,utility_functions.crossn(Omega_G, Gamma_G, 1),1);
+                    end
+                case {'forced', 'free'}
+                    PvecWeight_G = SimObject.grav_acc.*SimObject.gravVec_G.*obj.ms;
             end
+            
             massOffset_G = utility_functions.MultiProd_(E_G,massOffset_I);
 
             PvecApplied_G = obj.Pvec_appliedGlobal_G + utility_functions.MultiProd_(E_G,obj.Pvec_appliedLocal_I) + PvecWeight_G;

@@ -416,15 +416,20 @@ if ~isempty(aerodynamics)
             end
             
             %%
-                        
-            if ~sim.FLAG_parked
-                Omega_G = repmat([0;0;2*pi/SimObject.T], [1 1 nsAp]);
-                V_Omega = - utility_functions.crossn(Omega_G,Gamma_G_pm_global,1);
-                V_Free = SimObject.V* uVec_freeStream_G;
-                Vinf = V_Omega + V_Free;
-            else
-                V_Free = SimObject.V* uVec_freeStream_G;
-                Vinf = V_Free;
+            switch SimObject.sim.operation
+                case 'fixed'
+                    if ~sim.FLAG_parked
+                        Omega_G = repmat([0;0;2*pi/SimObject.T], [1 1 nsAp]);
+                        V_Omega = - utility_functions.crossn(Omega_G,Gamma_G_pm_global,1);
+                        V_Free = SimObject.V* uVec_freeStream_G;
+                        Vinf = V_Omega + V_Free;
+                    else
+                        V_Free = SimObject.V* uVec_freeStream_G;
+                        Vinf = V_Free;
+                    end
+                case {'forced', 'free'}
+                    V_Free = SimObject.V* uVec_freeStream_G;
+                    Vinf = V_Free;
             end
             
             alphaCP = 1 - aero_cntr_pm_global;
@@ -665,7 +670,7 @@ if ~isempty(aerodynamics)
 
                             ca = cos(alpha_global);
                             sa = sin(alpha_global);
-                           
+                            alpha_ = alpha_global(:,:,end)*180/pi;
                             F_N = LIFT.*ca + DRAG.*sa;
                             F_A = DRAG.*ca - LIFT.*sa;        
                     end
@@ -718,7 +723,7 @@ if ~isempty(aerodynamics)
                     
                     ca = cos(alpha_global);
                     sa = sin(alpha_global);
-                    
+%                     alpha_ = alpha_global*180/pi;
                     if ~sim.FLAG_parked
                         AICs_global = ones(1,1,nsAp);
                     end

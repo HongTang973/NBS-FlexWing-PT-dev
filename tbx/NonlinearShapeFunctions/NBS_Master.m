@@ -784,7 +784,7 @@ classdef NBS_Master < handle
         for i_ = 1:numel(Tidx)
             tidx = Tidx(i_);
             cla
-            obj.plotBounds = [-60 60; 0, 120; -60, 60];
+%             obj.plotBounds = [-60 60; 0, 120; -60, 60];
             obj.draw('parts','all','Tidx',tidx,'qoiRequest',false,'newFig',false,varargin{:})
             set(gcf,'Renderer','zbuffer');
             ax = gca;
