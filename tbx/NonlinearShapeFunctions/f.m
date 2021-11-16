@@ -116,13 +116,13 @@ if FLAG_free_free
     dOmega_dt_G_star = [0;0;0];
     BetaNorm_G = max(norm(Beta_G),1e-10);
     R_G_A = utility_functions.r_matrix(Beta_G./BetaNorm_G,BetaNorm_G);
-    OmegaSkew_G = utility_functions.getSkewMat(Omega_G); dOmega_dtSkew_G_star = getSkewMat(dOmega_dt_G_star);
+    OmegaSkew_G = utility_functions.getSkewMat(Omega_G); dOmega_dtSkew_G_star = utility_functions.getSkewMat(dOmega_dt_G_star);
     dR_G_A_dt = OmegaSkew_G*R_G_A;
     d2R_G_A_dt2_star = dOmega_dtSkew_G_star*R_G_A + OmegaSkew_G*OmegaSkew_G*R_G_A;
     
-    skewX = getSkewMat([1;0;0]);
-    skewY = getSkewMat([0;1;0]);
-    skewZ = getSkewMat([0;0;1]);
+    skewX = utility_functions.getSkewMat([1;0;0]);
+    skewY = utility_functions.getSkewMat([0;1;0]);
+    skewZ = utility_functions.getSkewMat([0;0;1]);
     
     dR_G_A_dqr_Dim3x3x1xnqr = utility_functions.MultiProd_(cat(4,zeros(3,3,1,3),skewX,skewY,skewZ) , R_G_A);
     dvarTheta_dqr_G_Dim3x1x1xnqr = reshape([zeros(3) eye(3)],3,1,1,6);

@@ -265,6 +265,13 @@ classdef NBS_Master < handle
                     StateGroup_ = [StateGroup(1), StateGroup(3:end)];
                     obj.([StateGroup_,'_idx']) = idx;
                 elseif strcmp(StateSet,{'qAero'})
+                  %nothing
+                elseif any(strcmp(StateGroup,{'qRigidT','qRigidR'}))
+                    StateGroup_ = StateGroup(end);
+                    obj.(['r',StateGroup_,'_idx']) = idx;                   
+                elseif any(strcmp(StateGroup,{'dqRigidT','dqRigidR'}))
+                    StateGroup_ = StateGroup(end);
+                    obj.(['dr',StateGroup_,'_idx']) = idx;                   
                 end
                 idx_counter = idx(end);
             end
