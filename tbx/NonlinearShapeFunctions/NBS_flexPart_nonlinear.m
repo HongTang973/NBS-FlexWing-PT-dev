@@ -363,12 +363,12 @@ classdef NBS_flexPart_nonlinear < handle
         obj.temp_properties.yidx33 = yidx33;
 
 
-        if isempty(obj.qth.group), obj.qth.group = ['qth_' obj.partName]; end
-        if isempty(obj.qsi.group), obj.qsi.group = ['qsi_' obj.partName]; end
-        if isempty(obj.qph.group), obj.qph.group = ['qph_' obj.partName]; end
-        if isempty(obj.qSx.group), obj.qSx.group = ['qSx_' obj.partName]; end
-        if isempty(obj.qSy.group), obj.qSy.group = ['qSy_' obj.partName]; end
-        if isempty(obj.qSz.group), obj.qSz.group = ['qSz_' obj.partName]; end
+        obj.qth.group = ['qth_' obj.partName];
+        obj.qsi.group = ['qsi_' obj.partName]; 
+        obj.qph.group = ['qph_' obj.partName]; 
+        obj.qSx.group = ['qSx_' obj.partName]; 
+        obj.qSy.group = ['qSy_' obj.partName]; 
+        obj.qSz.group = ['qSz_' obj.partName];
 
         
         if PLOT
