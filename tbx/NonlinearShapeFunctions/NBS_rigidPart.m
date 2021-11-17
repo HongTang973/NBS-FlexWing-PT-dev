@@ -43,11 +43,11 @@ classdef NBS_rigidPart < handle & matlab.mixin.Copyable
     
     c
         c_pm
-    aero_cntr
-    aero_cntr_pm
+    aero_cntr = 0.5
+    aero_cntr_pm 
     beam_cntr = 0.5
         beam_cntr_pm
-    
+    aeroData = struct();
     isAero
     AICs
     CrossSectionProfiles
@@ -114,7 +114,9 @@ end
         obj.EAp_I_pm = repmat(obj.EAp_I,1,1,numel(obj.s_aeroMid));
         obj.c_pm = utility_functions.sample(obj.c,obj.Apm_idx,3);
         obj.beam_cntr = bsxfun(@plus, obj.beam_cntr , obj.s*0);
+        obj.aero_cntr = bsxfun(@plus, obj.aero_cntr , obj.s*0);
         obj.beam_cntr_pm = utility_functions.sample(obj.beam_cntr,obj.Apm_idx,3);
+        obj.aero_cntr_pm = utility_functions.sample(obj.aero_cntr,obj.Apm_idx,3);
         obj.del_s_aero = diff(obj.s_aero);
         obj.ApWidths_pm = abs(obj.del_s_aero.*obj.EAp_I_pm(2,2,:));
         
@@ -337,13 +339,13 @@ end
         
         dGamma_m_dq_G_Dim3xnq2ndx1 = permute(dGamma_m_dq_G_Dim3x1x1xnq2nd,[1 4 3 2]);
         dGamma_m_dq_G_Dimnq2ndx3x1 = permute(dGamma_m_dq_G_Dim3x1x1xnq2nd,[4 1 3 2]);
-        [dW_dq_Kinetic_Translation_ddqComponent,dW_dq_Kinetic_Translation_remainder] = dPi_dq_Kinetic_Translation.get_dPi_dq_Kinetic_Translation(...
+        [dW_dq_Kinetic_Translation_ddqComponent,dW_dq_Kinetic_Translation_remainder] = static_method_groups.dPi_dq_Kinetic_Translation.get_dPi_dq_Kinetic_Translation(...
             ms, dGamma_m_dq_G_Dim3xnq2ndx1, dGamma_m_dq_G_Dimnq2ndx3x1,...
             d2Gamma_m_dt2_G_star);
         
         dvarTheta_m_dq_G_Dim3xnq2ndx1 = permute(dvarTheta_m_dq_G_Dim3x1x1xnq2nd,[1 4 3 2]);
         dvarTheta_m_dq_G_Dimnq2ndx3x1 = permute(dvarTheta_m_dq_G_Dim3x1x1xnq2nd,[4 1 3 2]);
-        [dW_dq_Kinetic_Rotation_ddqComponent,dW_dq_Kinetic_Rotation_remainder] = dPi_dq_Kinetic_Rotation.get_dPi_dq_Kinetic_Rotation(...
+        [dW_dq_Kinetic_Rotation_ddqComponent,dW_dq_Kinetic_Rotation_remainder] = static_method_groups.dPi_dq_Kinetic_Rotation.get_dPi_dq_Kinetic_Rotation(...
             E_G, E_G_tr, I_varTheta,...
             dvarTheta_m_dq_G_Dim3xnq2ndx1, dvarTheta_m_dq_G_Dimnq2ndx3x1,...
             dvarTheta_dt_G,d2varTheta_dt2_G_star);
@@ -360,8 +362,8 @@ end
         
         %==========================================================================
         %Virtual work terms from applied loads
-        dPi_dq_Fapplied = dotn(PvecApplied_G,dGamma_dq_G_Dim3x1xnsxnq2nd,1);
-        dPi_dq_Mapplied = dotn(MvecApplied_G,dvarTheta_dq_G_Dim3x1xnsxnq2nd,1);
+        dPi_dq_Fapplied = utility_functions.dotn(PvecApplied_G,dGamma_dq_G_Dim3x1xnsxnq2nd,1);
+        dPi_dq_Mapplied = utility_functions.dotn(MvecApplied_G,dvarTheta_dq_G_Dim3x1xnsxnq2nd,1);
         dPi_dq_Grav = utility_functions.dotn(PvecWeight_G,dGamma_m_dq_G_Dim3x1x1xnq2nd,1);
         dW_dq_AppliedLoad = sum(dPi_dq_Fapplied + dPi_dq_Mapplied,3) + dPi_dq_Grav;
         %==========================================================================
@@ -414,12 +416,12 @@ end
                 EAp_I_pm = obj.EAp_I_pm;
                 EAp_G_pm = utility_functions.MultiProd_(E_G_pm,EAp_I_pm);
                 dEAp_dt_G_pm = utility_functions.MultiProd_(dE_dt_G_pm,EAp_I_pm);
-                
+                partInformationStruct.(rigid_part_name).aero_cntr_pm = obj.aero_cntr_pm;
                 partInformationStruct.(rigid_part_name).nsAp = obj.nAnodes-1;
                 partInformationStruct.(rigid_part_name).EAp_G_pm = EAp_G_pm;
                 partInformationStruct.(rigid_part_name).dEAp_dt_G_pm = dEAp_dt_G_pm;
-                partInformationStruct.(rigid_part_name).Gamma_G_pm = sample(Gamma_G,Apm_idx,3);
-                partInformationStruct.(rigid_part_name).dGamma_dt_G_pm = sample(dGamma_dt_G,Apm_idx,3);
+                partInformationStruct.(rigid_part_name).Gamma_G_pm = utility_functions.sample(Gamma_G,Apm_idx,3);
+                partInformationStruct.(rigid_part_name).dGamma_dt_G_pm = utility_functions.sample(dGamma_dt_G,Apm_idx,3);
                %partInformationStruct.(rigid_part_name).dGammaAlphaCP_dt_G_pm = dGammaAlphaCP_dt_G_pm;
                 partInformationStruct.(rigid_part_name).dvarTheta_dt_G_pm = dvarTheta_dt_G_pm;
                 partInformationStruct.(rigid_part_name).chord = obj.c_pm;
@@ -428,6 +430,7 @@ end
                 partInformationStruct.(rigid_part_name).AIC = obj.AICs;
                 partInformationStruct.(rigid_part_name).dGamma_dq_G_pm = utility_functions.sample(dGamma_dq_G_Dim3x1xnsxnq2nd,Apm_idx,3);
                 partInformationStruct.(rigid_part_name).dvarTheta_dq_G_pm = utility_functions.sample(dvarTheta_dq_G_Dim3x1xnsxnq2nd,Apm_idx,3);
+                partInformationStruct.(rigid_part_name).aeroData = obj.aeroData;
                 if ~isempty(obj.qAero)
                     partInformationStruct.(rigid_part_name).qAero_idx = SimObject.StateInfo{'Index',obj.qAero.group}{:};
                 else
@@ -472,7 +475,7 @@ end
         
         if isequal(outputFormat,'qoi')
             
-            QOI_Container = get_field(SimObject,['QOI_Master.QOIcontainers_struct.rigidParts.' rigid_part_name]);
+            QOI_Container = utility_functions.get_field(SimObject,['QOI_Master.QOIcontainers_struct.rigidParts.' rigid_part_name]);
             
             %Gamma_G = bsxfun(@plus,rBarA_G + R_G_A*wingRoot_offset_A,MultiProd_(R_G_W,Gamma_W));
             QOI_Container.add_qoi('Gamma_G',tidx,Gamma_G,'1:ns','\Gamma#_{[G]}','m');

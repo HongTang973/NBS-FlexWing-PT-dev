@@ -85,27 +85,10 @@ classdef NBS_Master < handle
 
         aeroPartNames = cell(0)
 
-
-            th_idx
-            si_idx
-            ph_idx
-            Sx_idx
-            Sy_idx
-            Sz_idx
-
-            dth_idx
-            dsi_idx
-            dph_idx
-            dSx_idx
-            dSy_idx
-            dSz_idx
-
             rT_idx
             rR_idx
             drT_idx
             drR_idx
-
-
 
     end
 
@@ -248,32 +231,35 @@ classdef NBS_Master < handle
             if nStatesInGroup==0
                 idx = [];
                 if any(strcmp(StateSet,{'qth','qsi','qph','qSx','qSy','qSz'}))
-                    StateGroup_ = StateGroup(2:end);
-                    obj.([StateGroup_,'_idx']) = idx;
+                    StateGroup_ = StateSet(2:end);
+                    groupName = StateGroup(length(StateSet)+2:end);
+                    obj.flexParts_nonlinear.(groupName).([StateGroup_,'_idx']) = idx;
                 elseif any(strcmp(StateSet,{'dqth','dqsi','dqph','dqSx','dqSy','dqSz'}))
-                    StateGroup_ = [StateGroup(1), StateGroup(3:end)];
-                    obj.([StateGroup_,'_idx']) = idx;
+                    StateGroup_ = [StateSet(1), StateSet(3:end)];
+                    groupName = StateGroup(length(StateSet)+2:end);
+                    obj.flexParts_nonlinear.(groupName).([StateGroup_,'_idx']) = idx;
                 elseif strcmp(StateSet,{'qAero'})
                 end
-                
             else
-                idx = (1:nStatesInGroup) + idx_counter;
-                if any(strcmp(StateSet,{'qth','qsi','qph','qSx','qSy','qSz'}))
-                    StateGroup_ = StateGroup(2:end);
-                    obj.([StateGroup_,'_idx']) = idx;
-                elseif any(strcmp(StateSet,{'dqth','dqsi','dqph','dqSx','dqSy','dqSz'}))
-                    StateGroup_ = [StateGroup(1), StateGroup(3:end)];
-                    obj.([StateGroup_,'_idx']) = idx;
-                elseif strcmp(StateSet,{'qAero'})
-                  %nothing
-                elseif any(strcmp(StateGroup,{'qRigidT','qRigidR'}))
-                    StateGroup_ = StateGroup(end);
-                    obj.(['r',StateGroup_,'_idx']) = idx;                   
-                elseif any(strcmp(StateGroup,{'dqRigidT','dqRigidR'}))
-                    StateGroup_ = StateGroup(end);
-                    obj.(['dr',StateGroup_,'_idx']) = idx;                   
-                end
-                idx_counter = idx(end);
+                idx = (1:nStatesInGroup) + idx_counter; 
+                    if any(strcmp(StateSet,{'qth','qsi','qph','qSx','qSy','qSz'}))
+                        StateGroup_ = StateSet(2:end);
+                        groupName = StateGroup(length(StateSet)+2:end);
+                        obj.flexParts_nonlinear.(groupName).([StateGroup_,'_idx']) = idx;
+                    elseif any(strcmp(StateSet,{'dqth','dqsi','dqph','dqSx','dqSy','dqSz'}))
+                        StateGroup_ = [StateSet(1), StateSet(3:end)];
+                        groupName = StateGroup(length(StateSet)+2:end);
+                        obj.flexParts_nonlinear.(groupName).([StateGroup_,'_idx']) = idx;
+                    elseif strcmp(StateSet,{'qAero'})
+                        %nothing
+                    elseif any(strcmp(StateGroup,{'qRigidT','qRigidR'}))
+                        StateGroup_ = StateGroup(end);
+                        obj.(['r',StateGroup_,'_idx']) = idx;
+                    elseif any(strcmp(StateGroup,{'dqRigidT','dqRigidR'}))
+                        StateGroup_ = StateGroup(end);
+                        obj.(['dr',StateGroup_,'_idx']) = idx;
+                    end
+                    idx_counter = idx(end);             
             end
             obj.StateInfo.(StateGroup){Index_rowNum} = idx;
             if ismember(StateSet,StateSets1stOrder)
@@ -292,7 +278,7 @@ classdef NBS_Master < handle
 
         %--------------------
 
-        if obj.StateInfo.qRigidT{nStates_rowNum}==0, obj.FLAG_free_free = false; else, obj.FLAG_free_free = true; end
+        if obj.StateInfo.qRigidT{nStates_rowNum}==3, obj.FLAG_free_free = true; else, obj.FLAG_free_free = false; end
         
         obj.get_StateMap;
         
@@ -731,17 +717,16 @@ classdef NBS_Master < handle
 
     end
 
-    function generate_video(obj,varargin)
-
+    function generate_video(obj,varargin)        
         %------------------------------------------------------------------
         framesPerSecond = utility_functions.get_option(varargin,'framerate',20);
         playSpeed = utility_functions.get_option(varargin,'playSpeed',1);
         tBounds = utility_functions.get_option(varargin,'tBounds',[0,obj.nt]);
         fileName = utility_functions.get_option(varargin,'fileName','video.avi');
-
+        
         [tidx_start,~] = obj.closestTidx(tBounds(1));
         [tidx_end,~] = obj.closestTidx(tBounds(2));
-
+        
         t_ = obj.t; nt_ = obj.nt;
         t0 = t_(1);
         for i_ = 2:nt_
@@ -761,7 +746,7 @@ classdef NBS_Master < handle
             qoiRequest = [];
         end
         %------------------------------------------------------------------
-
+        
         %specify a qoi Request for the required plotting fields
         qoiRequest = [qoiRequest;{...
             true,'ex_G','1:ns',Tidx_str;...
@@ -769,56 +754,36 @@ classdef NBS_Master < handle
             true,'ez_G','1:ns',Tidx_str;...
             true,'R_C_W','1',Tidx_str;...
             true,'Gamma_G','1:ns',Tidx_str}];
-
+        
         %write qoi Request to the QOI_Container
         obj.QOI_Master.qoi_request_systemLevel = qoiRequest;
-
+        
         %populate any extra info required based on above request
         obj.QOI_Master.write_QOI_values('systemLevel','display',false);
-
-        writerObj = VideoWriter(fileName,'MPEG-4');
-%         writerObj.Quality = 100;
+        
+        writerObj = VideoWriter(fileName);
         writerObj.FrameRate = framesPerSecond_closestDiscreteFit*playSpeed;
         open(writerObj);
-
-        f = figure('units','normalized','outerposition',[0 0 1 1]);
-        f.Color = [1 1 1];
-
-
-%         set(gcf,'outerPosition',[100 100 800 800],'color',[1 1 1]);
+        
+        figure;
+        set(gcf,'outerPosition',[100 100 800 800],'color',[1 1 1]);
         pause(0.1);
-
+        
         for i_ = 1:numel(Tidx)
             tidx = Tidx(i_);
             cla
-%             obj.plotBounds = [-60 60; 0, 120; -60, 60];
             obj.draw('parts','all','Tidx',tidx,'qoiRequest',false,'newFig',false,varargin{:})
             set(gcf,'Renderer','zbuffer');
             ax = gca;
-            ax.XTickLabel = [];
-            ax.YTickLabel = [];
-            ax.ZTickLabel = [];
-            ax.TickDir = 'in';
-%             axis(ax, 'equal');
-%             set(ax,'ZLim', obj.plotBounds(1,:), 'YLim', obj.plotBounds(2,:), 'XLim', obj.plotBounds(3,:));
-
-            set(ax,'Xdir','reverse');
             set(ax,'Units','pixels');
-            grid off
-            lgt = light;
-            lgt.Position = [-1 -1 1];
-
             pos = get(ax,'Position');
             marg = 30;
             rect = [-marg, -marg, pos(3)+2*marg, pos(4)+2*marg];
-
             title(['t = ' num2str(t_(tidx))]);
             F = getframe(gca,rect);
-
             writeVideo(writerObj,F);
         end
         close(gcf);
-
     end
 
     function [Tidx,t] = closestTidx(obj,t_request)

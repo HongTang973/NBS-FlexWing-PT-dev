@@ -5,14 +5,13 @@ O = NBS_flexPart_nonlinear(master_object,name,'Parent',parent_object);
     L = 16;
     ns = 201;
 O.s = permute(linspace(0,L,ns),[1 3 2]);
-
     nAnodes = 17;
     Anode_Skew_Factor = 1.0; %dictates the degree to which the aero nodes are bunched towards the tip (set to 1 for linear distribution)
     Anode_distr = linspace(1,0,nAnodes).^Anode_Skew_Factor;
     s_aero_ = (1 - Anode_distr)*L;
 O.s_aero = permute(s_aero_,[1 3 2]);
+O.aero_cntr = O.s*0 + 0.25;
 O.isAero = true;
-
 O.h = ones(1,1,ns)*0.2;
 %--------------------------------------------------------------------------
     TaperScaling = reshape(linspace(2,0.5,ns),1,1,[]);

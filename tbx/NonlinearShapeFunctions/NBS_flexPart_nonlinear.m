@@ -52,7 +52,7 @@ classdef NBS_flexPart_nonlinear < handle
                         ApWidths_pm                                        %[m] aero panel widths in the eyAp direction
         w                                                                  %[m] wing width in the ex direction
         h                                                                  %[m] wing thicknesses
-        aero_cntr = 0.25;                                                  %[-] assumed aero centres for each panel (percentage of chord)
+        aero_cntr                                                          %[-] assumed aero centres for each panel (percentage of chord)
         aero_cntr_pm
 
         aeroData = struct();
@@ -204,6 +204,8 @@ classdef NBS_flexPart_nonlinear < handle
                        %onsB, onsdB
         qth,qsi,qph,qSx,qSy,qSz,qAero,nQAero
         nqs, nqa, nq2nd
+        th_idx, si_idx, ph_idx, Sx_idx, Sy_idx, Sz_idx
+        dth_idx, dsi_idx, dph_idx, dSx_idx, dSy_idx, dSz_idx
     end
 
     properties (Dependent)
@@ -368,7 +370,7 @@ classdef NBS_flexPart_nonlinear < handle
         if isempty(obj.qSy.group), obj.qSy.group = ['qSy_' obj.partName]; end
         if isempty(obj.qSz.group), obj.qSz.group = ['qSz_' obj.partName]; end
 
-
+        
         if PLOT
             obj.shapeObject_bend.plotShapes(obj.shapeObject_bend,'output_detail','final');
             obj.shapeObject_twist.plotShapes(obj.shapeObject_twist,'output_detail','final');
@@ -1004,19 +1006,19 @@ classdef NBS_flexPart_nonlinear < handle
 
             dqe_idx = partInformationStruct.(parentName).dq2nd_idx;
 
-            th_idx = SimObject.th_idx;
-            si_idx = SimObject.si_idx;
-            ph_idx = SimObject.ph_idx;
-            Sx_idx = SimObject.Sx_idx;
-            Sy_idx = SimObject.Sy_idx;
-            Sz_idx = SimObject.Sz_idx;
+            th_idx = obj.th_idx;
+            si_idx = obj.si_idx;
+            ph_idx = obj.ph_idx;
+            Sx_idx = obj.Sx_idx;
+            Sy_idx = obj.Sy_idx;
+            Sz_idx = obj.Sz_idx;
 
-            dth_idx = SimObject.dth_idx;
-            dsi_idx = SimObject.dsi_idx;
-            dph_idx = SimObject.dph_idx;
-            dSx_idx = SimObject.dSx_idx;
-            dSy_idx = SimObject.dSy_idx;
-            dSz_idx = SimObject.dSz_idx;
+            dth_idx = obj.dth_idx;
+            dsi_idx = obj.dsi_idx;
+            dph_idx = obj.dph_idx;
+            dSx_idx = obj.dSx_idx;
+            dSy_idx = obj.dSy_idx;
+            dSz_idx = obj.dSz_idx;
 
             nqs = obj.nqs;
             nqa = obj.nqa;
@@ -1261,16 +1263,20 @@ classdef NBS_flexPart_nonlinear < handle
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             %% FlexPart_nonlinear Applied Loads from PvecApplied_G, MvecApplied_G, Gravitational Acceleration
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            switch SimObject.sim.operation
-                case 'fixed'
-                    if SimObject.sim.FLAG_parked
+            if ~isfield(SimObject.sim, 'operation')
+                PvecWeight_G = SimObject.grav_acc.*SimObject.gravVec_G.*obj.ms;
+            else
+                switch SimObject.sim.operation
+                    case 'fixed'
+                        if SimObject.sim.FLAG_parked
+                            PvecWeight_G = SimObject.grav_acc.*SimObject.gravVec_G.*obj.ms;
+                        else
+                            Omega_G = repmat([0;0;2*pi/SimObject.T], [1 1 obj.ns]);
+                            PvecWeight_G = - utility_functions.crossn(2*obj.ms.*Omega_G, dGamma_dt_G, 1) - utility_functions.crossn(obj.ms.*Omega_G,utility_functions.crossn(Omega_G, Gamma_G, 1),1);
+                        end
+                    case {'forced', 'free'}
                         PvecWeight_G = SimObject.grav_acc.*SimObject.gravVec_G.*obj.ms;
-                    else
-                        Omega_G = repmat([0;0;2*pi/SimObject.T], [1 1 obj.ns]);
-                        PvecWeight_G = - utility_functions.crossn(2*obj.ms.*Omega_G, dGamma_dt_G, 1) - utility_functions.crossn(obj.ms.*Omega_G,utility_functions.crossn(Omega_G, Gamma_G, 1),1);
-                    end
-                case {'forced', 'free'}
-                    PvecWeight_G = SimObject.grav_acc.*SimObject.gravVec_G.*obj.ms;
+                end
             end
             
             massOffset_G = utility_functions.MultiProd_(E_G,massOffset_I);

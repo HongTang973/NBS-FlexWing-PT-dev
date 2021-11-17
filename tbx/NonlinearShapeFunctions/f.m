@@ -333,7 +333,12 @@ if ~isempty(aerodynamics)
                     AIC = AICs_global;
                     C_D0 = 0;
                     qsteady = true;
+                    
+                    if isfield(aeroData_global, 'aeroCoeff2D')
                     aeroCoeff2D = aeroData_global.aeroCoeff2D;
+                    else
+                    aeroCoeff2D = [];    
+                    end
                     
                     [~,~,Fqc,Mqc,Drag,alpha_global] = aerodynamic_codes.aero_stripTheory_usteady_LeishmanIndicial(...
                         Qaero,rho,Vinf,V3qrt,xAp,yAp,zAp,dAoA,chord,ApWidth,AIC,C_D0,aeroCoeff2D,qsteady);
