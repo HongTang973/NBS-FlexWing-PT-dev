@@ -127,10 +127,11 @@ end
         obj.Mvec_appliedGlobal_G = obj.Mvec_appliedGlobal_G + cat(3,zeros(3,1,obj.ns-1),obj.tip_moment_global);
         obj.Mvec_appliedLocal_I = obj.Mvec_appliedLocal_I + cat(3,zeros(3,1,obj.ns-1),obj.tip_moment_local);
         %--------------------
-        
+        if obj.isAero
         if strcmp(obj.NBS_Master.aerodynamics,'strip_unsteady')
             obj.qAero.n = (obj.nAnodes-1)*1;
             obj.qAero.group = ['AeroStates_' obj.partName];
+        end
         end
     end
     
@@ -489,6 +490,7 @@ end
             QOI_Container.add_qoi('ex_G',tidx,E_G(:,1,:),'1:ns','ex#_{[G]}','');
             QOI_Container.add_qoi('ey_G',tidx,E_G(:,2,:),'1:ns','ey#_{[G]}','');
             QOI_Container.add_qoi('ez_G',tidx,E_G(:,3,:),'1:ns','ez#_{[G]}','');
+            QOI_Container.add_qoi('PvecApplied_G', tidx, PvecApplied_G,'1:ns','Pvec_G','');
             
             QOI_Container.discretisationVariables.ns = obj.ns;
             QOI_Container.discretisationVariables.nt = SimObject.nt;

@@ -154,7 +154,7 @@ classdef NBS_Master < handle
         for partObj_ = obj.allParts_cell
             partObj = partObj_{1};
             if ~isa(partObj,'NBS_Master')
-                partObj.set_dependent_properties;
+                partObj.set_dependent_properties;               
             end
         end
 
@@ -184,9 +184,15 @@ classdef NBS_Master < handle
         StateSets = [StateSets2ndOrder , StateSets1stOrder];
         %----------------------------------
         %Populate the first row of StateInfo according to the 'n' and 'group' state information written to each system part
+        flex_counter = 0;
+        flexNames = cell(1,numel(obj.flexParts_nonlinear_cell));
         for ii_ = 1:obj.nParts
-            PartObj = obj.allParts_cell{ii_};
-
+            PartObj = obj.allParts_cell{ii_};           
+            if isa(PartObj,'NBS_flexPart_nonlinear')
+                flex_counter = flex_counter  + 1;
+                flexNames{flex_counter} = PartObj.partName;                
+            end  
+            
             for j_ = StateSets
                 StateSet = j_{:};
                 if isprop(PartObj,StateSet) && ~isempty(PartObj.(StateSet))
@@ -222,46 +228,32 @@ classdef NBS_Master < handle
         %Populate the row 2 StateInfo entries and get the state vector indices qg2nd_idx, dqg2nd_idx and qg1st_idx
         StateGroups = obj.StateInfo.Properties.VariableNames;
         idx_counter = 0;
+        flexInd = ~strcmp(StateSets2ndOrder(1),StateGroups(1)); 
+        flex_counter = reshape(repmat(1:numel(flexNames), 13, 1), 13*numel(flexNames), []);
+        
         obj.qg1st_idx = []; obj.qg2nd_idx = []; obj.dqg2nd_idx = [];
 
         for j_ = 1:numel(StateGroups)
             StateGroup = StateGroups{j_};
             StateSet = obj.StateInfo.(StateGroup){stateSet_rowNum};
             nStatesInGroup = obj.StateInfo.(StateGroup){nStates_rowNum};
+            
             if nStatesInGroup==0
                 idx = [];
-                if any(strcmp(StateSet,{'qth','qsi','qph','qSx','qSy','qSz'}))
-                    StateGroup_ = StateSet(2:end);
-                    groupName = StateGroup(length(StateSet)+2:end);
-                    obj.flexParts_nonlinear.(groupName).([StateGroup_,'_idx']) = idx;
-                elseif any(strcmp(StateSet,{'dqth','dqsi','dqph','dqSx','dqSy','dqSz'}))
-                    StateGroup_ = [StateSet(1), StateSet(3:end)];
-                    groupName = StateGroup(length(StateSet)+2:end);
-                    obj.flexParts_nonlinear.(groupName).([StateGroup_,'_idx']) = idx;
-                elseif strcmp(StateSet,{'qAero'})
-                end
             else
-                idx = (1:nStatesInGroup) + idx_counter; 
-                    if any(strcmp(StateSet,{'qth','qsi','qph','qSx','qSy','qSz'}))
-                        StateGroup_ = StateSet(2:end);
-                        groupName = StateGroup(length(StateSet)+2:end);
-                        obj.flexParts_nonlinear.(groupName).([StateGroup_,'_idx']) = idx;
-                    elseif any(strcmp(StateSet,{'dqth','dqsi','dqph','dqSx','dqSy','dqSz'}))
-                        StateGroup_ = [StateSet(1), StateSet(3:end)];
-                        groupName = StateGroup(length(StateSet)+2:end);
-                        obj.flexParts_nonlinear.(groupName).([StateGroup_,'_idx']) = idx;
-                    elseif strcmp(StateSet,{'qAero'})
-                        %nothing
-                    elseif any(strcmp(StateGroup,{'qRigidT','qRigidR'}))
-                        StateGroup_ = StateGroup(end);
-                        obj.(['r',StateGroup_,'_idx']) = idx;
-                    elseif any(strcmp(StateGroup,{'dqRigidT','dqRigidR'}))
-                        StateGroup_ = StateGroup(end);
-                        obj.(['dr',StateGroup_,'_idx']) = idx;
-                    end
-                    idx_counter = idx(end);             
+                idx = (1:nStatesInGroup) + idx_counter;
+                idx_counter = idx(end);
             end
             obj.StateInfo.(StateGroup){Index_rowNum} = idx;
+            
+            if any(strcmp(StateGroup,{'qRigidT','qRigidR'}))
+                StateGroup_ = StateGroup(end);
+                obj.(['r',StateGroup_,'_idx']) = idx;
+            elseif any(strcmp(StateGroup,{'dqRigidT','dqRigidR'}))
+                StateGroup_ = StateGroup(end);
+                obj.(['dr',StateGroup_,'_idx']) = idx;
+            end
+            
             if ismember(StateSet,StateSets1stOrder)
                 obj.qg1st_idx = [obj.qg1st_idx(:);obj.StateInfo.(StateGroup){Index_rowNum}(:)];
             elseif ismember(StateSet,StateSets2ndOrder)
@@ -273,6 +265,59 @@ classdef NBS_Master < handle
             end
             obj.IC(idx) = obj.StateInfo{'Initial Condition',StateGroup}{:};
         end
+        
+        idx_counter = 0;
+        for j_ = 1:numel(StateGroups)
+            StateGroup = StateGroups{j_};
+            StateSet = obj.StateInfo.(StateGroup){stateSet_rowNum};
+            nStatesInGroup = obj.StateInfo.(StateGroup){nStates_rowNum};
+            
+            if nStatesInGroup==0
+                idx = [];
+                if any(strcmp(StateSet,{'qth','qsi','qph','qSx','qSy','qSz'}))
+                    StateGroup_ = StateSet(2:end);
+                    if flexInd
+                        obj.flexParts_nonlinear.(flexNames{flex_counter(j_)}).([StateGroup_,'_idx']) = idx;
+                    else
+                        for i_ = 1:numel(flexNames)
+                            obj.flexParts_nonlinear.(flexNames{i_}).([StateGroup_,'_idx']) = idx;
+                        end
+                    end
+                elseif any(strcmp(StateSet,{'dqth','dqsi','dqph','dqSx','dqSy','dqSz'}))
+                    StateGroup_ = [StateSet(1), StateSet(3:end)];
+                    if flexInd
+                        obj.flexParts_nonlinear.(flexNames{flex_counter(j_)}).([StateGroup_,'_idx']) = idx;
+                    else
+                        for i_ = 1:numel(flexNames)
+                            obj.flexParts_nonlinear.(flexNames{i_}).([StateGroup_,'_idx']) = idx;
+                        end
+                    end
+                end
+            else
+                idx = (1:nStatesInGroup) + idx_counter;
+                if any(strcmp(StateSet,{'qth','qsi','qph','qSx','qSy','qSz'}))
+                    StateGroup_ = StateSet(2:end);
+                    if flexInd
+                        obj.flexParts_nonlinear.(flexNames{flex_counter(j_)}).([StateGroup_,'_idx']) = idx;
+                    else
+                        for i_ = 1:numel(flexNames)
+                            obj.flexParts_nonlinear.(flexNames{i_}).([StateGroup_,'_idx']) = idx;
+                        end
+                    end
+                elseif any(strcmp(StateSet,{'dqth','dqsi','dqph','dqSx','dqSy','dqSz'}))
+                    StateGroup_ = [StateSet(1), StateSet(3:end)];
+                    if flexInd                    
+                    obj.flexParts_nonlinear.(flexNames{flex_counter(j_)}).([StateGroup_,'_idx']) = idx;
+                     else
+                        for i_ = 1:numel(flexNames)
+                            obj.flexParts_nonlinear.(flexNames{i_}).([StateGroup_,'_idx']) = idx;
+                        end
+                    end                   
+                end
+                idx_counter = idx(end);
+            end
+        end
+
         obj.IC = reshape(obj.IC,[],1);
         obj.nqg2nd = numel(obj.qg2nd_idx);
 
@@ -281,31 +326,6 @@ classdef NBS_Master < handle
         if obj.StateInfo.qRigidT{nStates_rowNum}==3, obj.FLAG_free_free = true; else, obj.FLAG_free_free = false; end
         
         obj.get_StateMap;
-        
-%         if ~any(strcmp(StateGroup, {'qRigidT','qRigidR','dqRigidT','dqRigidR'}))
-%         obj.th_idx = obj.StateInfo{'Index',partObj.qth.group}{:};
-%         obj.si_idx = obj.StateInfo{'Index',partObj.qsi.group}{:};
-%         obj.ph_idx = obj.StateInfo{'Index',partObj.qph.group}{:};
-%         obj.Sx_idx = obj.StateInfo{'Index',partObj.qSx.group}{:};
-%         obj.Sy_idx = obj.StateInfo{'Index',partObj.qSy.group}{:};
-%         obj.Sz_idx = obj.StateInfo{'Index',partObj.qSz.group}{:};
-%         
-%         obj.dth_idx = obj.StateInfo{'Index',['d' partObj.qth.group]}{:};
-%         obj.dsi_idx = obj.StateInfo{'Index',['d' partObj.qsi.group]}{:};
-%         obj.dph_idx = obj.StateInfo{'Index',['d' partObj.qph.group]}{:};
-%         obj.dSx_idx = obj.StateInfo{'Index',['d' partObj.qSx.group]}{:};
-%         obj.dSy_idx = obj.StateInfo{'Index',['d' partObj.qSy.group]}{:};
-%         obj.dSz_idx = obj.StateInfo{'Index',['d' partObj.qSz.group]}{:};
-%         
-%         obj.rT_idx  = obj.StateInfo{'Index','qRigidT'}{:};
-%         obj.rR_idx  = obj.StateInfo{'Index','qRigidR'}{:};
-%         obj.drT_idx = obj.StateInfo{'Index','dqRigidT'}{:};
-%         obj.drR_idx = obj.StateInfo{'Index','dqRigidR'}{:};
-%         end
-        
-
-
-
     end
 
     function initialise_QOI_Master(obj)
@@ -615,6 +635,7 @@ classdef NBS_Master < handle
         if newFig
             figure('WindowStyle','docked','DockControls','on','Name',figureName);
         end
+        axis equal;
         %AppliedForce = get_option(varargin,'AppliedForce',false);
 
         %view(ax,[120 20]);
@@ -765,7 +786,7 @@ classdef NBS_Master < handle
         writerObj.FrameRate = framesPerSecond_closestDiscreteFit*playSpeed;
         open(writerObj);
         
-        figure;
+        figure();
         set(gcf,'outerPosition',[100 100 800 800],'color',[1 1 1]);
         pause(0.1);
         
@@ -776,6 +797,8 @@ classdef NBS_Master < handle
             set(gcf,'Renderer','zbuffer');
             ax = gca;
             set(ax,'Units','pixels');
+            set(ax, 'Xdir', 'reverse')
+            set(ax, 'Zdir', 'reverse')
             pos = get(ax,'Position');
             marg = 30;
             rect = [-marg, -marg, pos(3)+2*marg, pos(4)+2*marg];
@@ -1369,7 +1392,7 @@ classdef NBS_Master < handle
 
             XLIM_projection = -XLIM(projectionFacesXYZ(1));
             YLIM_projection = YLIM(projectionFacesXYZ(2));
-            ZLIM_projection = ZLIM(projectionFacesXYZ(3));
+            ZLIM_projection = -ZLIM(projectionFacesXYZ(3));
 
             hold on;
             zrs = GammaX*0;

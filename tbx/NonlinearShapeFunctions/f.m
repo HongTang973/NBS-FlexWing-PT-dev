@@ -424,7 +424,7 @@ if ~isempty(aerodynamics)
             switch SimObject.sim.operation
                 case 'fixed'
                     if ~sim.FLAG_parked
-                        Omega_G = repmat([0;0;2*pi/SimObject.T], [1 1 nsAp]);
+                        Omega_G = repmat([0;0;2*pi/SimObject.T], [1 1 nsAp*sim.nB]);
                         V_Omega = - utility_functions.crossn(Omega_G,Gamma_G_pm_global,1);
                         V_Free = SimObject.V* uVec_freeStream_G;
                         Vinf = V_Omega + V_Free;
@@ -482,7 +482,7 @@ if ~isempty(aerodynamics)
                     
                     switch BEMvar.polarMethod
                         case 'linear'
-                            aeroCoeff2D_part = aeroData_part.aeroCoeff2D;
+                            aeroCoeff2D_part = aeroData_part.oye.c_static;
                         case 'spline'
                             aeroCoeff2D_part = aeroData_part.oye.fit;
                     end
@@ -501,7 +501,7 @@ if ~isempty(aerodynamics)
                     %==============================================================
                     % global to aircraft (hub) rotation matrices for i'th blade
                     az_ib = 2*pi/BEMvar.B*(i-1);
-                    R_A_G_ib= utility_functions.r_matrix([0,0,1],az_ib).'*R_A_G;
+                    R_A_G_ib= utility_functions.r_matrix([1,0,0],az_ib).'*R_A_G;
                     Vinf_A = utility_functions.MultiProd_(R_A_G_ib, Vinf);
                     dGammaAlphaCP_dt_A_pm_part = utility_functions.MultiProd_(R_A_G_ib,dGammaAlphaCP_dt_G_pm_part);
                     Gamma_A_pm_part = utility_functions.MultiProd_(R_A_G_ib, Gamma_G_pm_part);
@@ -540,7 +540,7 @@ if ~isempty(aerodynamics)
                 
                 if sim.FLAG_dw
                     Qaero_idx_dw = qAero_idx_global(nsAp*obj.nQAero + 1:end);
-                    wqs_A_global = [ap_global.*Vrel_A_global(1,:,:); -a_global.*Vrel_A_global(3,:,:)]; %[tangential; normal]
+                    wqs_A_global = [-a_global.*Vrel_A_global(1,:,:); ap_global.*Vrel_A_global(3,:,:)]; %[normal; tangential]
                     dwqs_dt = 0; dtau1_dt = 0;
                     switch sim.dwDetail
                         case 'full' % 4 states per strip
@@ -548,8 +548,8 @@ if ~isempty(aerodynamics)
                             wn_bar_qs = []; a_bar_qs = [];
                         case 'simple' % 1 global rotor state
                             Qaero = reshape(Q(Qaero_idx_dw),1,1,[]);
-                            wn_bar_qs = 1./R_A_pn_global.*trapz(squeeze(r_A_pm_global),squeeze(wqs_A_global(2,:,:)));
-                            vn_bar_qs = 1./R_A_pn_global.*trapz(squeeze(r_A_pm_global),Vrel_A_global(3,:,:));
+                            wn_bar_qs = 1./R_A_pn_global.*trapz(squeeze(r_A_pm_global),squeeze(wqs_A_global(1,:,:)));
+                            vn_bar_qs = 1./R_A_pn_global.*trapz(squeeze(r_A_pm_global),Vrel_A_global(1,:,:));
                             a_bar_qs = 1./R_A_pn_global.*trapz(squeeze(r_A_pm_global),squeeze(a_global));
                     end   
                     if FLAG_static
@@ -654,9 +654,15 @@ if ~isempty(aerodynamics)
                             
                             %============OYE===================================
                         case 'oye' %1 state per strip (dynamic only in stall)
-
-                            oyeCoeff = aeroData_global.oye;
                             
+                            
+                            oye_ = aeroData_global.oye;
+                          
+                            oyeCoeff.cl_fs = repmat(oye_.cl_fs, [1,1,3]);
+                            oyeCoeff.c_static = repmat(oye_.c_static, [1,1,3]);
+                             oyeCoeff.clINV = repmat(oye_.clINV, [1,1,3]);
+                              oyeCoeff.f_static = repmat(oye_.f_static, [1,1,3]);
+                              
                             if sim.FLAG_dw
                                 Qaero_idx = qAero_idx_global(1:nsAp*obj.nQAero);
                                 Qaero = reshape(Q(Qaero_idx),1,1,[]);
@@ -682,7 +688,7 @@ if ~isempty(aerodynamics)
                     
                 case 'lookup 2D'
                     
-                    if sim.FLAG_parked
+                    if 1% sim.FLAG_parked
                         switch sim.aeroInterp_method
                             case 'spline'                               
                                 aeroFit = aeroData_global.oye.fit;
@@ -695,10 +701,10 @@ if ~isempty(aerodynamics)
                                 
                             case 'linear'
                                 aeroCoeff2D = aeroData_global.oye.c_static;
-                                alpha_in_file = aeroCoeff2D(:,1,:);
-                                cl_in_file = aeroCoeff2D(:,2,:);
-                                cd_in_file = aeroCoeff2D(:,3,:);
-                                cm_in_file = aeroCoeff2D(:,4,:);                               
+                                alpha_in_file = repmat(aeroCoeff2D(:,1,:),[1 1 3]);
+                                cl_in_file = repmat(aeroCoeff2D(:,2,:),[1 1 3]);
+                                cd_in_file = repmat(aeroCoeff2D(:,3,:),[1 1 3]);
+                                cm_in_file = repmat(aeroCoeff2D(:,4,:),[1 1 3]);                               
                                 
                                 Nseg = length(alpha_global);
                                 IDSeg = (1:Nseg)';
@@ -729,10 +735,7 @@ if ~isempty(aerodynamics)
                     ca = cos(alpha_global);
                     sa = sin(alpha_global);
 %                     alpha_ = alpha_global*180/pi;
-                    if ~sim.FLAG_parked
-                        AICs_global = ones(1,1,nsAp);
-                    end
-                    
+                   
                     LIFT = Pdyn.*chord_pm_global.*ApWidth_pm_global.*AICs_global.*cl_global;
                     DRAG = Pdyn.*chord_pm_global.*ApWidth_pm_global.*AICs_global.*cd_global;
                     MOMENT = Pdyn.*chord_pm_global.*ApWidth_pm_global.*AICs_global.*cm_global;
@@ -775,19 +778,19 @@ if ~isempty(aerodynamics)
                     F_A = DRAG;
                     F_M = MOMENT;
                     
-                    if sim.unsteady
+                    if sim.FLAG_unsteady
                         dQ_Aero(Qaero_idx,1) = dQaero(:);
                     end
-                    
+                        %==============================================================
+      
             end
-            
-            
-            
-            %==============================================================
             
             Fqc  = F_N.* EAp_G_pm_global(:,3,:);
             Mqc  = F_M.* EAp_G_pm_global(:,2,:);
-            Drag = F_A.* EAp_G_pm_global(:,1,:);
+            Drag = F_A.* EAp_G_pm_global(:,1,:);              
+            
+            
+
     end
     
     PvecAero_G_pm_global = Fqc + Drag;
@@ -806,6 +809,7 @@ else
     for aeroPartName_cell = aeroPartNames
         
         aeroPartName = aeroPartName_cell{1};
+        dqg2nd_to_dq2nd_idx = partInformationStruct.(aeroPartName).dqg2nd_to_dq2nd_idx;
         harmonic_load = partInformationStruct.(aeroPartName).harmonic_load_global;
         nsAp = partInformationStruct.(aeroPartName).nsAp;
         dGamma_dqg_G_pm_part = zeros(3,1,nsAp,nqg2nd);
