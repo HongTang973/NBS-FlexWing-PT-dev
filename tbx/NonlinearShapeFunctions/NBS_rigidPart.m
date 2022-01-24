@@ -490,7 +490,7 @@ end
             QOI_Container.add_qoi('ex_G',tidx,E_G(:,1,:),'1:ns','ex#_{[G]}','');
             QOI_Container.add_qoi('ey_G',tidx,E_G(:,2,:),'1:ns','ey#_{[G]}','');
             QOI_Container.add_qoi('ez_G',tidx,E_G(:,3,:),'1:ns','ez#_{[G]}','');
-            QOI_Container.add_qoi('PvecApplied_G', tidx, PvecApplied_G,'1:ns','Pvec_G','');
+            QOI_Container.add_qoi('PvecApplied_I', tidx, obj.Pvec_appliedLocal_I,'1:ns','Pvec_I','');
             
             QOI_Container.discretisationVariables.ns = obj.ns;
             QOI_Container.discretisationVariables.nt = SimObject.nt;

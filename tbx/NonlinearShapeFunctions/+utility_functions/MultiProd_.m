@@ -1,3 +1,4 @@
+
 function AB = MultiProd_(A,B,~)
 %returns the product of the multidimensional arrays A and B
 %product obtained by multiplying together all of the (dim1,dim2) 2d sub-matrices of A and B
@@ -26,8 +27,9 @@ else
 %     global mult3d_mex
 %     if mult3d_mex       
 %         AB = mtimesx(A,B);
+        AB = utility_functions.multiprod(A,B);
 %     else
-        AB = pagemtimes(A,B); %faster than mtimesx
+%         AB = pagemtimes(A,B); %faster than mtimesx
 %     end
     
 end

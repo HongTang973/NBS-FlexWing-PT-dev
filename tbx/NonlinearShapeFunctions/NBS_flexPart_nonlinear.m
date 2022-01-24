@@ -523,7 +523,7 @@ classdef NBS_flexPart_nonlinear < handle
                 aero_ref_direction_A = [1;0;0];
                 aero_ref_direction_W = obj.R_A_W.'*aero_ref_direction_A;
                 aero_ref_direction_I = utility_functions.mult_Anmz_Bmp1(permute(E0_aero_ref_W,[2 1 3]),aero_ref_direction_W); %calculate the [1;0;0] vector in the intrinsic system
-                aero_ref_projection_I = [1;1;0].*aero_ref_direction_I; %projection of the intrinsic [1;0;0] vector onto the wing plane
+                aero_ref_projection_I = [1;0;0].*aero_ref_direction_I; %projection of the intrinsic [1;0;0] vector onto the wing plane
 
                 %note: EAp aligns with free-stream direction
                 %regardless of which side of aircraft being considered
@@ -542,7 +542,7 @@ classdef NBS_flexPart_nonlinear < handle
                     obj.EAp_I = utility_functions.MultiProd_(utility_functions.r_matrix(eyAp_pr_I,obj.alpha_A*pi/180-alpha_aero_ref_I),EAp_pr_I);
                     obj.alpha_I = [];
                 elseif ~isempty(obj.alpha_I)
-                    obj.EAp_I = utility_functions.MultiProd_(utility_functions.r_matrix(eyAp_pr_I,obj.alpha_I*pi/180),EAp_pr_I);
+                    obj.EAp_I = utility_functions.MultiProd_(utility_functions.r_matrix(eyAp_pr_I,obj.alpha_I*pi/180),EAp_pr_I)*0 + eye(3);% [-1;-1;1].*eye(3);
                     obj.alpha_A = [];
                 end
 
@@ -1006,19 +1006,19 @@ classdef NBS_flexPart_nonlinear < handle
 
             dqe_idx = partInformationStruct.(parentName).dq2nd_idx;
 
-            th_idx = obj.th_idx;
-            si_idx = obj.si_idx;
-            ph_idx = obj.ph_idx;
-            Sx_idx = obj.Sx_idx;
-            Sy_idx = obj.Sy_idx;
-            Sz_idx = obj.Sz_idx;
+            th_idx = obj.th_idx.';
+            si_idx = obj.si_idx.';
+            ph_idx = obj.ph_idx.';
+            Sx_idx = obj.Sx_idx.';
+            Sy_idx = obj.Sy_idx.';
+            Sz_idx = obj.Sz_idx.';
 
-            dth_idx = obj.dth_idx;
-            dsi_idx = obj.dsi_idx;
-            dph_idx = obj.dph_idx;
-            dSx_idx = obj.dSx_idx;
-            dSy_idx = obj.dSy_idx;
-            dSz_idx = obj.dSz_idx;
+            dth_idx = obj.dth_idx.';
+            dsi_idx = obj.dsi_idx.';
+            dph_idx = obj.dph_idx.';
+            dSx_idx = obj.dSx_idx.';
+            dSy_idx = obj.dSy_idx.';
+            dSz_idx = obj.dSz_idx.';
 
             nqs = obj.nqs;
             nqa = obj.nqa;
@@ -1271,7 +1271,7 @@ classdef NBS_flexPart_nonlinear < handle
                         if SimObject.sim.FLAG_parked
                             PvecWeight_G = SimObject.grav_acc.*SimObject.gravVec_G.*obj.ms;
                         else
-                            Omega_G = repmat([0;0;2*pi/SimObject.T], [1 1 obj.ns]);
+                            Omega_G = repmat([2*pi/SimObject.T; 0; 0], [1 1 obj.ns]);
                             PvecWeight_G = - utility_functions.crossn(2*obj.ms.*Omega_G, dGamma_dt_G, 1) - utility_functions.crossn(obj.ms.*Omega_G,utility_functions.crossn(Omega_G, Gamma_G, 1),1);
                         end
                     case {'forced', 'free'}

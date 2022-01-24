@@ -83,8 +83,8 @@ FLAG_free_free = SimObject.FLAG_free_free;
 qg2nd_idx = SimObject.qg2nd_idx;
 dqg2nd_idx = SimObject.dqg2nd_idx;
 nqg2nd = SimObject.nqg2nd;
-nQ = numel(Q);
-dQ_Aero = zeros(nQ,1,SimObject.nParts);
+nQ = size(Q);
+dQ_Aero = zeros(nQ(1), nQ(2), SimObject.nParts, 'like', Q);
 
 % if FLAG_free_free, nqr = 6; else, nqr = 0; end
 
@@ -412,10 +412,10 @@ if ~isempty(aerodynamics)
                 global_idx_counter = global_idx_counter + nsAp;
                 
                 dqg2nd_to_dq2nd_idx = partInformationStruct.(aeroPartName).dqg2nd_to_dq2nd_idx;              
-                dGamma_dqg_G_pm_part = zeros(3,1,nsAp,nqg2nd);
+                dGamma_dqg_G_pm_part = zeros(3,1,nsAp,nqg2nd, 'like', partInformationStruct.(aeroPartName).dGamma_dq_G_pm);
                 dGamma_dqg_G_pm_part(:,:,:,dqg2nd_to_dq2nd_idx) = partInformationStruct.(aeroPartName).dGamma_dq_G_pm;
                 dGamma_dqg_G_pm_global = cat(3,dGamma_dqg_G_pm_global,dGamma_dqg_G_pm_part);
-                dvarTheta_dqg_G_pm_part = zeros(3,1,nsAp,nqg2nd);
+                dvarTheta_dqg_G_pm_part = zeros(3,1,nsAp,nqg2nd, 'like', partInformationStruct.(aeroPartName).dvarTheta_dq_G_pm);
                 dvarTheta_dqg_G_pm_part(:,:,:,dqg2nd_to_dq2nd_idx) = partInformationStruct.(aeroPartName).dvarTheta_dq_G_pm;
                 dvarTheta_dqg_G_pm_global = cat(3,dvarTheta_dqg_G_pm_global,dvarTheta_dqg_G_pm_part);               
             end
@@ -424,9 +424,9 @@ if ~isempty(aerodynamics)
             switch SimObject.sim.operation
                 case 'fixed'
                     if ~sim.FLAG_parked
-                        Omega_G = repmat([0;0;2*pi/SimObject.T], [1 1 nsAp*sim.nB]);
+                        Omega_G = repmat([2*pi/SimObject.T;0;0], [1 1 nsAp*sim.nB]);
                         V_Omega = - utility_functions.crossn(Omega_G,Gamma_G_pm_global,1);
-                        V_Free = SimObject.V* uVec_freeStream_G;
+                        V_Free = SimObject.V*uVec_freeStream_G;
                         Vinf = V_Omega + V_Free;
                     else
                         V_Free = SimObject.V* uVec_freeStream_G;
@@ -460,7 +460,7 @@ if ~isempty(aerodynamics)
                 %====================== BEM ===============================
                 
                 %initialise rotor variables
-                [a_global, ap_global, cl_global, cd_global, cm_global,...
+                [a_global, ap_global, alpha_global, cl_global, cd_global, cm_global,...
                     Urel_G_global,Vrel_A_global,Urel_A_global, Gamma_A_pm_global,...
                     r_A_pm_global,Gamma_A_pn_global,R_A_pn_global] = deal([]);
                 
@@ -494,29 +494,29 @@ if ~isempty(aerodynamics)
                     dexAp_dt_G_pm_part = partInformationStruct.(aeroPartName).dEAp_dt_G_pm(:,1,:);
                     dGamma_dt_G_pm_part = partInformationStruct.(aeroPartName).dGamma_dt_G_pm;
                     beam_cntr_pm_part = partInformationStruct.(aeroPartName).beam_cntr_pm;
-                    Gamma_G_pn_part = partInformationStruct.(aeroPartName).Gamma_G_pn;
+                    Gamma_G_pn_part = partInformationStruct.(aeroPartName).Gamma_G_pn - rBarA_G;
                     dGammaAlphaCP_dt_G_pm_part = dGamma_dt_G_pm_part + chord_part.*(alphaCP - beam_cntr_pm_part).*dexAp_dt_G_pm_part;
-                    Gamma_G_pm_part = partInformationStruct.(aeroPartName).Gamma_G_pm;
+                    Gamma_G_pm_part = partInformationStruct.(aeroPartName).Gamma_G_pm - rBarA_G;
                     
                     %==============================================================
                     % global to aircraft (hub) rotation matrices for i'th blade
                     az_ib = 2*pi/BEMvar.B*(i-1);
-                    R_A_G_ib= utility_functions.r_matrix([1,0,0],az_ib).'*R_A_G;
+                    R_A_G_ib= utility_functions.r_matrix([1,0,0],az_ib).'*R_A_G;%TODO CHECK
                     Vinf_A = utility_functions.MultiProd_(R_A_G_ib, Vinf);
                     dGammaAlphaCP_dt_A_pm_part = utility_functions.MultiProd_(R_A_G_ib,dGammaAlphaCP_dt_G_pm_part);
                     Gamma_A_pm_part = utility_functions.MultiProd_(R_A_G_ib, Gamma_G_pm_part);
                     Gamma_A_pn_part = utility_functions.MultiProd_(R_A_G_ib, Gamma_G_pn_part);
-                    r_A_pm_part = vecnorm(Gamma_A_pm_part,2);
+                    r_A_pm_part = sum(abs(Gamma_A_pm_part).^2,1).^(1/2);
                     EAp_A_pm_part = utility_functions.MultiProd_(R_A_G_ib,EAp_G_pm_part);
                     Vrel_A_part = Vinf_A - dGammaAlphaCP_dt_A_pm_part;
                     
-                    r_A_pn_part = vecnorm(Gamma_A_pn_part,2); R_A_pn_part = r_A_pn_part(end);
+                    r_A_pn_part = sum(abs(Gamma_A_pn_part).^2,1).^(1/2); R_A_pn_part = r_A_pn_part(end);
                     r_tip = (R_A_pn_part - r_A_pn_part)./r_A_pn_part; r_hub = (r_A_pn_part - 3)./r_A_pn_part;
                     r_tip = 0.5*(r_tip(2:end)+r_tip(1:end-1));
                     r_hub = 0.5*(r_hub(2:end)+r_hub(1:end-1));
                     BEMvar.losses = squeeze([r_tip; r_hub]).';
                     %==============================================================
-                    [a_part, ap_part, ~, ~, cl_part, cd_part, cm_part, Urel_G_part, Urel_A_part,~] = ...
+                    [a_part, ap_part, alpha_part, ~, cl_part, cd_part, cm_part, Urel_G_part, Urel_A_part,~] = ...
                         aero.bem_ning(Vrel_A_part, aeroCoeff2D_part, chord_part, EAp_A_pm_part, r_A_pm_part, R_A_G_ib, BEMvar);
                     %==============================================================
                     a_global = cat(3,a_global,permute(a_part,[3 2 1]));
@@ -533,11 +533,12 @@ if ~isempty(aerodynamics)
                     Gamma_A_pn_global  = cat(3,Gamma_A_pn_global,Gamma_A_pn_part);
                     R_A_pn_global = cat(3,R_A_pn_global,R_A_pn_part);
                 end               
-%                     Urel_G_global = utility_functions.MultiProd_(R_G_A, Urel_A_global);
+                    Urel_G_global = utility_functions.MultiProd_(R_G_A, Urel_A_global);
                     ux1qrt = sum(Urel_G_global.*EAp_G_pm_global(:,1,:),1);
                     uz1qrt = sum(Urel_G_global.*EAp_G_pm_global(:,3,:),1);
                     alpha_global = atan(uz1qrt./ux1qrt);                             
-                
+%                     alpha_ = alpha_global*180/pi; %check is equal to
+%                     alpha_part
                 if sim.FLAG_dw
                     Qaero_idx_dw = qAero_idx_global(nsAp*obj.nQAero + 1:end);
                     wqs_A_global = [-a_global.*Vrel_A_global(1,:,:); ap_global.*Vrel_A_global(3,:,:)]; %[normal; tangential]
@@ -658,13 +659,13 @@ if ~isempty(aerodynamics)
                             
                             oye_ = aeroData_global.oye;
                           
-                            oyeCoeff.cl_fs = repmat(oye_.cl_fs, [1,1,3]);
-                            oyeCoeff.c_static = repmat(oye_.c_static, [1,1,3]);
-                             oyeCoeff.clINV = repmat(oye_.clINV, [1,1,3]);
-                              oyeCoeff.f_static = repmat(oye_.f_static, [1,1,3]);
+                            oyeCoeff.cl_fs = repmat(oye_.cl_fs, [SimObject.sim.nB,1,SimObject.sim.nB]);
+                            oyeCoeff.c_static = repmat(oye_.c_static, [SimObject.sim.nB,1,SimObject.sim.nB]);
+                             oyeCoeff.clINV = repmat(oye_.clINV, [SimObject.sim.nB,1,SimObject.sim.nB]);
+                              oyeCoeff.f_static = repmat(oye_.f_static, [SimObject.sim.nB,1,SimObject.sim.nB]);
                               
                             if sim.FLAG_dw
-                                Qaero_idx = qAero_idx_global(1:nsAp*obj.nQAero);
+                                Qaero_idx = qAero_idx_global(1:(nsAp*SimObject.sim.nB)*obj.nQAero);
                                 Qaero = reshape(Q(Qaero_idx),1,1,[]);
                             else
                                 Qaero_idx = qAero_idx_global;
@@ -877,8 +878,11 @@ switch outputFormat
         %relate 1st and 2nd derivatives for second order variables
         dQ(qg2nd_idx) = Q(dqg2nd_idx);
         
-        dM_dqg_sum = sum(dM_dqg,3);% + sum(dM_dqg_rigidPart,3);
-        
+        if nflexParts_nonlinear > 1
+            dM_dqg_sum = sum(dM_dqg,3);% + sum(dM_dqg_rigidPart,3);
+        else
+            dM_dqg_sum = dM_dqg;
+        end
         
         if ~FLAG_free_free
             %         dQ(1:nq) = Q(nq+1:2*nq);
@@ -895,6 +899,7 @@ switch outputFormat
         end
         
         dQ = dQ+sum(dQ_Aero,3);
+
         output = dQ;
         
         %/////////////////////////

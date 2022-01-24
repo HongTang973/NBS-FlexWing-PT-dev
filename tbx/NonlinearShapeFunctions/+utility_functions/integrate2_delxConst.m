@@ -30,9 +30,9 @@ function int_vec_out = integrate2_delxConst(x,y,fullValOnly,dim)
     y2 = y(idx2{:});
     y3 = y(idx3{:});
     
-    int_vec = zeros(szy);
+    int_vec = zeros(szy, 'like', y);
     szdint = szy; szdint(dim) = szdint(dim)-1;
-    dint = zeros(szdint);
+    dint = zeros(szdint, 'like', y);
     
     dint(idx1{:}) = (5*y1+8*y2-y3)*dx/12;
     dint(idx2{:}) = (-y1+8*y2+5*y3)*dx/12;

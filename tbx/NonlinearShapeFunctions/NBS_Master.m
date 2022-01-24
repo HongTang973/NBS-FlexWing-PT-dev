@@ -1391,8 +1391,8 @@ classdef NBS_Master < handle
             GammaX = Gamma(1,:); GammaY = Gamma(2,:); GammaZ = Gamma(3,:);
 
             XLIM_projection = -XLIM(projectionFacesXYZ(1));
-            YLIM_projection = YLIM(projectionFacesXYZ(2));
-            ZLIM_projection = -ZLIM(projectionFacesXYZ(3));
+            YLIM_projection = -YLIM(projectionFacesXYZ(2));
+            ZLIM_projection = ZLIM(projectionFacesXYZ(3));
 
             hold on;
             zrs = GammaX*0;
