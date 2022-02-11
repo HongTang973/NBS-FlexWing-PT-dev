@@ -320,12 +320,12 @@ end
         dGamma_dqC_root_G_Dim3x1x1xnqC = zeros(3,1,1,nqC);
         dGamma_dq_root_G_Dim3x1x1xnq = cat(4, dGamma_dqC_root_G_Dim3x1x1xnqC , dGamma_dqe_root_G_Dim3x1x1xnqe);
         
-        Gamma_G = bsxfun(@plus, Gamma_root_G , utility_functions.MultiProd_(R_G_W,Gamma_W));
-        dGamma_dt_G = bsxfun(@plus, dGamma_dt_root_G , utility_functions.MultiProd_(dR_G_W_dt,Gamma_W));
-        d2Gamma_dt2_G_star = bsxfun(@plus, d2Gamma_dt2_root_G_star , utility_functions.MultiProd_(d2R_G_W_dt2_star,Gamma_W));
-        d2Gamma_m_dt2_G_star = bsxfun(@plus, d2Gamma_dt2_root_G_star , utility_functions.MultiProd_(d2R_G_W_dt2_star,massOffset_W));
-        dGamma_dq_G_Dim3x1xnsxnq2nd = bsxfun(@plus, dGamma_dq_root_G_Dim3x1x1xnq , utility_functions.MultiProd_(dR_G_W_dq,Gamma_W));
-        dGamma_m_dq_G_Dim3x1x1xnq2nd = bsxfun(@plus, dGamma_dq_root_G_Dim3x1x1xnq , utility_functions.MultiProd_(dR_G_W_dq,massOffset_W));
+        Gamma_G = Gamma_root_G + utility_functions.MultiProd_(R_G_W,Gamma_W);
+        dGamma_dt_G = dGamma_dt_root_G + utility_functions.MultiProd_(dR_G_W_dt,Gamma_W);
+        d2Gamma_dt2_G_star = d2Gamma_dt2_root_G_star + utility_functions.MultiProd_(d2R_G_W_dt2_star,Gamma_W);
+        d2Gamma_m_dt2_G_star =  d2Gamma_dt2_root_G_star + utility_functions.MultiProd_(d2R_G_W_dt2_star,massOffset_W);
+        dGamma_dq_G_Dim3x1xnsxnq2nd = dGamma_dq_root_G_Dim3x1x1xnq + utility_functions.MultiProd_(dR_G_W_dq,Gamma_W);
+        dGamma_m_dq_G_Dim3x1x1xnq2nd = dGamma_dq_root_G_Dim3x1x1xnq + utility_functions.MultiProd_(dR_G_W_dq,massOffset_W);
         
         dvarTheta_dt_root_G = R_G_C*depsilon_dt_C + partInformationStruct.(parentName).dvarTheta_dt_G(:,1,parentConnIdx);
         d2varTheta_dt2_root_G_star = partInformationStruct.(parentName).d2varTheta_dt2_G_star(:,1,parentConnIdx);
@@ -358,8 +358,8 @@ end
         PvecWeight_G = gravAccVec.*obj.Mu;
         % massOffset_G = MultiProd_(E_G,massOffset_I);
         
-        PvecApplied_G = bsxfun(@plus, obj.Pvec_appliedGlobal_G , utility_functions.MultiProd_(E_G,obj.Pvec_appliedLocal_I) );
-        MvecApplied_G = bsxfun(@plus, obj.Mvec_appliedGlobal_G , utility_functions.MultiProd_(E_G,obj.Mvec_appliedLocal_I) );
+        PvecApplied_G = obj.Pvec_appliedGlobal_G + utility_functions.MultiProd_(E_G,obj.Pvec_appliedLocal_I);
+        MvecApplied_G = obj.Mvec_appliedGlobal_G + utility_functions.MultiProd_(E_G,obj.Mvec_appliedLocal_I);
         
         %==========================================================================
         %Virtual work terms from applied loads
@@ -457,10 +457,10 @@ end
                 EAp_G_pn = utility_functions.MultiProd_(E_G_pn,EAp_I_pn);
                 dE_dt_G_pm = utility_functions.sample(dE_dt_G,Apm_idx,3);
                 dEAp_dt_G_pm = utility_functions.MultiProd_(dE_dt_G_pm,EAp_I_pm);
-                Pv = Gamma_G_pn + bsxfun(@times, (aero_cntr_pn - beam_cntr_pn).*chord_pn , EAp_G_pn(:,1,:) );
-                Pc = Gamma_G_pm + bsxfun(@times, (control_point_pm - beam_cntr_pm).*chord_pm , EAp_G_pm(:,1,:) );
+                Pv = Gamma_G_pn + ((aero_cntr_pn - beam_cntr_pn).*chord_pn) .* EAp_G_pn(:,1,:) ;
+                Pc = Gamma_G_pm + ((control_point_pm - beam_cntr_pm).*chord_pm) .* EAp_G_pm(:,1,:) ;
                 PcNorm = EAp_G_pm(:,3,:);
-                dPc_dt = dGamma_dt_G_pm + bsxfun(@times, (control_point_pm - beam_cntr_pm).*chord_pm , dEAp_dt_G_pm(:,1,:) );
+                dPc_dt = dGamma_dt_G_pm + ((control_point_pm - beam_cntr_pm).*chord_pm) .* dEAp_dt_G_pm(:,1,:) ;
                 
                 partInformationStruct.(flex_part_name).Pv = Pv;
                 partInformationStruct.(flex_part_name).Pc = Pc;

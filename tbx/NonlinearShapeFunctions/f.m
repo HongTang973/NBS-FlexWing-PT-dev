@@ -434,7 +434,7 @@ if ~isempty(aerodynamics)
                     end
                 case {'forced', 'free'}
                     V_Free = SimObject.V* uVec_freeStream_G;
-                    Vinf = V_Free;
+                    Vinf = V_Free.*ones(1,1,nsAp.*sim.nB);
             end
             
             alphaCP = 1 - aero_cntr_pm_global;
@@ -462,7 +462,7 @@ if ~isempty(aerodynamics)
                 %initialise rotor variables
                 [a_global, ap_global, alpha_global, cl_global, cd_global, cm_global,...
                     Urel_G_global,Vrel_A_global,Urel_A_global, Gamma_A_pm_global,...
-                    r_A_pm_global,Gamma_A_pn_global,R_A_pn_global] = deal([]);
+                    r_A_pm_global,Gamma_A_pn_global,R_A_pm_global,R_G_A_ib_global] = deal([]);
                 
                 %initialise blade variables
                 i = 0;
@@ -482,9 +482,11 @@ if ~isempty(aerodynamics)
                     
                     switch BEMvar.polarMethod
                         case 'linear'
-                            aeroCoeff2D_part = aeroData_part.oye.c_static;
+                            aeroCoeff2D_part = aeroData_part.oye.lin_c;
                         case 'spline'
                             aeroCoeff2D_part = aeroData_part.oye.fit;
+                        case '3d'
+                            aeroCoeff2D_part = aeroData_part.oye.ft_c;
                     end
                     
                     R_A_G = partInformationStruct.(aeroPartName).R_A_G;
@@ -502,16 +504,16 @@ if ~isempty(aerodynamics)
                     % global to aircraft (hub) rotation matrices for i'th blade
                     az_ib = 2*pi/BEMvar.B*(i-1);
                     R_A_G_ib= utility_functions.r_matrix([1,0,0],az_ib).'*R_A_G;%TODO CHECK
-                    Vinf_A = utility_functions.MultiProd_(R_A_G_ib, Vinf);
+                    Vinf_A_part = utility_functions.MultiProd_(R_A_G_ib, Vinf(:,:,1 + nsAp*(i-1):nsAp*i));
                     dGammaAlphaCP_dt_A_pm_part = utility_functions.MultiProd_(R_A_G_ib,dGammaAlphaCP_dt_G_pm_part);
                     Gamma_A_pm_part = utility_functions.MultiProd_(R_A_G_ib, Gamma_G_pm_part);
                     Gamma_A_pn_part = utility_functions.MultiProd_(R_A_G_ib, Gamma_G_pn_part);
                     r_A_pm_part = sum(abs(Gamma_A_pm_part).^2,1).^(1/2);
                     EAp_A_pm_part = utility_functions.MultiProd_(R_A_G_ib,EAp_G_pm_part);
-                    Vrel_A_part = Vinf_A - dGammaAlphaCP_dt_A_pm_part;
+                    Vrel_A_part = Vinf_A_part - dGammaAlphaCP_dt_A_pm_part;
                     
-                    r_A_pn_part = sum(abs(Gamma_A_pn_part).^2,1).^(1/2); R_A_pn_part = r_A_pn_part(end);
-                    r_tip = (R_A_pn_part - r_A_pn_part)./r_A_pn_part; r_hub = (r_A_pn_part - 3)./r_A_pn_part;
+                    r_A_pn_part = sum(abs(Gamma_A_pn_part).^2,1).^(1/2); R_A_pm_part = ones(1,1,nsAp, 'like',r_A_pn_part) .* r_A_pn_part(end);
+                    r_tip = (R_A_pm_part(end) - r_A_pn_part)./r_A_pn_part; r_hub = (r_A_pn_part - 3)./r_A_pn_part;
                     r_tip = 0.5*(r_tip(2:end)+r_tip(1:end-1));
                     r_hub = 0.5*(r_hub(2:end)+r_hub(1:end-1));
                     BEMvar.losses = squeeze([r_tip; r_hub]).';
@@ -519,9 +521,10 @@ if ~isempty(aerodynamics)
                     [a_part, ap_part, alpha_part, ~, cl_part, cd_part, cm_part, Urel_G_part, Urel_A_part,~] = ...
                         aero.bem_ning(Vrel_A_part, aeroCoeff2D_part, chord_part, EAp_A_pm_part, r_A_pm_part, R_A_G_ib, BEMvar);
                     %==============================================================
+                    R_G_A_ib_global = cat(3,R_G_A_ib_global,repmat(R_A_G_ib.',[1 1 nsAp]));
                     a_global = cat(3,a_global,permute(a_part,[3 2 1]));
                     ap_global = cat(3,ap_global,permute(ap_part,[3 2 1]));
-%                     alpha_global = cat(3,alpha_global,permute(alpha_part/180*pi,[3 2 1]));
+                    alpha_global = cat(3,alpha_global,permute(alpha_part/180*pi,[3 2 1]));
                     cl_global = cat(3,cl_global,permute(cl_part,[3 2 1]));
                     cd_global = cat(3,cd_global,permute(cd_part,[3 2 1]));
                     cm_global = cat(3,cm_global,permute(cm_part,[3 2 1]));
@@ -531,9 +534,9 @@ if ~isempty(aerodynamics)
                     r_A_pm_global = cat(3,r_A_pm_global,r_A_pm_part);
                     Gamma_A_pm_global  = cat(3,Gamma_A_pm_global,Gamma_A_pm_part);
                     Gamma_A_pn_global  = cat(3,Gamma_A_pn_global,Gamma_A_pn_part);
-                    R_A_pn_global = cat(3,R_A_pn_global,R_A_pn_part);
+                    R_A_pm_global = cat(3,R_A_pm_global,R_A_pm_part);
                 end               
-                    Urel_G_global = utility_functions.MultiProd_(R_G_A, Urel_A_global);
+                    Urel_G_global = utility_functions.MultiProd_(R_G_A_ib_global, Urel_A_global);
                     ux1qrt = sum(Urel_G_global.*EAp_G_pm_global(:,1,:),1);
                     uz1qrt = sum(Urel_G_global.*EAp_G_pm_global(:,3,:),1);
                     alpha_global = atan(uz1qrt./ux1qrt);                             
@@ -549,9 +552,9 @@ if ~isempty(aerodynamics)
                             wn_bar_qs = []; a_bar_qs = [];
                         case 'simple' % 1 global rotor state
                             Qaero = reshape(Q(Qaero_idx_dw),1,1,[]);
-                            wn_bar_qs = 1./R_A_pn_global.*trapz(squeeze(r_A_pm_global),squeeze(wqs_A_global(1,:,:)));
-                            vn_bar_qs = 1./R_A_pn_global.*trapz(squeeze(r_A_pm_global),Vrel_A_global(1,:,:));
-                            a_bar_qs = 1./R_A_pn_global.*trapz(squeeze(r_A_pm_global),squeeze(a_global));
+                            wn_bar_qs = 1./R_A_pm_global.*trapz(squeeze(r_A_pm_global),squeeze(wqs_A_global(1,:,:)));
+                            vn_bar_qs = 1./R_A_pm_global.*trapz(squeeze(r_A_pm_global),Vrel_A_global(1,:,:));
+                            a_bar_qs = 1./R_A_pm_global.*trapz(squeeze(r_A_pm_global),squeeze(a_global));
                     end   
                     if FLAG_static
                         switch sim.dwDetail
@@ -563,7 +566,7 @@ if ~isempty(aerodynamics)
                     end
                     [dQaero,  ~, Urel_A_global] = aero.dynamicWake.oye(Qaero, Vrel_A_global,...
                         wqs_A_global, dwqs_dt, dtau1_dt, Vrel_A_global(3,:,:), r_A_pm_global,...
-                        R_A_pn_global, a_global, nsAp, wn_bar_qs, a_bar_qs, vn_bar_qs, sim.dwDetail);             
+                        R_A_pm_global, a_global, nsAp, wn_bar_qs, a_bar_qs, vn_bar_qs, sim.dwDetail);             
                     
                     dQ_Aero(Qaero_idx_dw,1) = dQaero(:);
 %                     Q_Aero(Qaero_idx_dw,1) = Qaero(:);
@@ -658,12 +661,25 @@ if ~isempty(aerodynamics)
                             
                             
                             oye_ = aeroData_global.oye;
-                          
-                            oyeCoeff.cl_fs = repmat(oye_.cl_fs, [SimObject.sim.nB,1,SimObject.sim.nB]);
-                            oyeCoeff.c_static = repmat(oye_.c_static, [SimObject.sim.nB,1,SimObject.sim.nB]);
-                             oyeCoeff.clINV = repmat(oye_.clINV, [SimObject.sim.nB,1,SimObject.sim.nB]);
-                              oyeCoeff.f_static = repmat(oye_.f_static, [SimObject.sim.nB,1,SimObject.sim.nB]);
-                              
+                            switch sim.aeroInterp_method
+                                case 'linear'
+                                    oyeCoeff.cl_fs = repmat(oye_.cl_fs, [SimObject.sim.nB,1,SimObject.sim.nB]);
+                                    oyeCoeff.c_static = repmat(oye_.c_static, [SimObject.sim.nB,1,SimObject.sim.nB]);
+                                    oyeCoeff.clINV = repmat(oye_.clINV, [SimObject.sim.nB,1,SimObject.sim.nB]);
+                                    oyeCoeff.f_static = repmat(oye_.f_static, [SimObject.sim.nB,1,SimObject.sim.nB]);
+                                case 'spline'
+                                    oyeCoeff.fit = repmat(oye_.fit, [SimObject.sim.nB,1]);
+                                    oyeCoeff.ftinv = repmat(oye_.ftinv, [SimObject.sim.nB,1]);
+                                    oyeCoeff.ftfs = repmat(oye_.ftfs, [SimObject.sim.nB,1]);
+                                    oyeCoeff.ftstat = repmat(oye_.ftstat, [SimObject.sim.nB,1]);
+                                case '3d'
+                                    oyeCoeff.ft_c = repmat(oye_.ft_c, [SimObject.sim.nB,1]);
+                                    oyeCoeff.ft_clinv = repmat({oye_.ft_clinv}, [SimObject.sim.nB,1]);
+                                    oyeCoeff.ft_clfs = repmat({oye_.ft_clfs}, [SimObject.sim.nB,1]);
+                                    oyeCoeff.ft_fst = repmat({oye_.ft_fst}, [SimObject.sim.nB,1]);
+                                    oyeCoeff.section = oye_.section;
+                            end
+                            
                             if sim.FLAG_dw
                                 Qaero_idx = qAero_idx_global(1:(nsAp*SimObject.sim.nB)*obj.nQAero);
                                 Qaero = reshape(Q(Qaero_idx),1,1,[]);
@@ -672,7 +688,7 @@ if ~isempty(aerodynamics)
                                 Qaero = reshape(Q(Qaero_idx),1,1,[]);
                             end
 
-                            [dQaero, ~, cl_global, cd_global, cm_global] = aero.dynamicStall.oye(Qaero, vel, chord_pm_global, alpha_global, oyeCoeff, sim.aeroInterp_method, FLAG_static);
+                            [dQaero, ~, cl_global, cd_global, cm_global] = aero.dynamicStall.oye(Qaero, vel, chord_pm_global, alpha_global, SimObject.sim.nB, oyeCoeff, sim.aeroInterp_method, FLAG_static);
                             dQ_Aero(Qaero_idx,1) = dQaero(:);
 %                             Q_Aero(Qaero_idx,1) = Qaero(:);
                             
@@ -682,7 +698,7 @@ if ~isempty(aerodynamics)
 
                             ca = cos(alpha_global);
                             sa = sin(alpha_global);
-                            alpha_ = alpha_global(:,:,end)*180/pi;
+%                             alpha_ = alpha_global*180/pi;
                             F_N = LIFT.*ca + DRAG.*sa;
                             F_A = DRAG.*ca - LIFT.*sa;        
                     end

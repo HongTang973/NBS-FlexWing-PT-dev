@@ -27,9 +27,10 @@ else
 %     global mult3d_mex
 %     if mult3d_mex       
 %         AB = mtimesx(A,B);
-        AB = utility_functions.multiprod(A,B);
+%        
 %     else
-%         AB = pagemtimes(A,B); %faster than mtimesx
+%         AB = utility_functions.multiprod(A,B);
+        AB = pagemtimes(A,B); %faster than mtimesx
 %     end
     
 end
