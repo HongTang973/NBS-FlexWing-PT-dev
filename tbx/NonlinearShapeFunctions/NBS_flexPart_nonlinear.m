@@ -942,6 +942,10 @@ classdef NBS_flexPart_nonlinear < handle
         if isempty(TAU)
             xi = KAPPA_I - KAPPA_0_I;
             MOMENT_xi = -utility_functions.MultiProd_(Linear_Stiffness_Matrix{1}(1:3,1:3,:),xi);
+%             cubicTerms = 5e-1.*utility_functions.MultiProd_(Linear_Stiffness_Matrix{1}(1:3,1:3,:),xi.^3);
+%             quinticTerms = -7e-1*utility_functions.MultiProd_(Linear_Stiffness_Matrix{1}(1:3,1:3,:),xi.^5);
+%             MOMENT_xi = MOMENT_xi + cubicTerms; %softening  
+%             MOMENT_xi = MOMENT_xi - cubicTerms; %hardening
             FORCE_xi = zeros(3,0,0);
         else
             xi = [KAPPA_I - KAPPA_0_I ; TAU - TAU_0];
@@ -971,9 +975,9 @@ classdef NBS_flexPart_nonlinear < handle
 
     methods
 
-        function [dW_dq_part,dM_dq_part,partInformationStruct] = f_flexPart_nonlinear(obj,Q,partInformationStruct,outputFormat,tidx)
-            %#ok<*PROPLC>
-
+        function [dW_dq_part,dM_dq_part,partInformationStruct] = f_flexPart_nonlinear(obj,Q,partInformationStruct,outputFormat,tidx,i_flex_part)
+            %#ok<*PROPLC>          
+            
             SimObject = obj.NBS_Master;
             flex_part_name = obj.partName;
 
@@ -981,12 +985,13 @@ classdef NBS_flexPart_nonlinear < handle
             parentObj = obj.Parent;
             parentName = parentObj.partName;
             parentConnIdx = obj.connection_idx_ParentObj;
-          
+            Omega_G = partInformationStruct.(parentName).dvarTheta_dt_G;
+            beta_ = partInformationStruct.(parentName).azimuth;
             R_G_A = partInformationStruct.(parentName).E_G(:,:,parentConnIdx);
             dR_G_A_dt = partInformationStruct.(parentName).dE_dt_G(:,:,parentConnIdx);
             dR_G_A_dqe_Dim3x3x1xnqe = partInformationStruct.(parentName).dE_dq_G(:,:,parentConnIdx,:);
             d2R_G_A_dt2_star = partInformationStruct.(parentName).d2E_dt2_G_star(:,:,parentConnIdx);
-
+%             dOmega_dt_G_star = partInformationStruct.(parentName).d2varTheta_dt2_G_star;
             wingRoot_offset_G = R_G_A*obj.wingRoot_offset_A;
 
             R_W_WE = obj.R_W_WE;
@@ -1019,7 +1024,7 @@ classdef NBS_flexPart_nonlinear < handle
             dSx_idx = obj.dSx_idx.';
             dSy_idx = obj.dSy_idx.';
             dSz_idx = obj.dSz_idx.';
-
+           
             nqs = obj.nqs;
             nqa = obj.nqa;
             nqr = size(dR_G_A_dqe_Dim3x3x1xnqe,4);
@@ -1027,6 +1032,28 @@ classdef NBS_flexPart_nonlinear < handle
             dq2nd_idx = [...
                 dth_idx(:);dsi_idx(:);dph_idx(:);dSx_idx(:);dSy_idx(:);dSz_idx(:);dqe_idx(:)];
 
+            q2nd_idx = [...
+                th_idx(:);si_idx(:);ph_idx(:);Sx_idx(:);Sy_idx(:);Sz_idx(:)];
+%         
+%             beta_ = beta_(1);
+%             az_ib = 2*pi/SimObject.sim.nB*(i_flex_part-1);
+%             p1 = [1 cos(beta_ + az_ib) sin(beta_ + az_ib)];
+%             p2 = [0 -sin(beta_ + az_ib) cos(beta_ + az_ib)];
+% 
+%                 q2nd_idx_b = q2nd_idx;
+%                 dq2nd_idx_b = dq2nd_idx;
+%                 p1_ = repmat(p1, [length(q2nd_idx_b) 1]);
+%                 p2_ = repmat(p2, [length(dq2nd_idx_b) 1]);
+%             
+%             nQ = length(Q);
+%             P = zeros(nQ(1),3,'like',Q);
+%             P(q2nd_idx,:) = p1_;
+%             P(dq2nd_idx,:) = Omega_G(1)*p2_;
+%             
+%             for i = 1:nQ
+%             Q(i) = sum(P(i,:)\Q(i),1);
+%             end
+  
             [bools,dqg2nd_to_dq2nd_idx] = ismember(dq2nd_idx,SimObject.dqg2nd_idx); % dqg2nd_idx(dqg_to_dq_idx) = dq2nd_idx
             assert(all(bools),'Invalid Mapping');
 
@@ -1280,7 +1307,7 @@ classdef NBS_flexPart_nonlinear < handle
             end
             
             massOffset_G = utility_functions.MultiProd_(E_G,massOffset_I);
-
+            
             PvecApplied_G = obj.Pvec_appliedGlobal_G + utility_functions.MultiProd_(E_G,obj.Pvec_appliedLocal_I) + PvecWeight_G;
             MvecApplied_G = obj.Mvec_appliedGlobal_G + utility_functions.MultiProd_(E_G,obj.Mvec_appliedLocal_I) + utility_functions.MultiProd_(utility_functions.getSkewMat(massOffset_G),PvecWeight_G);
 
@@ -1431,7 +1458,7 @@ classdef NBS_flexPart_nonlinear < handle
             partInformationStruct.(flex_part_name).dGamma_dt_G = dGamma_dt_G;
             partInformationStruct.(flex_part_name).d2Gamma_dt2_G_star = d2Gamma_dt2_G_star;
             partInformationStruct.(flex_part_name).dGamma_dq_G = dGamma_dq_G_Dim3x1xnsxnq2nd;
-           %partInformationStruct.(flex_part_name).q2nd_idx = q2nd_idx;
+            partInformationStruct.(flex_part_name).q2nd_idx = q2nd_idx;
             partInformationStruct.(flex_part_name).dq2nd_idx = dq2nd_idx;
             partInformationStruct.(flex_part_name).dqg2nd_to_dq2nd_idx = dqg2nd_to_dq2nd_idx;
             partInformationStruct.(flex_part_name).ns = ns;
