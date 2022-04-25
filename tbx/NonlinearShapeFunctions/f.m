@@ -905,11 +905,11 @@ switch outputFormat
         %relate 1st and 2nd derivatives for second order variables
         dQ(qg2nd_idx) = Q(dqg2nd_idx);
         
-        if isempty(i_rigid_part)        
-            dM_dqg_sum = dM_dqg;            
-        else
+%         if isempty(i_rigid_part)        
+%             dM_dqg_sum = dM_dqg;            
+%         else
             dM_dqg_sum = sum(dM_dqg,3);% + sum(dM_dqg_rigidPart,3);           
-        end
+%         end
         if ~FLAG_free_free
             %         dQ(1:nq) = Q(nq+1:2*nq);
             %         dQ(nq+1:2*nq) = dM_dqg\dW_dqg;

@@ -1488,6 +1488,8 @@ classdef NBS_flexPart_nonlinear < handle
                 QOI_Container.add_qoi('th',tidx,th*180/pi,'1:ns','\theta','deg');
                 QOI_Container.add_qoi('si',tidx,si*180/pi,'1:ns','\psi','deg');
                 QOI_Container.add_qoi('ph',tidx,ph*180/pi,'1:ns','\phi','deg');
+                QOI_Container.add_qoi('dth_dt',tidx,dth_dt*180/pi,'1:ns','d\phi/dt','deg');
+                QOI_Container.add_qoi('dsi_dt',tidx,dsi_dt*180/pi,'1:ns','d\phi/dt','deg');
                 QOI_Container.add_qoi('dph_dt',tidx,dph_dt*180/pi,'1:ns','d\phi/dt','deg');
                 QOI_Container.add_qoi('KAPPA_I',tidx,KAPPA_I,'1:ns','\Kappa#_{[I]}','rad/m');
                 QOI_Container.add_qoi('PvecApplied_G',tidx,PvecApplied_G,'1:ns','P#_{Applied[G]}','N');

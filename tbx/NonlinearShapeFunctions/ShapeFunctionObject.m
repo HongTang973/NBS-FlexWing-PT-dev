@@ -232,7 +232,7 @@ classdef ShapeFunctionObject
 
         function [] = plotShapes(obj,varargin)
 
-            output_detail = get_option(varargin,'output_detail','final');
+            output_detail = utility_functions.get_option(varargin,'output_detail','final');
 
             switch output_detail
 
