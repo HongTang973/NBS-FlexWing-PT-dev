@@ -1,4 +1,4 @@
-function val = crossndim(a,b,dim)
+function val = crossn(a,b,dim)
 
     %returns the cross product of the multidimensional arrays 'a' and 'b'
     %performed along the dimension 'dim'

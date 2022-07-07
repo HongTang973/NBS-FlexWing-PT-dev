@@ -986,7 +986,7 @@ classdef NBS_flexPart_nonlinear < handle
             parentName = parentObj.partName;
             parentConnIdx = obj.connection_idx_ParentObj;
             Omega_G = partInformationStruct.(parentName).dvarTheta_dt_G;
-            beta_ = partInformationStruct.(parentName).azimuth;
+%             beta_ = partInformationStruct.(parentName).azimuth;
             R_G_A = partInformationStruct.(parentName).E_G(:,:,parentConnIdx);
             dR_G_A_dt = partInformationStruct.(parentName).dE_dt_G(:,:,parentConnIdx);
             dR_G_A_dqe_Dim3x3x1xnqe = partInformationStruct.(parentName).dE_dq_G(:,:,parentConnIdx,:);
@@ -1298,7 +1298,7 @@ classdef NBS_flexPart_nonlinear < handle
                         if SimObject.sim.FLAG_parked
                             PvecWeight_G = SimObject.grav_acc.*SimObject.gravVec_G.*obj.ms;
                         else
-                            Omega_G = repmat([2*pi/SimObject.T; 0; 0], [1 1 obj.ns]);
+                            Omega_G = repmat([0; 0; 2*pi/SimObject.T], [1 1 obj.ns]);
                             PvecWeight_G = - utility_functions.crossn(2*obj.ms.*Omega_G, dGamma_dt_G, 1) - utility_functions.crossn(obj.ms.*Omega_G,utility_functions.crossn(Omega_G, Gamma_G, 1),1);
                         end
                     case {'forced', 'free'}
@@ -1363,11 +1363,11 @@ classdef NBS_flexPart_nonlinear < handle
                     partInformationStruct.(flex_part_name).dGamma_dq_G_pm = utility_functions.sample(dGamma_dq_G_Dim3x1xnsxnq2nd,Apm_idx,3);
                     partInformationStruct.(flex_part_name).dvarTheta_dq_G_pm = utility_functions.sample(dvarTheta_dq_G_Dim3x1xnsxnq2nd,Apm_idx,3);
                     partInformationStruct.(flex_part_name).aeroData = obj.aeroData;
-                         F_SUM = utility_functions.sample(PvecApplied_G, Apm_idx,3);
-                         M_SUM = utility_functions.sample(MvecApplied_G, Apm_idx,3);
+%                          F_SUM = utility_functions.sample(PvecApplied_G, Apm_idx,3);
+%                          M_SUM = utility_functions.sample(MvecApplied_G, Apm_idx,3);
             
-                    partInformationStruct.(flex_part_name).F_SUM = F_SUM;
-                    partInformationStruct.(flex_part_name).M_SUM = M_SUM;
+%                     partInformationStruct.(flex_part_name).F_SUM = F_SUM;
+%                     partInformationStruct.(flex_part_name).M_SUM = M_SUM;
 
                     case {'VLM_steady'}
 

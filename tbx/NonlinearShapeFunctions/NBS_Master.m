@@ -54,7 +54,8 @@ classdef NBS_Master < handle
         %simulation results
         analysis_notes                                                     %any additional analysis notes
         t, Q                                                               %output time steps (t [s]) and corresponding state vector values (Q [-])
-       %                nt                                                 %total number of time evaluation points
+        Q_control
+        %                nt                                                 %total number of time evaluation points
         QOI                                                                %additional quantities of interest
         QOI_index                                                          %a listing of all QOIs contained in the object and sub objects; object address and dimensions given for each QOI
         QOI_Master %experimental object-based QOI storage
@@ -221,7 +222,7 @@ classdef NBS_Master < handle
         %----------------------------------
         %Populate the rigid state StateInfo row 1 entries
         obj.StateInfo.qRigidT = {'global';'rigidBody';numel(obj.qRigidT);inf;obj.qRigidT};
-        obj.StateInfo.qRigidR = {'global';'rigidBody';numel(obj.qRigidR);inf;obj.qRigidR};
+        obj.StateInfo.qRigidR = {'global';'rigidBody';0;inf;obj.qRigidR};
         obj.StateInfo.dqRigidT = {'global';'drigidBody';numel(obj.qRigidT);inf;obj.dqRigidT};
         obj.StateInfo.dqRigidR = {'global';'drigidBody';numel(obj.qRigidR);inf;obj.dqRigidR};
         %----------------------------------
@@ -1238,7 +1239,7 @@ classdef NBS_Master < handle
             %produce a deep copy of the object 'obj' preserving all handle structures within the object but severing all links between 'obj_copy' and 'obj'
             %accomplished via save and reload operation on obj
 
-            unique_identifyer = '89hd2n38479y2jnzhdh8e9w82jxmcf';
+            unique_identifyer = '89hd2n3sdf8479y2jnzhdh8e9w82jxmcf';
             temp_fileName = ['temp_NBS_object_copy_' unique_identifyer '.mat'];
             save(temp_fileName,'obj');
             struct = load(temp_fileName);
