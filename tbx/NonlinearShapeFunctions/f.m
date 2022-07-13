@@ -485,7 +485,7 @@ if ~isempty(aerodynamics)
                     
                     switch BEMvar.polarMethod
                         case 'linear'
-                            aeroCoeff2D_part = aeroData_part.oye.c_static;
+                            aeroCoeff2D_part = aeroData_part.oye.lin_c;
                         case 'spline'
                             aeroCoeff2D_part = aeroData_part.oye.fit;
                         case '3d'
