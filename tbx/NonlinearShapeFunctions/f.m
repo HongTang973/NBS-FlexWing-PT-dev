@@ -84,8 +84,12 @@ qg2nd_idx = SimObject.qg2nd_idx;
 dqg2nd_idx = SimObject.dqg2nd_idx;
 nqg2nd = SimObject.nqg2nd;
 nQ = size(Q);
-dQ_Aero = zeros(nQ(1), nQ(2), SimObject.nParts, 'like', Q);
-
+% if SimObject.sim.FLAG_unsteady
+dQ_Aero = zeros(nQ(1), nQ(2), length(SimObject.aeroPartNames));
+if isa(Q, 'AutoDiff')
+    dQ_Aero = AutoDiff(dQ_Aero, Q);
+end
+% end
 % if FLAG_free_free, nqr = 6; else, nqr = 0; end
 
 %=======remark on state vector notation========
@@ -424,7 +428,7 @@ if ~isempty(aerodynamics)
             end
             
             %%
-            switch SimObject.sim.operation
+            switch sim.operation
                 case 'fixed'
                     if ~sim.FLAG_parked
                         Omega_G = repmat([0;0;2*pi/SimObject.T], [1 1 nsAp*sim.nB]);
@@ -441,6 +445,8 @@ if ~isempty(aerodynamics)
             end
             
             alphaCP = 1 - aero_cntr_pm_global;
+%             alphaCP  = alphaCP.*0 + 0.75;
+%             aero_cntr_pm_global = aero_cntr_pm_global.*0 + 0.25;
             dexAp_dt_G_pm_global = dEAp_dt_G_pm_global(:,1,:);
             dGammaAlphaCP_dt_G_pm_global = ...%bsxfun(@plus,drBarA_dt_G,...
                 (dGamma_dt_G_pm_global + chord_pm_global.*(alphaCP - beam_cntr_pm_global).*dexAp_dt_G_pm_global);
@@ -505,7 +511,7 @@ if ~isempty(aerodynamics)
                     
                     %==============================================================
                     % global to aircraft (hub) rotation matrices for i'th blade
-                    az_ib = 2*pi/SimObject.sim.nB*(i-1);
+                    az_ib = 2*pi/sim.nB*(i-1);
                     R_A_G_ib= utility_functions.r_matrix([0,0,1],az_ib).'*R_A_G;%TODO CHECK
                     Vinf_A_part = utility_functions.MultiProd_(R_A_G_ib, Vinf(:,:,1 + nsAp*(i-1):nsAp*i));
                     dGammaAlphaCP_dt_A_pm_part = utility_functions.MultiProd_(R_A_G_ib,dGammaAlphaCP_dt_G_pm_part);
@@ -668,25 +674,25 @@ if ~isempty(aerodynamics)
                             oye_ = aeroData_global.oye;
                             switch sim.aeroInterp_method
                                 case 'linear'
-                                    oyeCoeff.cl_fs = repmat(oye_.cl_fs, [SimObject.sim.nB,1,SimObject.sim.nB]);
-                                    oyeCoeff.c_static = repmat(oye_.c_static, [SimObject.sim.nB,1,SimObject.sim.nB]);
-                                    oyeCoeff.clINV = repmat(oye_.clINV, [SimObject.sim.nB,1,SimObject.sim.nB]);
-                                    oyeCoeff.f_static = repmat(oye_.f_static, [SimObject.sim.nB,1,SimObject.sim.nB]);
+                                    oyeCoeff.cl_fs = repmat(oye_.cl_fs, [sim.nB,1,SimObject.sim.nB]);
+                                    oyeCoeff.c_static = repmat(oye_.c_static, [sim.nB,1,SimObject.sim.nB]);
+                                    oyeCoeff.clINV = repmat(oye_.clINV, [sim.nB,1,SimObject.sim.nB]);
+                                    oyeCoeff.f_static = repmat(oye_.f_static, [sim.nB,1,SimObject.sim.nB]);
                                 case 'spline'
-                                    oyeCoeff.fit = repmat(oye_.fit, [SimObject.sim.nB,1]);
-                                    oyeCoeff.ftinv = repmat(oye_.ftinv, [SimObject.sim.nB,1]);
-                                    oyeCoeff.ftfs = repmat(oye_.ftfs, [SimObject.sim.nB,1]);
-                                    oyeCoeff.ftstat = repmat(oye_.ftstat, [SimObject.sim.nB,1]);
+                                    oyeCoeff.fit = repmat(oye_.fit, [sim.nB,1]);
+                                    oyeCoeff.ftinv = repmat(oye_.ftinv, [sim.nB,1]);
+                                    oyeCoeff.ftfs = repmat(oye_.ftfs, [sim.nB,1]);
+                                    oyeCoeff.ftstat = repmat(oye_.ftstat, [sim.nB,1]);
                                 case '3d'
-                                    oyeCoeff.ft_c = repmat(oye_.ft_c, [SimObject.sim.nB,1]);
-                                    oyeCoeff.ft_clinv = repmat({oye_.ft_clinv}, [SimObject.sim.nB,1]);
-                                    oyeCoeff.ft_clfs = repmat({oye_.ft_clfs}, [SimObject.sim.nB,1]);
-                                    oyeCoeff.ft_fst = repmat({oye_.ft_fst}, [SimObject.sim.nB,1]);
+                                    oyeCoeff.ft_c = repmat(oye_.ft_c, [sim.nB,1]);
+                                    oyeCoeff.ft_clinv = repmat({oye_.ft_clinv}, [sim.nB,1]);
+                                    oyeCoeff.ft_clfs = repmat({oye_.ft_clfs}, [sim.nB,1]);
+                                    oyeCoeff.ft_fst = repmat({oye_.ft_fst}, [sim.nB,1]);
                                     oyeCoeff.section = oye_.section;
                             end
                             
                             if sim.FLAG_dw
-                                Qaero_idx = qAero_idx_global(1:(nsAp*SimObject.sim.nB)*1);
+                                Qaero_idx = qAero_idx_global(1:(nsAp*sim.nB)*1);
                                 Qaero = reshape(Q(Qaero_idx),1,1,[]);
                             else
                                 Qaero_idx = qAero_idx_global;
@@ -807,9 +813,9 @@ if ~isempty(aerodynamics)
                     F_A = DRAG;
                     F_M = MOMENT;
                     
-                    if sim.FLAG_unsteady
-                        dQ_Aero(Qaero_idx,1) = dQaero(:);
-                    end
+%                     if sim.FLAG_unsteady
+                    dQ_Aero(Qaero_idx,1) = dQaero(:);
+%                     end
                         %==============================================================
       
             end
@@ -902,8 +908,11 @@ switch outputFormat
         dQ = Q*0; %initialise 1st order state derivative
         
         %relate 1st and 2nd derivatives for second order variables
-%         dQ(qg2nd_idx) = Q(dqg2nd_idx(1:end-1));
-        dQ(qg2nd_idx) = Q(dqg2nd_idx);
+        if sim.FLAG_dynControl
+            dQ(qg2nd_idx) = Q(dqg2nd_idx(1:end-1));
+        else
+            dQ(qg2nd_idx) = Q(dqg2nd_idx);
+        end
 %         if isempty(i_rigid_part)        
 %             dM_dqg_sum = dM_dqg;            
 %         else
