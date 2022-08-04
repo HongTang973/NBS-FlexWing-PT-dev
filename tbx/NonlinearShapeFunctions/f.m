@@ -380,6 +380,7 @@ if ~isempty(aerodynamics)
             [EAp_G_pm_global,...
                 dEAp_dt_G_pm_global,...
                 Gamma_G_pm_global,...
+                Gamma_G_pn_global,...
                 dGamma_dt_G_pm_global,...
                 dvarTheta_dt_G_pm_global,...
                 chord_pm_global,ApWidth_pm_global,...
@@ -404,7 +405,7 @@ if ~isempty(aerodynamics)
                 EAp_G_pm_global = cat(3,EAp_G_pm_global,partInformationStruct.(aeroPartName).EAp_G_pm);
                 dEAp_dt_G_pm_global = cat(3,dEAp_dt_G_pm_global,partInformationStruct.(aeroPartName).dEAp_dt_G_pm);
                 Gamma_G_pm_global = cat(3,Gamma_G_pm_global,partInformationStruct.(aeroPartName).Gamma_G_pm);
-%                 Gamma_G_pn_global = cat(3,Gamma_G_pn_global,partInformationStruct.(aeroPartName).Gamma_G_pn);
+                Gamma_G_pn_global = cat(3,Gamma_G_pn_global,partInformationStruct.(aeroPartName).Gamma_G_pn);
                 dGamma_dt_G_pm_global = cat(3,dGamma_dt_G_pm_global,partInformationStruct.(aeroPartName).dGamma_dt_G_pm);
                 %dGammaAlphaCP_dt_G_pm_global = cat(3,dGammaAlphaCP_dt_G_pm_global,partInformationStruct.(aeroPartName).dGammaAlphaCP_dt_G_pm);
                 dvarTheta_dt_G_pm_global = cat(3,dvarTheta_dt_G_pm_global,partInformationStruct.(aeroPartName).dvarTheta_dt_G_pm);
@@ -517,12 +518,12 @@ if ~isempty(aerodynamics)
                     dGammaAlphaCP_dt_A_pm_part = utility_functions.MultiProd_(R_A_G_ib,dGammaAlphaCP_dt_G_pm_part);
                     Gamma_A_pm_part = utility_functions.MultiProd_(R_A_G_ib, Gamma_G_pm_part);
                     Gamma_A_pn_part = utility_functions.MultiProd_(R_A_G_ib, Gamma_G_pn_part);
-                    r_A_pm_part = sum(abs(Gamma_A_pm_part).^2,1).^(1/2);
+                    r_A_pm_part = abs(Gamma_A_pm_part(2,:,:));
                     EAp_A_pm_part = utility_functions.MultiProd_(R_A_G_ib,EAp_G_pm_part);
                     Vrel_A_part = Vinf_A_part - dGammaAlphaCP_dt_A_pm_part;
                     
-                    r_A_pn_part = sum(abs(Gamma_A_pn_part).^2,1).^(1/2); R_A_pm_part = ones(1,1,nsAp, 'like',r_A_pn_part) .* r_A_pn_part(end);
-                    r_tip = (R_A_pm_part(end) - r_A_pn_part)./r_A_pn_part; r_hub = (r_A_pn_part - 3)./r_A_pn_part;
+                    r_A_pn_part = abs(Gamma_A_pn_part(2,:,:)); R_A_pn_part = ones(1,1,nsAp, 'like',r_A_pn_part) .* r_A_pn_part(end);
+                    r_tip = (R_A_pn_part(end) - r_A_pn_part)./r_A_pn_part; r_hub = (r_A_pn_part - 3)./r_A_pn_part;
                     r_tip = 0.5*(r_tip(2:end)+r_tip(1:end-1));
                     r_hub = 0.5*(r_hub(2:end)+r_hub(1:end-1));
                     BEMvar.losses = squeeze([r_tip; r_hub]).';

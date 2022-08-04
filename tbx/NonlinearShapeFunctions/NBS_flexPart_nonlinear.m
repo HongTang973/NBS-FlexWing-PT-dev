@@ -1478,6 +1478,8 @@ classdef NBS_flexPart_nonlinear < handle
                 QOI_Container.add_qoi('MOMENT_xi',tidx,MOMENT_xi,'1:ns','\MOMENT_xi','N');
                 Gamma_A = Gamma_root_G + squeeze(utility_functions.MultiProd_(R_A_G,Gamma_G));
                 QOI_Container.add_qoi('Gamma_A',tidx,Gamma_A,'1:ns','\Gamma#_{[A]}','m');
+                Gamma_G_pn = utility_functions.sample(Gamma_G,Apn_idx,3);
+                QOI_Container.add_qoi('Gamma_G_pn',tidx,Gamma_G_pn, 1:nsAp+1,'\Gamma#_{[G]}','m');
                 Gamma_m_G = Gamma_G + utility_functions.MultiProd_(E_G,massOffset_I);
                 QOI_Container.add_qoi('Gamma_m_G',tidx,Gamma_m_G,'1:ns','\Gamma_m#_{[G]}','m');
                 %dGamma_dt_G = squeeze(bsxfun(@plus,drBarA_dt_G,map_WtoG(dGamma_dt_W,R_G_W) + MultiProd_(dR_G_W_dt,Gamma_W)));
