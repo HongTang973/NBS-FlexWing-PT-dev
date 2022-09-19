@@ -492,7 +492,7 @@ if ~isempty(aerodynamics)
                     
                     switch BEMvar.polarMethod
                         case 'linear'
-                            aeroCoeff2D_part = aeroData_part.oye.lin_c;
+                            aeroCoeff2D_part = aeroData_part.oye.c_static;
                         case 'spline'
                             aeroCoeff2D_part = aeroData_part.oye.fit;
                         case '3d'
@@ -522,7 +522,7 @@ if ~isempty(aerodynamics)
                     EAp_A_pm_part = utility_functions.MultiProd_(R_A_G_ib,EAp_G_pm_part);
                     Vrel_A_part = Vinf_A_part - dGammaAlphaCP_dt_A_pm_part;
                     
-                    r_A_pn_part = abs(Gamma_A_pn_part(2,:,:)); R_A_pn_part = ones(1,1,nsAp, 'like',r_A_pn_part) .* r_A_pn_part(end);
+                    r_A_pn_part = abs(Gamma_A_pn_part(2,:,:)); R_A_pn_part = ones(1,1,nsAp, 'like', r_A_pn_part) .* r_A_pn_part(end);
                     r_tip = (R_A_pn_part(end) - r_A_pn_part)./r_A_pn_part; r_hub = (r_A_pn_part - 3)./r_A_pn_part;
                     r_tip = 0.5*(r_tip(2:end)+r_tip(1:end-1));
                     r_hub = 0.5*(r_hub(2:end)+r_hub(1:end-1));
@@ -543,9 +543,10 @@ if ~isempty(aerodynamics)
                     Urel_A_global = cat(3,Urel_A_global,Urel_A_part); %POST INDUCTION
                     Vrel_A_global = cat(3,Vrel_A_global,Vrel_A_part); %PRE INDUCTION
                     r_A_pm_global = cat(3,r_A_pm_global,r_A_pm_part);
+                    R_A_pm_part = ones(1,1,nsAp, 'like', r_A_pm_part) .* r_A_pm_part(end);
                     Gamma_A_pm_global  = cat(3,Gamma_A_pm_global,Gamma_A_pm_part);
                     Gamma_A_pn_global  = cat(3,Gamma_A_pn_global,Gamma_A_pn_part);
-                    R_A_pm_global = cat(3,R_A_pm_global,R_A_pm_part);
+                    R_A_pm_global = cat(3,R_A_pm_global, R_A_pm_part);
                 end  
                        
 %                     Urel_G_global == utility_functions.MultiProd_(R_G_A_ib_global, Urel_A_global);
@@ -700,7 +701,7 @@ if ~isempty(aerodynamics)
                                 Qaero = reshape(Q(Qaero_idx),1,1,[]);
                             end
 
-                            [dQaero, ~, cl_global, cd_global, cm_global] = aero.dynamicStall.oye(Qaero, vel, chord_pm_global, alpha_global, oyeCoeff, sim.aeroInterp_method, FLAG_static);
+                            [dQaero, ~, cl_global, cd_global, cm_global] = aero.dynamicStall.oye(Qaero, vel, chord_pm_global, alpha_global, sim.nB, oyeCoeff, sim.aeroInterp_method, FLAG_static);
                             dQ_Aero(Qaero_idx,1) = dQaero(:);
 %                             Q_Aero(Qaero_idx,1) = Qaero(:);
                             
@@ -736,7 +737,7 @@ if ~isempty(aerodynamics)
                                         cm_global(1,1,1 + nsAp*(i-1):nsAp*i) = smooth{3}(alpha_global.', section).';
                                 end          
                             case 'linear'
-                                aeroCoeff2D = aeroData_global.oye.c_static;
+                                aeroCoeff2D = aeroData_global.oye.lin_c;
                                 alpha_in_file = repmat(aeroCoeff2D(:,1,:),[1 1 3]);
                                 cl_in_file = repmat(aeroCoeff2D(:,2,:),[1 1 3]);
                                 cd_in_file = repmat(aeroCoeff2D(:,3,:),[1 1 3]);
@@ -790,8 +791,9 @@ if ~isempty(aerodynamics)
                     vel = sum(Vrel_G_global.^2,1).^0.5;
                     Pdyn = 0.5*rho*vel.^2;
                     
+                    
+                    Qaero_idx = qAero_idx_global;
                     if sim.FLAG_unsteady
-                        Qaero_idx = qAero_idx_global;
                         Qaero = reshape(Q(Qaero_idx),2,1,[]);
                         qsteady = false;
                     else
@@ -814,9 +816,9 @@ if ~isempty(aerodynamics)
                     F_A = DRAG;
                     F_M = MOMENT;
                     
-%                     if sim.FLAG_unsteady
-                    dQ_Aero(Qaero_idx,1) = dQaero(:);
-%                     end
+                    if sim.FLAG_unsteady
+                        dQ_Aero(Qaero_idx,1) = dQaero(:);
+                    end
                         %==============================================================
       
             end
