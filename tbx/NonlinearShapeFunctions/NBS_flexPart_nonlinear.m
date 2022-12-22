@@ -1282,10 +1282,9 @@ classdef NBS_flexPart_nonlinear < handle
 
             Higher_Order_Arguments = [];
 
-            [MOMENT_xi , FORCE_xi]      = obj.material_law( KAPPA_I , dKAPPA_dt_I , KAPPA_0_I , TAU , dTAU_dt , TAU_0 , Linear_Stiffness_Matrix , Higher_Order_Arguments);
+            [MOMENT_xi , FORCE_xi]       = obj.material_law( KAPPA_I , dKAPPA_dt_I , KAPPA_0_I , TAU , dTAU_dt , TAU_0 , Linear_Stiffness_Matrix , Higher_Order_Arguments);
 
             [MOMENT_dxidt , FORCE_dxidt] = obj.damping_law( KAPPA_I , dKAPPA_dt_I , KAPPA_0_I , TAU , dTAU_dt , TAU_0 , Linear_Damping_Matrix   , Higher_Order_Arguments);
-
 
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             %% FlexPart_nonlinear Applied Loads from PvecApplied_G, MvecApplied_G, Gravitational Acceleration
@@ -1441,7 +1440,7 @@ classdef NBS_flexPart_nonlinear < handle
                 - dW_dq_Kinetic_Translation_remainder(:)...
                 + dW_dq_xi(:)...
                 + dW_dq_AppliedLoad(:);
-
+                
             dM_dq_part = ...
                 + dW_dq_Kinetic_Rotation_ddqComponent...
                 + dW_dq_Kinetic_Translation_ddqComponent;
@@ -1476,7 +1475,7 @@ classdef NBS_flexPart_nonlinear < handle
                 %Gamma_G = bsxfun(@plus,rBarA_G + R_G_A*wingRoot_offset_A,MultiProd_(R_G_W,Gamma_W));
                 QOI_Container.add_qoi('Gamma_G',tidx,Gamma_G,'1:ns','\Gamma#_{[G]}','m');
                 QOI_Container.add_qoi('MOMENT_xi',tidx,MOMENT_xi,'1:ns','\MOMENT_xi','N');
-                Gamma_A = Gamma_root_G + squeeze(utility_functions.MultiProd_(R_A_G,Gamma_G));
+                Gamma_A = rBarA_G + squeeze(utility_functions.MultiProd_(R_A_G,Gamma_G));
                 QOI_Container.add_qoi('Gamma_A',tidx,Gamma_A,'1:ns','\Gamma#_{[A]}','m');
                 Gamma_G_pn = utility_functions.sample(Gamma_G, obj.Apn_idx, 3);
                 QOI_Container.add_qoi('Gamma_G_pn',tidx,Gamma_G_pn, 1:nsAp+1,'\Gamma#_{[G]}','m');

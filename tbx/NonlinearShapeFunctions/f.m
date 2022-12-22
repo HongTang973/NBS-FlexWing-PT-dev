@@ -158,6 +158,7 @@ else
         prescribed_motion = SimObject.prescribedMotion_fnc(SimObject,t);
         
 %         beta_ = prescribed_motion.beta_;
+        Beta_G = [0;0;1];
         Omega_G = prescribed_motion.Omega_G;
         OmegaSkew_G = prescribed_motion.OmegaSkew_G;
         dOmega_dt_G_star = prescribed_motion.dOmega_dt_G;
@@ -180,7 +181,6 @@ else
         d2rBarA_dt2_G_star = zeros(3,1);
         dOmega_dt_G_star = zeros(3,1);
         rBarA_G = zeros(3,1);
-        beta_ = 0;
         drBarA_dt_G = zeros(3,1);
     end
     dR_G_A_dqr_Dim3x3x1xnqr = zeros(3,3,1,0);
@@ -390,6 +390,7 @@ if ~isempty(aerodynamics)
                 dGamma_dqg_G_pm_global,...
                 dvarTheta_dqg_G_pm_global,...
                 qAero_idx_global,...
+                R_A_W_global,...
                 ] = deal([]);
             
             global_idx_counter = 0;
@@ -414,8 +415,7 @@ if ~isempty(aerodynamics)
                 beam_cntr_pm_global = cat(3,beam_cntr_pm_global,partInformationStruct.(aeroPartName).beam_cntr_pm);
                 AICs_global = cat(3,AICs_global,partInformationStruct.(aeroPartName).AIC);
                 qAero_idx_global = cat(1,qAero_idx_global,partInformationStruct.(aeroPartName).qAero_idx(:));
-                
-                               
+                                               
                 SimObject.allParts_struct.(aeroPartName).sAp_idx_global = 1:nsAp + global_idx_counter;
                 global_idx_counter = global_idx_counter + nsAp;
                 
@@ -466,7 +466,8 @@ if ~isempty(aerodynamics)
             %                                                                 %
             %-----------------------------------------------------------------%
             
-            if ~sim.FLAG_parked
+            if ~sim.FLAG_parked 
+                
                 %====================== BEM ===============================
                 
                 %initialise rotor variables
@@ -500,36 +501,56 @@ if ~isempty(aerodynamics)
                     end
                     
                     R_A_G = partInformationStruct.(aeroPartName).R_A_G;
-                    R_G_A = R_A_G.';
+                    R_A_W_part = partInformationStruct.(aeroPartName).R_A_W;
+                    R_G_A = R_A_G.'; R_W_A_part = R_A_W_part.';
+                    R_W_G_part = R_W_A_part*R_A_G;
+                    
                     chord_part = partInformationStruct.(aeroPartName).chord;
                     EAp_G_pm_part = partInformationStruct.(aeroPartName).EAp_G_pm;
                     dexAp_dt_G_pm_part = partInformationStruct.(aeroPartName).dEAp_dt_G_pm(:,1,:);
                     dGamma_dt_G_pm_part = partInformationStruct.(aeroPartName).dGamma_dt_G_pm;
                     beam_cntr_pm_part = partInformationStruct.(aeroPartName).beam_cntr_pm;
-                    Gamma_G_pn_part = partInformationStruct.(aeroPartName).Gamma_G_pn - rBarA_G;
+                    Gamma_G_pn_part = partInformationStruct.(aeroPartName).Gamma_G_pn;
                     dGammaAlphaCP_dt_G_pm_part = dGamma_dt_G_pm_part + chord_part.*(alphaCP - beam_cntr_pm_part).*dexAp_dt_G_pm_part;
-                    Gamma_G_pm_part = partInformationStruct.(aeroPartName).Gamma_G_pm - rBarA_G;
+                    Gamma_G_pm_part = partInformationStruct.(aeroPartName).Gamma_G_pm;
                     
                     %==============================================================
                     % global to aircraft (hub) rotation matrices for i'th blade
                     az_ib = 2*pi/sim.nB*(i-1);
-                    R_A_G_ib= utility_functions.r_matrix([0,0,1],az_ib).'*R_A_G;%TODO CHECK
+                    R_A_G_ib = utility_functions.r_matrix([0,0,1],az_ib).'*R_A_G;%TODO CHECK
+                    
+                    
                     Vinf_A_part = utility_functions.MultiProd_(R_A_G_ib, Vinf(:,:,1 + nsAp*(i-1):nsAp*i));
-                    dGammaAlphaCP_dt_A_pm_part = utility_functions.MultiProd_(R_A_G_ib,dGammaAlphaCP_dt_G_pm_part);
-                    Gamma_A_pm_part = utility_functions.MultiProd_(R_A_G_ib, Gamma_G_pm_part);
-                    Gamma_A_pn_part = utility_functions.MultiProd_(R_A_G_ib, Gamma_G_pn_part);
+                    dGammaAlphaCP_dt_A_pm_part = utility_functions.MultiProd_(R_A_G_ib, dGammaAlphaCP_dt_G_pm_part);
+                    Gamma_A_pm_part = utility_functions.MultiProd_(R_A_G_ib, Gamma_G_pm_part) - rBarA_G;
+                    Gamma_A_pn_part = utility_functions.MultiProd_(R_A_G_ib, Gamma_G_pn_part) - rBarA_G;
                     r_A_pm_part = abs(Gamma_A_pm_part(2,:,:));
                     EAp_A_pm_part = utility_functions.MultiProd_(R_A_G_ib,EAp_G_pm_part);
                     Vrel_A_part = Vinf_A_part - dGammaAlphaCP_dt_A_pm_part;
+                    R_Ap_A_part = permute(EAp_A_pm_part,[2 1 3]);
+                    Omega_A = R_A_G*Omega_G;
+                    Beta_A = R_A_G*Beta_G; % should always be perpendicular to rotor plane regardless of rotor orientation in global frame
+                    Gamma12_A_pm_part = utility_functions.crossn(repmat(Beta_A, [1 1 nsAp]), Gamma_A_pm_part, 1);
+%                     Gamma12_A_pm_part = Gamma_A_pm_part; Gamma12_A_pm_part(3,:,:) = 0;
+                    TorqueDist_A_pm_part = sum((Gamma12_A_pm_part.^2),1).^0.5;
                     
                     r_A_pn_part = abs(Gamma_A_pn_part(2,:,:)); R_A_pn_part = ones(1,1,nsAp, 'like', r_A_pn_part) .* r_A_pn_part(end);
+                    Vtan_A_part = utility_functions.crossn(repmat(Omega_A, [1 1 nsAp]), Gamma_A_pm_part, 1); % tangential velocity of mid panel due to rigid rotation
+                    Vtan_Ap_part = utility_functions.MultiProd_(R_Ap_A_part, Vtan_A_part);
                     r_tip = (R_A_pn_part(end) - r_A_pn_part)./r_A_pn_part; r_hub = (r_A_pn_part - 3)./r_A_pn_part;
                     r_tip = 0.5*(r_tip(2:end)+r_tip(1:end-1));
                     r_hub = 0.5*(r_hub(2:end)+r_hub(1:end-1));
                     BEMvar.losses = squeeze([r_tip; r_hub]).';
                     %==============================================================
-                    [a_part, ap_part, alpha_part, ~, cl_part, cd_part, cm_part, Urel_G_part, Urel_A_part,~] = ...
-                        aero.bem_ning(Vrel_A_part, aeroCoeff2D_part, chord_part, EAp_A_pm_part, r_A_pm_part, R_A_G_ib, BEMvar);
+                    switch sim.bemModel
+                        case 'ning'
+                            [a_part, ap_part, alpha_part, ~, cl_part, cd_part, cm_part, Urel_G_part, Urel_A_part, ~] = ...
+                                aero.bem2D.bem_ning(Vrel_A_part, aeroCoeff2D_part, chord_part, EAp_A_pm_part, r_A_pm_part, R_A_G_ib, Beta_G, BEMvar);
+                            
+                        case 'ponta'
+                            [a_part, ap_part, alpha_part, ~, cl_part, cd_part, cm_part, Urel_G_part, Urel_A_part, ~] = ...
+                                aero.bem3D.SolveBEM_Ponta(Vinf_A_part, Vrel_A_part, dGammaAlphaCP_dt_A_pm_part, Vtan_Ap_part, Omega_A, Beta_G, aeroCoeff2D_part, chord_part, EAp_A_pm_part, TorqueDist_A_pm_part, R_A_G_ib, BEMvar);
+                    end
                     %==============================================================
                     az_ib_global = cat(3,az_ib_global, az_ib);
                     R_G_A_ib_global = cat(3,R_G_A_ib_global,repmat(R_A_G_ib.',[1 1 nsAp]));
@@ -602,8 +623,7 @@ if ~isempty(aerodynamics)
 
             %===================dynamic stall==============================
             switch sim.aeroForces
-                case 'dynamic stall'
-                    
+                case 'dynamic stall'                   
                     switch sim.dsModel
                         %%
                         %============LARSEN/NIELSEN========================
@@ -670,9 +690,7 @@ if ~isempty(aerodynamics)
                             
                             
                             %============OYE===================================
-                        case 'oye' %1 state per strip (dynamic only in stall)
-                            
-                            
+                        case 'oye' %1 state per strip (dynamic only in stall)                         
                             oye_ = aeroData_global.oye;
                             switch sim.aeroInterp_method
                                 case 'linear'
@@ -714,10 +732,9 @@ if ~isempty(aerodynamics)
 %                             alpha_ = alpha_global*180/pi;
                             F_N = LIFT.*ca + DRAG.*sa;
                             F_A = DRAG.*ca - LIFT.*sa;        
-                    end
+                    end  
                     
-                case 'lookup 2D'
-                    
+                case 'lookup 2D'                    
                     if sim.FLAG_parked
                         switch sim.aeroInterp_method
                             case 'spline'                               
@@ -822,10 +839,13 @@ if ~isempty(aerodynamics)
                         %==============================================================
       
             end
+            xAp = EAp_G_pm_global(:,1,:);
+            yAp = EAp_G_pm_global(:,2,:);
+            zAp = EAp_G_pm_global(:,3,:);
             
-            Fqc  = F_N.* EAp_G_pm_global(:,3,:);
-            Mqc  = F_M.* EAp_G_pm_global(:,2,:);
-            Drag = F_A.* EAp_G_pm_global(:,1,:);              
+            Fqc  = F_N.*zAp;
+            Mqc  = F_M.*yAp;
+            Drag = F_A.*xAp;              
             
             
 
