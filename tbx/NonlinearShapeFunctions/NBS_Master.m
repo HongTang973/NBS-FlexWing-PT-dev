@@ -802,9 +802,9 @@ classdef NBS_Master < handle
             set(ax, 'Zdir', 'reverse')
             pos = get(ax,'Position');
             marg = 30;
-            rect = [-marg, -marg, pos(3)+2*marg, pos(4)+2*marg];
+%             rect = [-marg, -marg, pos(3)+2*marg, pos(4)+2*marg];
             title(['t = ' num2str(t_(tidx))]);
-            F = getframe(gca,rect);
+            F = getframe(gca);
             writeVideo(writerObj,F);
         end
         close(gcf);
@@ -1392,8 +1392,8 @@ classdef NBS_Master < handle
             GammaX = Gamma(1,:); GammaY = Gamma(2,:); GammaZ = Gamma(3,:);
 
             XLIM_projection = -XLIM(projectionFacesXYZ(1));
-            YLIM_projection = -YLIM(projectionFacesXYZ(2));
-            ZLIM_projection = ZLIM(projectionFacesXYZ(3));
+            YLIM_projection = YLIM(projectionFacesXYZ(2));
+            ZLIM_projection = -ZLIM(projectionFacesXYZ(3));
 
             hold on;
             zrs = GammaX*0;

@@ -3,7 +3,7 @@ function R = r_matrix(d,del)
 %arbitrary vector d
 
 if nargin == 1
-    del = norm(d);
+    del = norm(d,2);
     d = d./max(del,1e-8);
 end
 

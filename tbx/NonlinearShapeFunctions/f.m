@@ -147,7 +147,7 @@ elseif ~isempty(SimObject.CUSTOM_free_states)
     
     d2rBarA_dt2_G_star = [0;0;0];
     dOmega_dt_G_star = [0;0;0];
-    BetaNorm_G = max(norm(Beta_G),1e-10);
+    BetaNorm_G = max(norm(Beta_G, 2), 1e-10);
     OmegaSkew_G = utility_functions.getSkewMat(Omega_G); dOmega_dtSkew_G_star = utility_functions.getSkewMat(dOmega_dt_G_star);
     dR_G_A_dt = OmegaSkew_G*R_G_A;
     d2R_G_A_dt2_star = dOmega_dtSkew_G_star*R_G_A + OmegaSkew_G*OmegaSkew_G*R_G_A;
@@ -529,8 +529,9 @@ if ~isempty(aerodynamics)
                     Vrel_A_part = Vinf_A_part - dGammaAlphaCP_dt_A_pm_part;
                     R_Ap_A_part = permute(EAp_A_pm_part,[2 1 3]);
                     Omega_A = R_A_G*Omega_G;
-                    Beta_A = R_A_G*Beta_G; % should always be perpendicular to rotor plane regardless of rotor orientation in global frame
-                    Gamma12_A_pm_part = utility_functions.crossn(repmat(Beta_A, [1 1 nsAp]), Gamma_A_pm_part, 1);
+%                     BetaNorm_A = R_A_G*(Beta_G./BetaNorm_G); % should always be perpendicular to rotor plane regardless of rotor orientation in global frame
+                    BetaNorm_A = [0;0;1];
+                    Gamma12_A_pm_part = utility_functions.crossn(repmat(BetaNorm_A, [1 1 nsAp]), Gamma_A_pm_part, 1);
 %                     Gamma12_A_pm_part = Gamma_A_pm_part; Gamma12_A_pm_part(3,:,:) = 0;
                     TorqueDist_A_pm_part = sum((Gamma12_A_pm_part.^2),1).^0.5;
                     
@@ -545,11 +546,11 @@ if ~isempty(aerodynamics)
                     switch sim.bemModel
                         case 'ning'
                             [a_part, ap_part, alpha_part, ~, cl_part, cd_part, cm_part, Urel_G_part, Urel_A_part, ~] = ...
-                                aero.bem2D.bem_ning(Vrel_A_part, aeroCoeff2D_part, chord_part, EAp_A_pm_part, r_A_pm_part, R_A_G_ib, Beta_G, BEMvar);
+                                aero.bem2D.bem_ning(Vrel_A_part, aeroCoeff2D_part, chord_part, EAp_A_pm_part, r_A_pm_part, R_A_G_ib, BEMvar);
                             
                         case 'ponta'
                             [a_part, ap_part, alpha_part, ~, cl_part, cd_part, cm_part, Urel_G_part, Urel_A_part, ~] = ...
-                                aero.bem3D.SolveBEM_Ponta(Vinf_A_part, Vrel_A_part, dGammaAlphaCP_dt_A_pm_part, Vtan_Ap_part, Omega_A, Beta_G, aeroCoeff2D_part, chord_part, EAp_A_pm_part, TorqueDist_A_pm_part, R_A_G_ib, BEMvar);
+                                aero.bem3D.SolveBEM_Ponta(Vinf_A_part, Vrel_A_part, dGammaAlphaCP_dt_A_pm_part, Vtan_Ap_part, Omega_A, aeroCoeff2D_part, chord_part, EAp_A_pm_part, TorqueDist_A_pm_part, R_A_G_ib, BEMvar);
                     end
                     %==============================================================
                     az_ib_global = cat(3,az_ib_global, az_ib);
@@ -1055,6 +1056,7 @@ switch outputFormat
 %             QOI_Container.add_qoi('dCp_da', tidx,dcp_da,'1','dC_{p}/da','[]');
             QOI_Container.add_qoi('EAp_G', tidx,reshape(EAp_G_pm_global,9,1,[]),'1:nsAp','EAp_{[G]}','[]','GlobalAeroQuantity',true);
             QOI_Container.add_qoi('Gamma_G_pm', tidx,Gamma_G_pm_global,'1:nsAp','Gamma_{[G]}_pm','[]','GlobalAeroQuantity',true);
+            QOI_Container.add_qoi('Gamma_A_pm', tidx,Gamma_A_pm_global,'1:nsAp','Gamma_{[A]}_pm','[]','GlobalAeroQuantity',true);
             QOI_Container.add_qoi('Aero_Forces_G' ,tidx,PvecAero_G_pm_global,'1:nsAp','AeroForce#_{[G]}','N','GlobalAeroQuantity',true);
             QOI_Container.add_qoi('Aero_ForcePerSpan_G', tidx,PvecAero_G_pm_global./ApWidth_pm_global,'1:nsAp','AeroForcePerSpan#_{[G]}','N/m','GlobalAeroQuantity',true);
             QOI_Container.add_qoi('Aero_Forces_Gamma_G', tidx, PvecAero_Gamma_G,'1:nsAp','AeroForce \Gamma#_{[G]}','m');
