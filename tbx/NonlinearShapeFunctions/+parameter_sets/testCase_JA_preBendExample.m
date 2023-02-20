@@ -7,15 +7,15 @@ O = NBS_Master;
 %//////Flight Condition
 O.V = 30; %m/s                                                             airspeed
 O.rho = 0.0881; %kg/m^3                                                    air density
-% O.aerodynamics = 'strip_steady';
+O.aerodynamics = [];
 O.uVec_freeStream_G = [1;0;0];
 %--------------------------------------------------------------------------
-O.grav_acc = 9.807;
+O.grav_acc = 9.807.*0;
 O.gravVec_G = [0;0;-1];
 %--------------------------------------------------------------------------
-O.qRigidT = [];
-O.qRigidR = [0]; %#ok<NBRAK>
-O.CUSTOM_free_states = @user_functions.custom_free_states;
+O.qRigidT = [0 0 0];
+O.qRigidR = [0 0 0];
+O.CUSTOM_free_states = [];
 %==========================================================================
 
 %==========================================================================

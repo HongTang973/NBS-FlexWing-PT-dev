@@ -282,8 +282,7 @@ if ~isempty(aerodynamics)
             
             global_idx_counter = 0;
             
-            for aeroPartName_cell = aeroPartNames
-                
+            for aeroPartName_cell = aeroPartNames                
                 aeroPartName = aeroPartName_cell{1};
                 aero_cntr_pm_global = cat(3,aero_cntr_pm_global,partInformationStruct.(aeroPartName).aero_cntr_pm);
                 aeroData_global = partInformationStruct.(aeroPartName).aeroData;
@@ -390,7 +389,6 @@ if ~isempty(aerodynamics)
                 dGamma_dqg_G_pm_global,...
                 dvarTheta_dqg_G_pm_global,...
                 qAero_idx_global,...
-                R_A_W_global,...
                 ] = deal([]);
             
             global_idx_counter = 0;
@@ -472,8 +470,8 @@ if ~isempty(aerodynamics)
                 
                 %initialise rotor variables
                 [a_global, ap_global, alpha_global, cl_global, cd_global, cm_global,...
-                    Urel_G_global,Vrel_A_global,Urel_A_global, Gamma_A_pm_global,...
-                    r_A_pm_global,Gamma_A_pn_global,R_A_pm_global,R_G_A_ib_global,az_ib_global] = deal([]);
+                    Urel_G_global,Vrel_A_global,Urel_A_global, AICs_global, Gamma_A_pm_global,...
+                    r_A_pm_global,Gamma_A_pn_global,R_A_pm_global,EAp_A_pm_global,R_G_A_global,az_global] = deal([]);
                 
                 %initialise blade variables
                 i = 0;
@@ -500,10 +498,11 @@ if ~isempty(aerodynamics)
                             aeroCoeff2D_part = aeroData_part.oye.ft_c;
                     end
                     
-                    R_A_G = partInformationStruct.(aeroPartName).R_A_G;
-                    R_A_W_part = partInformationStruct.(aeroPartName).R_A_W;
-                    R_G_A = R_A_G.'; R_W_A_part = R_A_W_part.';
-                    R_W_G_part = R_W_A_part*R_A_G;
+%                     R_G_A = partInformationStruct.(aeroPartName).E_G;
+                    R_A_G = R_G_A.';
+%                     R_A_W_part = partInformationStruct.(aeroPartName).R_A_W;
+%                     R_W_A_part = R_A_W_part.';
+%                     R_W_G_part = R_W_A_part*R_A_G;
                     
                     chord_part = partInformationStruct.(aeroPartName).chord;
                     EAp_G_pm_part = partInformationStruct.(aeroPartName).EAp_G_pm;
@@ -516,45 +515,49 @@ if ~isempty(aerodynamics)
                     
                     %==============================================================
                     % global to aircraft (hub) rotation matrices for i'th blade
-                    az_ib = 2*pi/sim.nB*(i-1);
-                    R_A_G_ib = utility_functions.r_matrix([0,0,1],az_ib).'*R_A_G;%TODO CHECK
+                    az_part = 2*pi/sim.nB*(i-1);
+                    R_A_G_part = utility_functions.r_matrix([0,0,1],az_part).'*R_A_G;%TODO CHECK
                     
                     
-                    Vinf_A_part = utility_functions.MultiProd_(R_A_G_ib, Vinf(:,:,1 + nsAp*(i-1):nsAp*i));
-                    dGammaAlphaCP_dt_A_pm_part = utility_functions.MultiProd_(R_A_G_ib, dGammaAlphaCP_dt_G_pm_part);
-                    Gamma_A_pm_part = utility_functions.MultiProd_(R_A_G_ib, Gamma_G_pm_part) - rBarA_G;
-                    Gamma_A_pn_part = utility_functions.MultiProd_(R_A_G_ib, Gamma_G_pn_part) - rBarA_G;
-                    r_A_pm_part = abs(Gamma_A_pm_part(2,:,:));
-                    EAp_A_pm_part = utility_functions.MultiProd_(R_A_G_ib,EAp_G_pm_part);
+                    Vinf_A_part = utility_functions.MultiProd_(R_A_G_part, Vinf(:,:,1 + nsAp*(i-1):nsAp*i));
+                    dGammaAlphaCP_dt_A_pm_part = utility_functions.MultiProd_(R_A_G_part, dGammaAlphaCP_dt_G_pm_part);
+                    Gamma_A_pm_part = utility_functions.MultiProd_(R_A_G_part, Gamma_G_pm_part) - rBarA_G;
+                    Gamma_A_pn_part = utility_functions.MultiProd_(R_A_G_part, Gamma_G_pn_part) - rBarA_G;
+                    EAp_A_pm_part = utility_functions.MultiProd_(R_A_G_part,EAp_G_pm_part);
                     Vrel_A_part = Vinf_A_part - dGammaAlphaCP_dt_A_pm_part;
                     R_Ap_A_part = permute(EAp_A_pm_part,[2 1 3]);
                     Omega_A = R_A_G*Omega_G;
 %                     BetaNorm_A = R_A_G*(Beta_G./BetaNorm_G); % should always be perpendicular to rotor plane regardless of rotor orientation in global frame
                     BetaNorm_A = [0;0;1];
                     Gamma12_A_pm_part = utility_functions.crossn(repmat(BetaNorm_A, [1 1 nsAp]), Gamma_A_pm_part, 1);
+                    Gamma12_A_pn_part = utility_functions.crossn(repmat(BetaNorm_A, [1 1 nsAp + 1]), Gamma_A_pn_part, 1);
 %                     Gamma12_A_pm_part = Gamma_A_pm_part; Gamma12_A_pm_part(3,:,:) = 0;
                     TorqueDist_A_pm_part = sum((Gamma12_A_pm_part.^2),1).^0.5;
+                    TorqueDist_A_pn_part = sum((Gamma12_A_pn_part.^2),1).^0.5;
                     
-                    r_A_pn_part = abs(Gamma_A_pn_part(2,:,:)); R_A_pn_part = ones(1,1,nsAp, 'like', r_A_pn_part) .* r_A_pn_part(end);
                     Vtan_A_part = utility_functions.crossn(repmat(Omega_A, [1 1 nsAp]), Gamma_A_pm_part, 1); % tangential velocity of mid panel due to rigid rotation
                     Vtan_Ap_part = utility_functions.MultiProd_(R_Ap_A_part, Vtan_A_part);
-                    r_tip = (R_A_pn_part(end) - r_A_pn_part)./r_A_pn_part; r_hub = (r_A_pn_part - 3)./r_A_pn_part;
+                    r_tip = (TorqueDist_A_pn_part(end) - TorqueDist_A_pn_part)./TorqueDist_A_pn_part; r_hub = (TorqueDist_A_pn_part - sim.r_hub)./TorqueDist_A_pn_part;
                     r_tip = 0.5*(r_tip(2:end)+r_tip(1:end-1));
                     r_hub = 0.5*(r_hub(2:end)+r_hub(1:end-1));
                     BEMvar.losses = squeeze([r_tip; r_hub]).';
                     %==============================================================
+
                     switch sim.bemModel
                         case 'ning'
                             [a_part, ap_part, alpha_part, ~, cl_part, cd_part, cm_part, Urel_G_part, Urel_A_part, ~] = ...
-                                aero.bem2D.bem_ning(Vrel_A_part, aeroCoeff2D_part, chord_part, EAp_A_pm_part, r_A_pm_part, R_A_G_ib, BEMvar);
-                            
+                                aero.bem2D.bem_ning(Vrel_A_part, aeroCoeff2D_part, chord_part, EAp_A_pm_part, TorqueDist_A_pm_part, R_A_G_part, BEMvar);
+%                                                   clf; plot(a_part, 'b'); hold on; plot(ap_part, 'b'); plot(alpha_part/180*pi, 'b');
                         case 'ponta'
-                            [a_part, ap_part, alpha_part, ~, cl_part, cd_part, cm_part, Urel_G_part, Urel_A_part, ~] = ...
-                                aero.bem3D.SolveBEM_Ponta(Vinf_A_part, Vrel_A_part, dGammaAlphaCP_dt_A_pm_part, Vtan_Ap_part, Omega_A, aeroCoeff2D_part, chord_part, EAp_A_pm_part, TorqueDist_A_pm_part, R_A_G_ib, BEMvar);
+                            [a_part, ap_part, alpha_part, ~, cl_part, cd_part, cm_part, Urel_G_part, Urel_A_part, AICs_part, ~] = ...
+                                aero.bem3D.bem_ponta(Vinf_A_part, Vrel_A_part, dGammaAlphaCP_dt_A_pm_part, Vtan_Ap_part,...
+                                Omega_A, aeroCoeff2D_part, chord_part, EAp_A_pm_part, TorqueDist_A_pm_part, R_A_G_part, BEMvar);
                     end
-                    %==============================================================
-                    az_ib_global = cat(3,az_ib_global, az_ib);
-                    R_G_A_ib_global = cat(3,R_G_A_ib_global,repmat(R_A_G_ib.',[1 1 nsAp]));
+%                       plot(a_part, ':r'); hold on; plot(ap_part, '--r'); plot(alpha_part/180*pi, '-r');
+%                     legend({'','','','a','ap','aoa'})
+                      %==============================================================
+                    az_global = cat(3,az_global, az_part);
+                    R_G_A_global = cat(3,R_G_A_global,repmat(R_A_G_part.',[1 1 nsAp]));
                     a_global = cat(3,a_global,permute(a_part,[3 2 1]));
                     ap_global = cat(3,ap_global,permute(ap_part,[3 2 1]));
                     alpha_global = cat(3,alpha_global,permute(alpha_part/180*pi,[3 2 1]));
@@ -562,13 +565,15 @@ if ~isempty(aerodynamics)
                     cd_global = cat(3,cd_global,permute(cd_part,[3 2 1]));
                     cm_global = cat(3,cm_global,permute(cm_part,[3 2 1]));
                     Urel_G_global = cat(3,Urel_G_global,Urel_G_part);
+                    EAp_A_pm_global = cat(3, EAp_A_pm_global, EAp_A_pm_part);
                     Urel_A_global = cat(3,Urel_A_global,Urel_A_part); %POST INDUCTION
                     Vrel_A_global = cat(3,Vrel_A_global,Vrel_A_part); %PRE INDUCTION
-                    r_A_pm_global = cat(3,r_A_pm_global,r_A_pm_part);
-                    R_A_pm_part = ones(1,1,nsAp, 'like', r_A_pm_part) .* r_A_pm_part(end);
+%                     r_A_pm_global = cat(3,r_A_pm_global,r_A_pm_part);
+%                     R_A_pm_part = ones(1,1,nsAp, 'like', r_A_pm_part) .* r_A_pm_part(end);
                     Gamma_A_pm_global  = cat(3,Gamma_A_pm_global,Gamma_A_pm_part);
                     Gamma_A_pn_global  = cat(3,Gamma_A_pn_global,Gamma_A_pn_part);
-                    R_A_pm_global = cat(3,R_A_pm_global, R_A_pm_part);
+%                     R_A_pm_global = cat(3,R_A_pm_global, R_A_pm_part);
+                    AICs_global = cat(3, AICs_global, permute(AICs_part, [3 2 1]));
                 end  
                        
 %                     Urel_G_global == utility_functions.MultiProd_(R_G_A_ib_global, Urel_A_global);
@@ -932,19 +937,15 @@ switch outputFormat
         dQ = Q*0; %initialise 1st order state derivative
         
         %relate 1st and 2nd derivatives for second order variables
-        if sim.FLAG_dynControl
+        if sim.FLAG_dynControl && sim.type == 3
             dQ(qg2nd_idx) = Q(dqg2nd_idx(1:end-1));
         else
             dQ(qg2nd_idx) = Q(dqg2nd_idx);
         end
-%         if isempty(i_rigid_part)        
-%             dM_dqg_sum = dM_dqg;            
-%         else
-            dM_dqg_sum = sum(dM_dqg,3);% + sum(dM_dqg_rigidPart,3);           
-%         end
+        
+        dM_dqg_sum = sum(dM_dqg,3);% + sum(dM_dqg_rigidPart,3);
+
         if ~FLAG_free_free
-            %         dQ(1:nq) = Q(nq+1:2*nq);
-            %         dQ(nq+1:2*nq) = dM_dqg\dW_dqg;
             dQ(dqg2nd_idx) = dM_dqg_sum\dW_dqg_sum;
         else
             %special 1st order derivative relation for rigid rotation
@@ -957,48 +958,6 @@ switch outputFormat
         end
         
         dQ = dQ+sum(dQ_Aero,3);
-        
-%         beta_ = beta_(1);
-%         p1 = [1 cos(beta_ + az_ib_global(1)) sin(beta_ + az_ib_global(1))
-%               1 cos(beta_ + az_ib_global(2)) sin(beta_ + az_ib_global(2))
-%               1 cos(beta_ + az_ib_global(3)) sin(beta_ + az_ib_global(3))];
-%         p2 = [0 -sin(beta_ + az_ib_global(1)) cos(beta_ + az_ib_global(1))
-%               0 -sin(beta_ + az_ib_global(2)) cos(beta_ + az_ib_global(2))
-%               0 -sin(beta_ + az_ib_global(3)) cos(beta_ + az_ib_global(3))];
-%         p3 = [0 -cos(beta_ + az_ib_global(1)) -sin(beta_ + az_ib_global(1))
-%               0 -cos(beta_ + az_ib_global(2)) -sin(beta_ + az_ib_global(2))
-%               0 -cos(beta_ + az_ib_global(3)) -sin(beta_ + az_ib_global(3))];
-%           
-%         p1 = inv(p1);
-%         p2 = inv(Omega_G(1)*p2);
-%         p3 = inv(dOmega_dt_G_star(1).*p2 + Omega_G(1)*Omega_G(1)*p3);
-%         
-%         p2_ = []; p3_ = [];
-%         for i = 1:3
-%             blade_no = ['O_turbineBlade_',num2str(i)];
-%             q2nd_idx_b = partInformationStruct.(blade_no).q2nd_idx;
-%             dq2nd_idx_b = partInformationStruct.(blade_no).dq2nd_idx;           
-%             p2_ = cat(1,p2_,repmat(p1(i,:), [length(q2nd_idx_b) 1]));    
-%             p3_ = cat(1,p3_,repmat(p1(i,:), [length(dq2nd_idx_b) 1])); 
-%         end 
-%         
-%         Pdd = zeros(nQ(1),3,'like',dQ);
-% %         Pdd(qg2nd_idx,:) = Omega_G(1)*p2_;
-% %         Pdd(dqg2nd_idx,:) = dOmega_dt_G_star(1).*p2_ + Omega_G(1)*Omega_G(1)*p3_;
-% 
-%         Pdd(qg2nd_idx,:) = p2_;
-%         Pdd(dqg2nd_idx,:) = p3_;
-%         
-%         list = cell(1,nQ(1)/3);
-%         for i = 1:nQ(1)/3
-%             j = 1:3;
-%             j = j + 3*i -3;
-%         list{i} = Pdd(j,:);
-%         end
-%         
-%         Pdd = blkdiag(list{:});        
-%         output = Pdd*dQ
-        
         output = dQ;
         %/////////////////////////
         %=========================
@@ -1033,8 +992,8 @@ switch outputFormat
 %         Jacobian_flag = 'jac';
         
     case 'qoi'
-        
         QOI_Container = utility_functions.get_field(SimObject,['QOI_Master.QOIcontainers_struct.',NBS_Master_partName]); %TODO read properties(QOI_Master) to get 'QOIcontainers_struct' string
+
         CoM_info = [CoM_info_flexPart_nonlinear , CoM_info_rigidPart];
         aircraftMass = sum(CoM_info(1,:));
         QOI_Container.add_qoi('aircraftMass',tidx,aircraftMass,'1','Aircraft Mass','kg');
@@ -1042,7 +1001,6 @@ switch outputFormat
         CoM_G = sum(bsxfun(@times,CoM_info(1,:),CoM_info(2:4,:)),2)/aircraftMass;
         QOI_Container.add_qoi('CoM_G',tidx,CoM_G,'1','CoM#_{[G]}','m');
         QOI_Container.add_qoi('R_G_A_flat',tidx,reshape(R_G_A,[9 1]),'1','R_{G,A}#','');
- 
 %         QOI_Container.add_qoi('ForcesSum',tidx,F_SUM,'1:nsAp','ForcesSum','N','GlobalAeroQuantity',true);
 %         QOI_Container.add_qoi('MomentSum',tidx,M_SUM,'1:nsAp','MomentSum','Nm','GlobalAeroQuantity',true);
         QOI_Container.add_qoi('ex_G',tidx,R_G_A(:,1,:),'1','ex#_{[G]}','');
@@ -1054,18 +1012,23 @@ switch outputFormat
         if ~isempty(SimObject.aeroPartNames) && ~isempty(aerodynamics)
 %             QOI_Container.add_qoi('C_p', tidx,cp,'1','C_p','[]');
 %             QOI_Container.add_qoi('dCp_da', tidx,dcp_da,'1','dC_{p}/da','[]');
-            QOI_Container.add_qoi('EAp_G', tidx,reshape(EAp_G_pm_global,9,1,[]),'1:nsAp','EAp_{[G]}','[]','GlobalAeroQuantity',true);
+%             QOI_Container.add_qoi('EAp_G_pm', tidx,reshape(EAp_G_pm_global,9,1,[]),'1:nsAp','EAp_{[G]}','[]','GlobalAeroQuantity',true);
+%             QOI_Container.add_qoi('EAp_A_pm', tidx,reshape(EAp_A_pm_global,9,1,[]),'1:nsAp','EAp_{[A]}','[]','GlobalAeroQuantity',true);
             QOI_Container.add_qoi('Gamma_G_pm', tidx,Gamma_G_pm_global,'1:nsAp','Gamma_{[G]}_pm','[]','GlobalAeroQuantity',true);
             QOI_Container.add_qoi('Gamma_A_pm', tidx,Gamma_A_pm_global,'1:nsAp','Gamma_{[A]}_pm','[]','GlobalAeroQuantity',true);
             QOI_Container.add_qoi('Aero_Forces_G' ,tidx,PvecAero_G_pm_global,'1:nsAp','AeroForce#_{[G]}','N','GlobalAeroQuantity',true);
+            PvecAero_A_pm_global = pagemtimes(R_A_G,PvecAero_G_pm_global);
+            QOI_Container.add_qoi('Aero_Forces_A' ,tidx,PvecAero_A_pm_global,'1:nsAp','AeroForce#_{[A]}','N','GlobalAeroQuantity',true);
             QOI_Container.add_qoi('Aero_ForcePerSpan_G', tidx,PvecAero_G_pm_global./ApWidth_pm_global,'1:nsAp','AeroForcePerSpan#_{[G]}','N/m','GlobalAeroQuantity',true);
             QOI_Container.add_qoi('Aero_Forces_Gamma_G', tidx, PvecAero_Gamma_G,'1:nsAp','AeroForce \Gamma#_{[G]}','m');
             QOI_Container.add_qoi('Aero_Moments_G',tidx, MvecAero_G_pm_global,'1:nsAp','AeroMoment#_{[G]}','Nm','GlobalAeroQuantity',true);
+            MvecAero_A_pm_global = pagemtimes(R_A_G,MvecAero_G_pm_global);
+            QOI_Container.add_qoi('Aero_Moments_A',tidx, MvecAero_A_pm_global,'1:nsAp','AeroMoment#_{[A]}','Nm','GlobalAeroQuantity',true);
             QOI_Container.add_qoi('Aero_MomentPerSpan_G', tidx, MvecAero_G_pm_global./ApWidth_pm_global,'1:nsAp','AeroMomentPerSpan#_{[G]}','N','GlobalAeroQuantity',true);
             QOI_Container.add_qoi('Net_Lift', tidx, sum(PvecAero_G_pm_global(3,1,:)),'1','NetLift','N');
             if exist('alpha_global','var')
                 alpha_degrees = alpha_global*180/pi;
-                QOI_Container.add_qoi('Angle_Of_Attack' ,tidx,reshape(alpha_degrees,1,1,[]),'1:nsAp','Angle Of Attack','deg');
+                QOI_Container.add_qoi('Angle_Of_Attack',tidx,reshape(alpha_degrees,1,1,[]),'1:nsAp','Angle Of Attack','deg');
             end
             if exist('CL','var')
                 QOI_Container.add_generic_qoi('CL' ,tidx,reshape(CL,1,1,[]),'1:nsAp','CL','');

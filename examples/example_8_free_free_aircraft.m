@@ -1,86 +1,70 @@
-clc,close all;
+%%
+qRigid = [];
+initialDeflection = 1;
 
-%==========================================================================
-%>>Master Level Object<<%
-O = NBS_Master;
-%--------------------------------------------------------------------------
-%//////Flight Condition
-O.V = 30; %m/s                                                             free stream airspeed
-O.rho = 0.0881; %kg/m^3                                                    air density
-O.aerodynamics = 'strip_steady'; %                                         aerodynamic model
-O.uVec_freeStream_G = [1;0;0]; %                                           free stream unit velocity vector
-%--------------------------------------------------------------------------
-O.grav_acc = 9.807*1;
-O.gravVec_G = [0;0;-1];
-%--------------------------------------------------------------------------
-O.qRigidT = [0];
-O.qRigidR = [0];
-%--------------------------------------------------------------------------
-O.plotBounds = [[-1 1];[-1 1];[-1 1]]*40;
-O.CUSTOM_free_states = @user_functions.custom_free_states;
-%==========================================================================
-%>>Add Flexible Patil/Hodges Starboard Wing
+[x, fval, ~, ~] = fzero(@(x)tipDEF(x,qRigid,initialDeflection),0);
+O_canti = testCasePatilFREE(x,qRigid);
+O_static = runSim(0,1,'analysisType','static','fromObject', O_canti, 'suppressIter', true);
+Q_predef = O_static.Q(:,end);
 
-O_SBWing = parameter_sets.FlexPart_Library.flexPart_ExampleWing(O,O,'SBWing');
-O_SBWing.alpha_root = 4; % the root angle of attack of the wing in degrees
-O_SBWing.sweep_root = 5; % the root sweep angle of the wing in degrees
-O_SBWing.wingRoot_offset_A = [0;0.5;0];
+%%
+qRigid = [0 0 0];
+O_free = testCasePatilFREE(0,qRigid);
+O_free.IC = [Q_predef; zeros(12,1)];
+O_dynamic = runSim(0,30,'analysisType','dynamic','fromObject', O_free, 'delta_t', 0.01);
+% O_dynamic.generate_video();
 
-%//////Shape Functions
-O_SBWing.shape_class_bend = 'chebyshev_1st';
-O_SBWing.shape_class_twist = 'chebyshev_1st';
-O_SBWing.shape_BCs_bend  = [0 1;1 1;1 1];
-O_SBWing.shape_BCs_twist = [0 1;1 1;1 1];
+flex_part_name = O_dynamic.flexParts_nonlinear_cell{1}.partName;
+gamma_dim3xnsxnt_tip = O_dynamic.get_qoiValue(flex_part_name,...
+    'Gamma_G','Tidx','1:nt','Sidx','ns',...
+    'generate_QOIs',true,...
+    'display',false);
+t = O_dynamic.t;
 
-O_SBWing.qth.n = 8;
-O_SBWing.qsi.n = 6;
-O_SBWing.qph.n = 6;
+figure()
+plot(t, squeeze(gamma_dim3xnsxnt_tip(3,:,:)), 'DisplayName', 'Tip')
+hold on
 
-O_SBWing.populate_shape_set('PLOT',false,'setName','Starboard Wing');
+gamma_dim3xnsxnt_root = O_dynamic.get_qoiValue(flex_part_name,...
+    'Gamma_G','Tidx','1:nt','Sidx','1',...
+    'generate_QOIs',true,...
+    'display',false);
+plot(t, squeeze(gamma_dim3xnsxnt_root(3,:,:)), 'DisplayName', 'Root')
 
-%==========================================================================
-%>>Add Flexible Patil/Hodges Port Wing
+flex_part_name = O_dynamic.flexParts_nonlinear_cell{1}.partName;
+COM_G_SB = O_dynamic.get_qoiValue(flex_part_name,...
+    'CoM_G','Tidx','1:nt','Sidx','1:3',...
+    'generate_QOIs',true,...
+    'display',false);
+SB_mass = sum(O_dynamic.flexParts_nonlinear.(flex_part_name).ms);
+flex_part_name = O_dynamic.flexParts_nonlinear_cell{2}.partName;
+COM_G_PT = O_dynamic.get_qoiValue(flex_part_name,...
+    'CoM_G','Tidx','1:nt','Sidx','1:3',...
+    'generate_QOIs',true,...
+    'display',false);
 
-O_PTWing = parameter_sets.FlexPart_Library.flexPart_ExampleWing(O,O,'PTWing');
-O_PTWing.alpha_root = 4; O_PTWing.sweep_root = 5;
-O_PTWing.wingRoot_offset_A = [0;-0.5;0];
+% rigidQ_T = O_dynamic.Q(O_dynamic.rT_idx,:);
+% plot(t, rigidQ_T(3,:))
+CoM_G = sum(bsxfun(@times,[repmat(SB_mass, [1 1 size(t,2)]) ; repmat(PT_mass, [1 1 size(t,2)])],[COM_G_SB; COM_G_PT]),1)/(PT_mass + SB_mass);
+figure()
+plot(t, squeeze(CoM_G(1,3,:)))
 
-%//////Shape Functions
-O_PTWing.shape_class_bend = 'chebyshev_1st';
-O_PTWing.shape_class_twist = 'chebyshev_1st';
-O_PTWing.shape_BCs_bend  = [0 1;1 1;1 1];
-O_PTWing.shape_BCs_twist = [0 1;1 1;1 1];
+PT_mass = sum(O_dynamic.flexParts_nonlinear.(flex_part_name).ms);
+CoM_info = [repmat(SB_mass, [1 size(t,2)]).', squeeze(COM_G_SB).'; repmat(PT_mass, [1 size(t,2)]).', squeeze(COM_G_PT).'];
+aircraftMass = SB_mass + PT_mass;
+CoM_G = sum(bsxfun(@times,CoM_info(:,1),CoM_info(:,2:4)),2)/aircraftMass;
 
-O_PTWing.qth.n = 8;
-O_PTWing.qsi.n = 6;
-O_PTWing.qph.n = 6;
+plot(t, CoM_G, 'DisplayName', 'CoM_G')
+legend('-DynamicLegend')
 
-O_PTWing.update_R_A_W('reflect',true);
-O_PTWing.populate_shape_set('PLOT',false,'setName','Port Wing');
+function residual = tipDEF(tipFORCE,qRigid,initialDeflection)
+O = testCasePatilFREE(tipFORCE,qRigid);
+O_static = runSim(0,1,'analysisType','static','fromObject', O, 'suppressIter', true);
+flex_part_name = O_static.flexParts_nonlinear_cell{1}.partName;
+gamma_dim3xnsxnt = O_static.get_qoiValue(flex_part_name,...
+    'Gamma_G','Tidx','1:nt','Sidx','ns',...
+    'generate_QOIs',true,...
+    'display',false);
 
-%==========================================================================
-%>>Add Fuselage
-
-O_Fuselage = parameter_sets.RigidPart_Library.rigidPart_ExampleFuselage(O,O,'Fuselage');
-O_Fuselage.connection_idx_ParentObj = 1;
-O_Fuselage.connectionOffset_C = [0;0;0];
-O_Fuselage.R_C_W_0 = utility_functions.r_matrix([0;0;-1],pi/2);
-O_Fuselage.set_dependent_properties();
-
-%==========================================================================
-%>>Add HTP
-
-O_HTP = parameter_sets.RigidPart_Library.rigidPart_ExampleHTP(O,O,'HTP');
-O_HTP.connection_idx_ParentObj = 1;
-O_HTP.connectionOffset_C = [1;0;0]*O_Fuselage.s(end);
-O_HTP.R_C_W_0 = O_SBWing.R_A_W.'*utility_functions.r_matrix([0;1;0],0);
-O_HTP.R_C_W_0 = utility_functions.r_matrix([0;1;0],0);
-O_HTP.set_dependent_properties();
-
-%==========================================================================
-set_dependent_properties(O);
-%==========================================================================
-T0 = 0; T1 = 2;
-Mcph_obj_dynamic = runSim(T0,T1,'analysisType','dynamic','fromObject',O);
-Mcph_obj_dynamic.generate_video('plotCoM',false,'playSpeed',1,'framerate',5,'az',130);
-% implay('video.avi');
+residual = gamma_dim3xnsxnt(3,1,2) - initialDeflection;
+end

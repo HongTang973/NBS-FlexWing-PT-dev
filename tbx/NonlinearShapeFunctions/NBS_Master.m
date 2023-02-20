@@ -17,6 +17,7 @@ classdef NBS_Master < handle
         CUSTOM_free_states                                                 %handle to a function that prescribes a mapping from a set of kinematic states to position/rotational quantities and their variations
         sim = struct
         T                                                                  %period of prescribed rotation
+        Pitch
         ff_h
         R_G_A_0                                                            %initial orientation
         StateInfo
@@ -575,13 +576,14 @@ classdef NBS_Master < handle
         Sidx = utility_functions.get_option(varargin,'Sidx',':');
         Tidx = utility_functions.get_option(varargin,'Tidx',':');
         generate_QOIs = utility_functions.get_option(varargin,'generate_QOIs',false);
-
+        Display = utility_functions.get_option(varargin,'display',true);
+        
         if ischar(PartObject), PartObject = obj.get_partObj(PartObject); end
 
         if generate_QOIs
             qoiRequest = {true, qoiName, Sidx, Tidx};
             PartObject.QOI_Container.qoi_request_partLevel = qoiRequest;
-            obj.QOI_Master.write_QOI_values('partLevel');
+            obj.QOI_Master.write_QOI_values('partLevel', 'display', Display);
         end
 
         qoi = PartObject.QOI_Container.qoiStruct.(qoiName);
@@ -735,7 +737,7 @@ classdef NBS_Master < handle
         ax = gca;
         view(ax,[azimuth,elevation]);
         box on; grid on;
-        title(['System Parts: ' utility_functions.cell2char(parts,'parseChars',', ') ' , t = ' num2str(t_)]);
+%         title(['System Parts: ' utility_functions.cell2char(parts,'parseChars',', ') ' , t = ' num2str(t_)]);
 
     end
 
@@ -766,7 +768,8 @@ classdef NBS_Master < handle
             qoiRequest = {true,'CoM_G','1',Tidx_str};
         else
             qoiRequest = [];
-        end
+        end   
+        
         %------------------------------------------------------------------
         
         %specify a qoi Request for the required plotting fields
@@ -777,6 +780,11 @@ classdef NBS_Master < handle
             true,'R_C_W','1',Tidx_str;...
             true,'Gamma_G','1:ns',Tidx_str}];
         
+        AeroForce = utility_functions.get_option(varargin,'AeroForce',false);
+        if AeroForce
+            qoiRequest = [qoiRequest;{true,'Aero_Forces_G',':',Tidx_str}];
+            qoiRequest = [qoiRequest;{true,'Aero_Forces_Gamma_G',':',Tidx_str}]; 
+        end    
         %write qoi Request to the QOI_Container
         obj.QOI_Master.qoi_request_systemLevel = qoiRequest;
         
@@ -787,7 +795,7 @@ classdef NBS_Master < handle
         writerObj.FrameRate = framesPerSecond_closestDiscreteFit*playSpeed;
         open(writerObj);
         
-        figure();
+        figure('WindowStyle','normal');
         set(gcf,'outerPosition',[100 100 800 800],'color',[1 1 1]);
         pause(0.1);
         
@@ -798,8 +806,9 @@ classdef NBS_Master < handle
             set(gcf,'Renderer','zbuffer');
             ax = gca;
             set(ax,'Units','pixels');
-            set(ax, 'Xdir', 'reverse')
-            set(ax, 'Zdir', 'reverse')
+            view([90,-70])
+%             set(ax, 'Xdir', 'reverse')
+%             set(ax, 'Zdir', 'reverse')
             pos = get(ax,'Position');
             marg = 30;
 %             rect = [-marg, -marg, pos(3)+2*marg, pos(4)+2*marg];
@@ -1239,7 +1248,7 @@ classdef NBS_Master < handle
             %produce a deep copy of the object 'obj' preserving all handle structures within the object but severing all links between 'obj_copy' and 'obj'
             %accomplished via save and reload operation on obj
 
-            unique_identifyer = '89hd2n3sdf8479y2jnzhdh8e9w82jxmcf';
+            unique_identifyer = num2str(floor(rand()*1e12));
             temp_fileName = ['temp_NBS_object_copy_' unique_identifyer '.mat'];
             save(temp_fileName,'obj');
             struct = load(temp_fileName);
@@ -1391,19 +1400,24 @@ classdef NBS_Master < handle
         function [] = plot_2D_projections(Gamma,XLIM,YLIM,ZLIM,projectionFacesXYZ)
             GammaX = Gamma(1,:); GammaY = Gamma(2,:); GammaZ = Gamma(3,:);
 
-            XLIM_projection = -XLIM(projectionFacesXYZ(1));
+            XLIM_projection = XLIM(projectionFacesXYZ(1));
             YLIM_projection = YLIM(projectionFacesXYZ(2));
-            ZLIM_projection = -ZLIM(projectionFacesXYZ(3));
+            ZLIM_projection = ZLIM(projectionFacesXYZ(3));
 
             hold on;
             zrs = GammaX*0;
-            plot3(zrs+XLIM_projection,GammaY,GammaZ,'color',[0,0.75,0.75],'lineWidth',1.5);
-            plot3(GammaX,zrs+YLIM_projection,GammaZ,'color',[0,0.75,0.75],'lineWidth',1.5);
-            plot3(GammaX,GammaY,zrs+ZLIM_projection,'color',[0,0.75,0.75],'lineWidth',1.5);
-            plot3([0,XLIM_projection],[0,0],[0,0],'color',[0,0.75,0.75],'lineStyle',':','lineWidth',1);
-            plot3([0,0],[0,0],[0,ZLIM_projection],'color',[0,0.75,0.75],'lineStyle',':','lineWidth',1);
-            plot3([GammaX(end),XLIM_projection],[0,0]+GammaY(end),[0,0]+GammaZ(end),'color',[0,0.75,0.75],'lineStyle',':','lineWidth',1);
-            plot3([0,0]+GammaX(end),[0,0]+GammaY(end),[GammaZ(end),ZLIM_projection],'color',[0,0.75,0.75],'lineStyle',':','lineWidth',1);
+            plot3(zrs+XLIM_projection,GammaY,GammaZ,'color',[0.75,0.75,0.75],'lineWidth',1.5);
+            plot3(GammaX,GammaY,zrs,'color',[0,0.25,0.75],'lineWidth',1.5);
+            
+%             plot3(GammaX,zrs+YLIM_projection,GammaZ,'color',[0,0.75,0.75],'lineWidth',1.5);
+            
+            plot3(GammaX,GammaY,zrs+ZLIM_projection,'color',[0.75,0.75,0.75],'lineWidth',1.5);
+            plot3(zrs+GammaX(end),zrs+GammaY(end),GammaZ,'color',[0,0.25,0.75],'lineWidth',1.5);
+            
+            plot3([0,XLIM_projection],[0,0],[0,0],'color',[0.75,0.75,0.75],'lineStyle',':','lineWidth',1);
+            plot3([0,0],[0,0],[0,ZLIM_projection],'color',[0.75,0.75,0.75],'lineStyle',':','lineWidth',1);
+            plot3([GammaX(end),XLIM_projection],[0,0]+GammaY(end),[0,0]+GammaZ(end),'color',[0.75,0.75,0.75],'lineStyle',':','lineWidth',1);
+            plot3([0,0]+GammaX(end),[0,0]+GammaY(end),[GammaZ(end),ZLIM_projection],'color',[0.75,0.75,0.75],'lineStyle',':','lineWidth',1);
 
         end
 

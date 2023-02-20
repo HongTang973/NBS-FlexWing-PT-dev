@@ -1219,8 +1219,6 @@ classdef NBS_flexPart_nonlinear < handle
             dE_dt_G = utility_functions.MultiProd_(dvarTheta_dt_G_skew,E_G);
             d2E_dt2_G_star = utility_functions.MultiProd_(d2varTheta_dt2_G_star_skew,E_G) + utility_functions.MultiProd_(dvarTheta_dt_G_skew,dE_dt_G);
 
-
-
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             %% Calculation of Gamma position vectors
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -1474,8 +1472,9 @@ classdef NBS_flexPart_nonlinear < handle
 
                 %Gamma_G = bsxfun(@plus,rBarA_G + R_G_A*wingRoot_offset_A,MultiProd_(R_G_W,Gamma_W));
                 QOI_Container.add_qoi('Gamma_G',tidx,Gamma_G,'1:ns','\Gamma#_{[G]}','m');
-                QOI_Container.add_qoi('MOMENT_xi',tidx,MOMENT_xi,'1:ns','\MOMENT_xi','N');
-                Gamma_A = rBarA_G + squeeze(utility_functions.MultiProd_(R_A_G,Gamma_G));
+%                 QOI_Container.add_qoi('MOMENT_xi',tidx,MOMENT_xi,'1:ns','\MOMENT_xi','N');
+                
+                Gamma_A = rBarA_G + utility_functions.MultiProd_(R_A_G,Gamma_G);
                 QOI_Container.add_qoi('Gamma_A',tidx,Gamma_A,'1:ns','\Gamma#_{[A]}','m');
                 Gamma_G_pn = utility_functions.sample(Gamma_G, obj.Apn_idx, 3);
                 QOI_Container.add_qoi('Gamma_G_pn',tidx,Gamma_G_pn, 1:nsAp+1,'\Gamma#_{[G]}','m');
@@ -1483,6 +1482,13 @@ classdef NBS_flexPart_nonlinear < handle
                 QOI_Container.add_qoi('Gamma_m_G',tidx,Gamma_m_G,'1:ns','\Gamma_m#_{[G]}','m');
                 %dGamma_dt_G = squeeze(bsxfun(@plus,drBarA_dt_G,map_WtoG(dGamma_dt_W,R_G_W) + MultiProd_(dR_G_W_dt,Gamma_W)));
                 QOI_Container.add_qoi('dGamma_dt_G',tidx,dGamma_dt_G,'1:ns','d\Gamma#/dt_{[G]}','m/s');
+                dGamma_dt_A = utility_functions.MultiProd_(R_A_G,dGamma_dt_G);
+                QOI_Container.add_qoi('dGamma_dt_A',tidx,dGamma_dt_A,'1:ns','d\Gamma#/dt_{[A]}','m/s');
+                
+                EAp_G = utility_functions.MultiProd_(E_G,obj.EAp_I);
+                EAp_A = utility_functions.MultiProd_(R_A_G, EAp_G);
+                QOI_Container.add_qoi('EAp_A',tidx,reshape(EAp_A,9,1,[]),'1:ns','EAp_{[A]}','');
+                QOI_Container.add_qoi('EAp_I',tidx,reshape(obj.EAp_I,9,1,[]),'1:ns','EAp_{[A]}','');
                 QOI_Container.add_qoi('ex_G',tidx,E_G(:,1,:),'1:ns','ex#_{[G]}','');
                 QOI_Container.add_qoi('ey_G',tidx,E_G(:,2,:),'1:ns','ey#_{[G]}','');
                 QOI_Container.add_qoi('ez_G',tidx,E_G(:,3,:),'1:ns','ez#_{[G]}','');
@@ -1499,8 +1505,8 @@ classdef NBS_flexPart_nonlinear < handle
                 CoM_info_flexPart_nonlinear(1) = sum(ms);
                 CoM_info_flexPart_nonlinear(2:4) = sum(ms.*Gamma_G,3)/sum(ms);
                 CoM_G = CoM_info_flexPart_nonlinear(2:4);
-
-                QOI_Container.add_qoi('CoM_G',tidx,CoM_G,'1','CoM#_{[G]}','m');
+ 
+               QOI_Container.add_qoi('CoM_G',tidx,CoM_G,'1:3','CoM#_{[G]}','m');
 
                 QOI_Container.discretisationVariables.ns = obj.ns;
                 QOI_Container.discretisationVariables.nt = SimObject.nt;

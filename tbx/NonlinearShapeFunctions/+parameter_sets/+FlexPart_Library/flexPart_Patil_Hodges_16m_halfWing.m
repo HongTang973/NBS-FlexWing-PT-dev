@@ -24,7 +24,7 @@ O.StiffnessMatrix = [
     0    0    EIzz];
 O.StiffnessMatrix(4:6,4:6) = eye(3)*1e3;
 %--------------------------------------------------------------------------
-damping_factor = 0.04;
+damping_factor = 4e-2;
 O.DampingMatrix = damping_factor*O.StiffnessMatrix;
 %--------------------------------------------------------------------------
 I_tau = 0.1;

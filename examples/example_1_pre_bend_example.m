@@ -2,7 +2,6 @@
 %
 %
 %
-
 %Make a model
 ModelDefinition = parameter_sets.testCase_JA_preBendExample;
 
@@ -11,4 +10,4 @@ AnalysisOutput = runSim(0, 10, 'analysisType', 'dynamic', 'fromObject', ModelDef
 
 %Post process the results
 part_name = AnalysisOutput.flexParts_nonlinear_cell{1}.partName;
-AnalysisOutput.generate_2dplot(part_name, {'t',1,'1','1:nt'}, {'Gamma_G', 3, 'ns', '1:nt'});
+AnalysisOutput.generate_2dplot(part_name, {'t',1,'1','nt'}, {'Gamma_G', 3, 'ns', '1:nt'});

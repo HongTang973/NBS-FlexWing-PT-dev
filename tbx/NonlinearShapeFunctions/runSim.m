@@ -94,6 +94,9 @@ tic
 options = odeset('OutputFcn',@outputFunction,'BDF','off','relTol',1e-5);
 [t,u] = ode15s(fHandle, tsteps, SimObject.IC, options, SimObject,'dQ');
 
+% options = odeset('OutputFcn',@outputFunction,'relTol',1e-5);
+% [t,u] = ode45(fHandle, tsteps, SimObject.IC, options, SimObject,'dQ');
+
 runTime = toc; disp(['   runTime: ' num2str(runTime)]);
 SimObject.runTime = runTime;
 SimObject.t = t.';
