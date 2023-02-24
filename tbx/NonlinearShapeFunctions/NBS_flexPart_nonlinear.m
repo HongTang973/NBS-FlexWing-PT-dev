@@ -466,7 +466,7 @@ classdef NBS_flexPart_nonlinear < handle
 
     methods (Access = {?NBS_Master})
 
-        function set_dependent_properties(obj)
+        function set_dependent_properties(obj, tbf)
             %populate additional dependent wing parameters
             obj.R_W_WE_tr = obj.R_W_WE.';
             %obj.s_aeroMid = (obj.s_aero(2:end)+obj.s_aero(1:end-1))/2;
@@ -601,36 +601,36 @@ classdef NBS_flexPart_nonlinear < handle
 
                 if strcmp(obj.NBS_Master.aerodynamics,'WT')
                     
-                    if obj.NBS_Master.sim.FLAG_unsteady
+                    if tbf.FLAG_unsteady
                         obj.qAero.n = 0;
                         obj.qAero.group = ['AeroStates_' obj.partName];
                         
-                        if strcmp(obj.NBS_Master.sim.aeroForces, 'leishman')
+                        if strcmp(tbf.aeroForces, 'leishman')
                             obj.qAero.n = obj.nsAp*2;
                             obj.qAero.group = ['AeroStates_' obj.partName];
                         end
-                        if strcmp(obj.NBS_Master.sim.aeroForces, 'dynamic stall')
-                            if strcmp(obj.NBS_Master.sim.dsModel, 'oye')
+                        if strcmp(tbf.aeroForces, 'dynamic stall')
+                            if strcmp(tbf.dsModel, 'oye')
                                 obj.nQAero = 1;
                                 obj.qAero.n = obj.nsAp*obj.nQAero;
                                 obj.qAero.group = ['AeroStates_' obj.partName];
-                            elseif strcmp(obj.NBS_Master.sim.dsModel, 'larsen')
+                            elseif strcmp(tbf.dsModel, 'larsen')
                                 obj.nQAero = 4;
                                 obj.qAero.n = obj.nsAp*obj.nQAero;
                                 obj.qAero.group = ['AeroStates_' obj.partName];
                             end
                         end
-                        if obj.NBS_Master.sim.FLAG_dw
-                            if strcmp(obj.NBS_Master.sim.aeroForces, 'lookup 2D')
+                        if tbf.FLAG_dw
+                            if strcmp(tbf.aeroForces, 'lookup 2D')
                                 obj.nQAero = 0;
-                                switch obj.NBS_Master.sim.dwDetail
+                                switch tbf.dwDetail
                                     case 'full'
                                         obj.qAero.n = obj.nsAp*4;
                                     case 'simple'
                                         obj.qAero.n = 1;
                                 end
                             else                              
-                                switch obj.NBS_Master.sim.dwDetail
+                                switch tbf.dwDetail
                                     case 'full'
                                         obj.qAero.n = obj.qAero.n + obj.nsAp*4;
                                     case 'simple'
@@ -975,7 +975,7 @@ classdef NBS_flexPart_nonlinear < handle
 
     methods
 
-        function [dW_dq_part,dM_dq_part,partInformationStruct] = f_flexPart_nonlinear(obj,Q,partInformationStruct,outputFormat,tidx,i_flex_part)
+        function [dW_dq_part,dM_dq_part,partInformationStruct] = f_flexPart_nonlinear(obj,tbf,Q,partInformationStruct,outputFormat,tidx,i_flex_part)
             %#ok<*PROPLC>          
             
             SimObject = obj.NBS_Master;
@@ -1036,7 +1036,7 @@ classdef NBS_flexPart_nonlinear < handle
                 th_idx(:);si_idx(:);ph_idx(:);Sx_idx(:);Sy_idx(:);Sz_idx(:)];
 %         
 %             beta_ = beta_(1);
-%             az_ib = 2*pi/SimObject.sim.nB*(i_flex_part-1);
+%             az_ib = 2*pi/SimObject.tbf.nB*(i_flex_part-1);
 %             p1 = [1 cos(beta_ + az_ib) sin(beta_ + az_ib)];
 %             p2 = [0 -sin(beta_ + az_ib) cos(beta_ + az_ib)];
 % 
@@ -1287,12 +1287,12 @@ classdef NBS_flexPart_nonlinear < handle
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             %% FlexPart_nonlinear Applied Loads from PvecApplied_G, MvecApplied_G, Gravitational Acceleration
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            if ~isfield(SimObject.sim, 'operation')
+            if ~isprop(tbf, 'operation')
                 PvecWeight_G = SimObject.grav_acc.*SimObject.gravVec_G.*obj.ms;
             else
-                switch SimObject.sim.operation
+                switch tbf.operation
                     case 'fixed'
-                        if SimObject.sim.FLAG_parked
+                        if tbf.FLAG_parked
                             PvecWeight_G = SimObject.grav_acc.*SimObject.gravVec_G.*obj.ms;
                         else
                             Omega_G = repmat([0; 0; 2*pi/SimObject.T], [1 1 obj.ns]);

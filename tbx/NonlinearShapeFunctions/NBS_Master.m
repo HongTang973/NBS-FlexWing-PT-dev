@@ -15,7 +15,6 @@ classdef NBS_Master < handle
         aerodynamics                                                       %[-] aerodynamics switch
         prescribedMotion_fnc                                               %handle to a function that prescribes an enforced motion of the aircraft reference point
         CUSTOM_free_states                                                 %handle to a function that prescribes a mapping from a set of kinematic states to position/rotational quantities and their variations
-        sim = struct
         T                                                                  %period of prescribed rotation
         Pitch
         ff_h
@@ -71,7 +70,7 @@ classdef NBS_Master < handle
         fileArchive
         Camlight = [45,-90]
         temp_properties
-        maindir
+        mainDir
         %flexParts_nonlinear_cell
         %               nflexParts_nonlinear
         flexParts_nonlinear
@@ -144,19 +143,19 @@ classdef NBS_Master < handle
         for partObj_ = obj.allParts_cell
             partObj = partObj_{1};
             if ~isa(partObj,'NBS_Master')
-                partObj.set_dependent_properties;
+                partObj.set_dependent_properties(tbf);
             end
         end
     end
     
-    function set_dependent_properties(obj)
+    function set_dependent_properties(obj, tbf)
 
         %call the set_dependent_properties methods of all aircraft sub parts
         obj.aeroPartNames = [];
         for partObj_ = obj.allParts_cell
             partObj = partObj_{1};
             if ~isa(partObj,'NBS_Master')
-                partObj.set_dependent_properties;               
+                partObj.set_dependent_properties(tbf);               
             end
         end
 
@@ -892,7 +891,7 @@ classdef NBS_Master < handle
         %write the trimmed Lambda values to the object
         for i_ = 1:nCon
             obj.setParameterVal(partName_partProperty{i_,1},partName_partProperty{i_,2},Lambda(i_));
-            obj.set_dependent_properties();
+            obj.set_dependent_properties(tbf);
         end
 
         function Cost = staticEval(Lambda,obj_,Y_Target,nCon,partName_partProperty,partName_QOIName_QOIValue)
@@ -926,13 +925,13 @@ classdef NBS_Master < handle
         if nargin == 0
             disp(' ')
             disp('function call of the form ''obj = runSim(t1,t2,options)''')
-            disp('where t1 and t2 are the start and end times (ignored for static sim)')
+            disp('where t1 and t2 are the start and end times (ignored for static tbf)')
             disp(' ')
             disp('additional keyword/value pairs specified in ''options'' argument')
             disp(' ')
             disp('optional keywords (default values marked with ''*''):')
             disp('        analysisType: [''dynamic''*/''static''] - specify dynamic or static analysis to be run')
-            disp('        solver:       [''ode15s''*/''NewmarkBeta''] - choose between ode15s and Newmark Beta solvers (ignored for static sim)')
+            disp('        solver:       [''ode15s''*/''NewmarkBeta''] - choose between ode15s and Newmark Beta solvers (ignored for static tbf)')
             disp('        intFnc:       [@functionName] - specify integration function to be used; Expected form, intVal = functionName(x,y)')
             disp('                                        where: size(x) = [1 nx], size(y) = [nfunc nx], size(intVal) = [nfunc nx]')
             disp('        profileCode:  [false*/true] - run code profiler if true')
