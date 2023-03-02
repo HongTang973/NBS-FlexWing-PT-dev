@@ -1,0 +1,74 @@
+[
+  {
+    "directory": "C:\\Users\\ja14996\\Documents\\turbif\\dpd\\nonlinear_shape_functions\\tbx\\NonlinearShapeFunctions\\+static_method_groups\\codegen\\mex\\mex",
+    "command": "C:\\ProgramData\\MATLAB\\SupportPackages\\R2021a\\3P.instrset\\mingw_w64.instrset\\bin\\g++ -c -fexceptions -fno-omit-frame-pointer -std=c++11 -m64 -DMATLAB_MEX_FILE  -DMATLAB_MEX_FILE -O2 -fwrapv -DNDEBUG -std=c++11 -I \"C:\\Users\\ja14996\\Documents\\turbif\\dpd\\nonlinear_shape_functions\\tbx\\NonlinearShapeFunctions\\+static_method_groups\\codegen\\mex\\mex\" -I \"C:\\Users\\ja14996\\Documents\\turbif\\dpd\\nonlinear_shape_functions\\tbx\\NonlinearShapeFunctions\\+static_method_groups\" -I \"C:\\Users\\ja14996\\Documents\\turbif\\dpd\\nonlinear_shape_functions\\tbx\\NonlinearShapeFunctions\\+static_method_groups\\codegen\\mex\\mex\\interface\" -I \"C:\\Program Files\\MATLAB\\R2021a\\extern\\include\" -I \".\" -DMODEL=mex -D__USE_MINGW_ANSI_STDIO=1 -DMW_NEEDS_VERSION_H -fopenmp  mex_data.cpp -o build/win64/mex_data.o",
+    "file": "mex_data.cpp",
+    "output": "build/win64/mex_data.o"
+  },
+  {
+    "directory": "C:\\Users\\ja14996\\Documents\\turbif\\dpd\\nonlinear_shape_functions\\tbx\\NonlinearShapeFunctions\\+static_method_groups\\codegen\\mex\\mex",
+    "command": "C:\\ProgramData\\MATLAB\\SupportPackages\\R2021a\\3P.instrset\\mingw_w64.instrset\\bin\\g++ -c -fexceptions -fno-omit-frame-pointer -std=c++11 -m64 -DMATLAB_MEX_FILE  -DMATLAB_MEX_FILE -O2 -fwrapv -DNDEBUG -std=c++11 -I \"C:\\Users\\ja14996\\Documents\\turbif\\dpd\\nonlinear_shape_functions\\tbx\\NonlinearShapeFunctions\\+static_method_groups\\codegen\\mex\\mex\" -I \"C:\\Users\\ja14996\\Documents\\turbif\\dpd\\nonlinear_shape_functions\\tbx\\NonlinearShapeFunctions\\+static_method_groups\" -I \"C:\\Users\\ja14996\\Documents\\turbif\\dpd\\nonlinear_shape_functions\\tbx\\NonlinearShapeFunctions\\+static_method_groups\\codegen\\mex\\mex\\interface\" -I \"C:\\Program Files\\MATLAB\\R2021a\\extern\\include\" -I \".\" -DMODEL=mex -D__USE_MINGW_ANSI_STDIO=1 -DMW_NEEDS_VERSION_H -fopenmp  rt_nonfinite.cpp -o build/win64/rt_nonfinite.o",
+    "file": "rt_nonfinite.cpp",
+    "output": "build/win64/rt_nonfinite.o"
+  },
+  {
+    "directory": "C:\\Users\\ja14996\\Documents\\turbif\\dpd\\nonlinear_shape_functions\\tbx\\NonlinearShapeFunctions\\+static_method_groups\\codegen\\mex\\mex",
+    "command": "C:\\ProgramData\\MATLAB\\SupportPackages\\R2021a\\3P.instrset\\mingw_w64.instrset\\bin\\g++ -c -fexceptions -fno-omit-frame-pointer -std=c++11 -m64 -DMATLAB_MEX_FILE  -DMATLAB_MEX_FILE -O2 -fwrapv -DNDEBUG -std=c++11 -I \"C:\\Users\\ja14996\\Documents\\turbif\\dpd\\nonlinear_shape_functions\\tbx\\NonlinearShapeFunctions\\+static_method_groups\\codegen\\mex\\mex\" -I \"C:\\Users\\ja14996\\Documents\\turbif\\dpd\\nonlinear_shape_functions\\tbx\\NonlinearShapeFunctions\\+static_method_groups\" -I \"C:\\Users\\ja14996\\Documents\\turbif\\dpd\\nonlinear_shape_functions\\tbx\\NonlinearShapeFunctions\\+static_method_groups\\codegen\\mex\\mex\\interface\" -I \"C:\\Program Files\\MATLAB\\R2021a\\extern\\include\" -I \".\" -DMODEL=mex -D__USE_MINGW_ANSI_STDIO=1 -DMW_NEEDS_VERSION_H -fopenmp  mex_initialize.cpp -o build/win64/mex_initialize.o",
+    "file": "mex_initialize.cpp",
+    "output": "build/win64/mex_initialize.o"
+  },
+  {
+    "directory": "C:\\Users\\ja14996\\Documents\\turbif\\dpd\\nonlinear_shape_functions\\tbx\\NonlinearShapeFunctions\\+static_method_groups\\codegen\\mex\\mex",
+    "command": "C:\\ProgramData\\MATLAB\\SupportPackages\\R2021a\\3P.instrset\\mingw_w64.instrset\\bin\\g++ -c -fexceptions -fno-omit-frame-pointer -std=c++11 -m64 -DMATLAB_MEX_FILE  -DMATLAB_MEX_FILE -O2 -fwrapv -DNDEBUG -std=c++11 -I \"C:\\Users\\ja14996\\Documents\\turbif\\dpd\\nonlinear_shape_functions\\tbx\\NonlinearShapeFunctions\\+static_method_groups\\codegen\\mex\\mex\" -I \"C:\\Users\\ja14996\\Documents\\turbif\\dpd\\nonlinear_shape_functions\\tbx\\NonlinearShapeFunctions\\+static_method_groups\" -I \"C:\\Users\\ja14996\\Documents\\turbif\\dpd\\nonlinear_shape_functions\\tbx\\NonlinearShapeFunctions\\+static_method_groups\\codegen\\mex\\mex\\interface\" -I \"C:\\Program Files\\MATLAB\\R2021a\\extern\\include\" -I \".\" -DMODEL=mex -D__USE_MINGW_ANSI_STDIO=1 -DMW_NEEDS_VERSION_H -fopenmp  mex_terminate.cpp -o build/win64/mex_terminate.o",
+    "file": "mex_terminate.cpp",
+    "output": "build/win64/mex_terminate.o"
+  },
+  {
+    "directory": "C:\\Users\\ja14996\\Documents\\turbif\\dpd\\nonlinear_shape_functions\\tbx\\NonlinearShapeFunctions\\+static_method_groups\\codegen\\mex\\mex",
+    "command": "C:\\ProgramData\\MATLAB\\SupportPackages\\R2021a\\3P.instrset\\mingw_w64.instrset\\bin\\g++ -c -fexceptions -fno-omit-frame-pointer -std=c++11 -m64 -DMATLAB_MEX_FILE  -DMATLAB_MEX_FILE -O2 -fwrapv -DNDEBUG -std=c++11 -I \"C:\\Users\\ja14996\\Documents\\turbif\\dpd\\nonlinear_shape_functions\\tbx\\NonlinearShapeFunctions\\+static_method_groups\\codegen\\mex\\mex\" -I \"C:\\Users\\ja14996\\Documents\\turbif\\dpd\\nonlinear_shape_functions\\tbx\\NonlinearShapeFunctions\\+static_method_groups\" -I \"C:\\Users\\ja14996\\Documents\\turbif\\dpd\\nonlinear_shape_functions\\tbx\\NonlinearShapeFunctions\\+static_method_groups\\codegen\\mex\\mex\\interface\" -I \"C:\\Program Files\\MATLAB\\R2021a\\extern\\include\" -I \".\" -DMODEL=mex -D__USE_MINGW_ANSI_STDIO=1 -DMW_NEEDS_VERSION_H -fopenmp  map_WEtoW.cpp -o build/win64/map_WEtoW.o",
+    "file": "map_WEtoW.cpp",
+    "output": "build/win64/map_WEtoW.o"
+  },
+  {
+    "directory": "C:\\Users\\ja14996\\Documents\\turbif\\dpd\\nonlinear_shape_functions\\tbx\\NonlinearShapeFunctions\\+static_method_groups\\codegen\\mex\\mex",
+    "command": "C:\\ProgramData\\MATLAB\\SupportPackages\\R2021a\\3P.instrset\\mingw_w64.instrset\\bin\\g++ -c -fexceptions -fno-omit-frame-pointer -std=c++11 -m64 -DMATLAB_MEX_FILE  -DMATLAB_MEX_FILE -O2 -fwrapv -DNDEBUG -std=c++11 -I \"C:\\Users\\ja14996\\Documents\\turbif\\dpd\\nonlinear_shape_functions\\tbx\\NonlinearShapeFunctions\\+static_method_groups\\codegen\\mex\\mex\" -I \"C:\\Users\\ja14996\\Documents\\turbif\\dpd\\nonlinear_shape_functions\\tbx\\NonlinearShapeFunctions\\+static_method_groups\" -I \"C:\\Users\\ja14996\\Documents\\turbif\\dpd\\nonlinear_shape_functions\\tbx\\NonlinearShapeFunctions\\+static_method_groups\\codegen\\mex\\mex\\interface\" -I \"C:\\Program Files\\MATLAB\\R2021a\\extern\\include\" -I \".\" -DMODEL=mex -D__USE_MINGW_ANSI_STDIO=1 -DMW_NEEDS_VERSION_H -fopenmp  mult_Anmz_Bmp1.cpp -o build/win64/mult_Anmz_Bmp1.o",
+    "file": "mult_Anmz_Bmp1.cpp",
+    "output": "build/win64/mult_Anmz_Bmp1.o"
+  },
+  {
+    "directory": "C:\\Users\\ja14996\\Documents\\turbif\\dpd\\nonlinear_shape_functions\\tbx\\NonlinearShapeFunctions\\+static_method_groups\\codegen\\mex\\mex",
+    "command": "C:\\ProgramData\\MATLAB\\SupportPackages\\R2021a\\3P.instrset\\mingw_w64.instrset\\bin\\g++ -c -fexceptions -fno-omit-frame-pointer -std=c++11 -m64 -DMATLAB_MEX_FILE  -DMATLAB_MEX_FILE -O2 -fwrapv -DNDEBUG -std=c++11 -I \"C:\\Users\\ja14996\\Documents\\turbif\\dpd\\nonlinear_shape_functions\\tbx\\NonlinearShapeFunctions\\+static_method_groups\\codegen\\mex\\mex\" -I \"C:\\Users\\ja14996\\Documents\\turbif\\dpd\\nonlinear_shape_functions\\tbx\\NonlinearShapeFunctions\\+static_method_groups\" -I \"C:\\Users\\ja14996\\Documents\\turbif\\dpd\\nonlinear_shape_functions\\tbx\\NonlinearShapeFunctions\\+static_method_groups\\codegen\\mex\\mex\\interface\" -I \"C:\\Program Files\\MATLAB\\R2021a\\extern\\include\" -I \".\" -DMODEL=mex -D__USE_MINGW_ANSI_STDIO=1 -DMW_NEEDS_VERSION_H -fopenmp  permute.cpp -o build/win64/permute.o",
+    "file": "permute.cpp",
+    "output": "build/win64/permute.o"
+  },
+  {
+    "directory": "C:\\Users\\ja14996\\Documents\\turbif\\dpd\\nonlinear_shape_functions\\tbx\\NonlinearShapeFunctions\\+static_method_groups\\codegen\\mex\\mex",
+    "command": "C:\\ProgramData\\MATLAB\\SupportPackages\\R2021a\\3P.instrset\\mingw_w64.instrset\\bin\\g++ -c -fexceptions -fno-omit-frame-pointer -std=c++11 -m64 -DMATLAB_MEX_FILE  -DMATLAB_MEX_FILE -O2 -fwrapv -DNDEBUG -std=c++11 -I \"C:\\Users\\ja14996\\Documents\\turbif\\dpd\\nonlinear_shape_functions\\tbx\\NonlinearShapeFunctions\\+static_method_groups\\codegen\\mex\\mex\" -I \"C:\\Users\\ja14996\\Documents\\turbif\\dpd\\nonlinear_shape_functions\\tbx\\NonlinearShapeFunctions\\+static_method_groups\" -I \"C:\\Users\\ja14996\\Documents\\turbif\\dpd\\nonlinear_shape_functions\\tbx\\NonlinearShapeFunctions\\+static_method_groups\\codegen\\mex\\mex\\interface\" -I \"C:\\Program Files\\MATLAB\\R2021a\\extern\\include\" -I \".\" -DMODEL=mex -D__USE_MINGW_ANSI_STDIO=1 -DMW_NEEDS_VERSION_H -fopenmp  map_WEtoW_stackDim2.cpp -o build/win64/map_WEtoW_stackDim2.o",
+    "file": "map_WEtoW_stackDim2.cpp",
+    "output": "build/win64/map_WEtoW_stackDim2.o"
+  },
+  {
+    "directory": "C:\\Users\\ja14996\\Documents\\turbif\\dpd\\nonlinear_shape_functions\\tbx\\NonlinearShapeFunctions\\+static_method_groups\\codegen\\mex\\mex",
+    "command": "C:\\ProgramData\\MATLAB\\SupportPackages\\R2021a\\3P.instrset\\mingw_w64.instrset\\bin\\g++ -c -fexceptions -fno-omit-frame-pointer -std=c++11 -m64 -DMATLAB_MEX_FILE  -DMATLAB_MEX_FILE -O2 -fwrapv -DNDEBUG -std=c++11 -I \"C:\\Users\\ja14996\\Documents\\turbif\\dpd\\nonlinear_shape_functions\\tbx\\NonlinearShapeFunctions\\+static_method_groups\\codegen\\mex\\mex\" -I \"C:\\Users\\ja14996\\Documents\\turbif\\dpd\\nonlinear_shape_functions\\tbx\\NonlinearShapeFunctions\\+static_method_groups\" -I \"C:\\Users\\ja14996\\Documents\\turbif\\dpd\\nonlinear_shape_functions\\tbx\\NonlinearShapeFunctions\\+static_method_groups\\codegen\\mex\\mex\\interface\" -I \"C:\\Program Files\\MATLAB\\R2021a\\extern\\include\" -I \".\" -DMODEL=mex -D__USE_MINGW_ANSI_STDIO=1 -DMW_NEEDS_VERSION_H -fopenmp  interface/_coder_mex_api.cpp -o build/win64/_coder_mex_api.o",
+    "file": "interface/_coder_mex_api.cpp",
+    "output": "build/win64/_coder_mex_api.o"
+  },
+  {
+    "directory": "C:\\Users\\ja14996\\Documents\\turbif\\dpd\\nonlinear_shape_functions\\tbx\\NonlinearShapeFunctions\\+static_method_groups\\codegen\\mex\\mex",
+    "command": "C:\\ProgramData\\MATLAB\\SupportPackages\\R2021a\\3P.instrset\\mingw_w64.instrset\\bin\\g++ -c -fexceptions -fno-omit-frame-pointer -std=c++11 -m64 -DMATLAB_MEX_FILE  -DMATLAB_MEX_FILE -O2 -fwrapv -DNDEBUG -std=c++11 -I \"C:\\Users\\ja14996\\Documents\\turbif\\dpd\\nonlinear_shape_functions\\tbx\\NonlinearShapeFunctions\\+static_method_groups\\codegen\\mex\\mex\" -I \"C:\\Users\\ja14996\\Documents\\turbif\\dpd\\nonlinear_shape_functions\\tbx\\NonlinearShapeFunctions\\+static_method_groups\" -I \"C:\\Users\\ja14996\\Documents\\turbif\\dpd\\nonlinear_shape_functions\\tbx\\NonlinearShapeFunctions\\+static_method_groups\\codegen\\mex\\mex\\interface\" -I \"C:\\Program Files\\MATLAB\\R2021a\\extern\\include\" -I \".\" -DMODEL=mex -D__USE_MINGW_ANSI_STDIO=1 -DMW_NEEDS_VERSION_H -fopenmp  interface/_coder_mex_mex.cpp -o build/win64/_coder_mex_mex.o",
+    "file": "interface/_coder_mex_mex.cpp",
+    "output": "build/win64/_coder_mex_mex.o"
+  },
+  {
+    "directory": "C:\\Users\\ja14996\\Documents\\turbif\\dpd\\nonlinear_shape_functions\\tbx\\NonlinearShapeFunctions\\+static_method_groups\\codegen\\mex\\mex",
+    "command": "C:\\ProgramData\\MATLAB\\SupportPackages\\R2021a\\3P.instrset\\mingw_w64.instrset\\bin\\g++ -c -fexceptions -fno-omit-frame-pointer -std=c++11 -m64 -DMATLAB_MEX_FILE  -DMATLAB_MEX_FILE -O2 -fwrapv -DNDEBUG -std=c++11 -I \"C:\\Users\\ja14996\\Documents\\turbif\\dpd\\nonlinear_shape_functions\\tbx\\NonlinearShapeFunctions\\+static_method_groups\\codegen\\mex\\mex\" -I \"C:\\Users\\ja14996\\Documents\\turbif\\dpd\\nonlinear_shape_functions\\tbx\\NonlinearShapeFunctions\\+static_method_groups\" -I \"C:\\Users\\ja14996\\Documents\\turbif\\dpd\\nonlinear_shape_functions\\tbx\\NonlinearShapeFunctions\\+static_method_groups\\codegen\\mex\\mex\\interface\" -I \"C:\\Program Files\\MATLAB\\R2021a\\extern\\include\" -I \".\" -DMODEL=mex -D__USE_MINGW_ANSI_STDIO=1 -DMW_NEEDS_VERSION_H -fopenmp  interface/_coder_mex_info.cpp -o build/win64/_coder_mex_info.o",
+    "file": "interface/_coder_mex_info.cpp",
+    "output": "build/win64/_coder_mex_info.o"
+  },
+  {
+    "directory": "C:\\Users\\ja14996\\Documents\\turbif\\dpd\\nonlinear_shape_functions\\tbx\\NonlinearShapeFunctions\\+static_method_groups\\codegen\\mex\\mex",
+    "command": "C:\\ProgramData\\MATLAB\\SupportPackages\\R2021a\\3P.instrset\\mingw_w64.instrset\\bin\\g++ -c -fexceptions -fno-omit-frame-pointer -std=c++11 -m64 -DMATLAB_MEX_FILE  -DMATLAB_MEX_FILE -O2 -fwrapv -DNDEBUG -std=c++11 -I \"C:\\Users\\ja14996\\Documents\\turbif\\dpd\\nonlinear_shape_functions\\tbx\\NonlinearShapeFunctions\\+static_method_groups\\codegen\\mex\\mex\" -I \"C:\\Users\\ja14996\\Documents\\turbif\\dpd\\nonlinear_shape_functions\\tbx\\NonlinearShapeFunctions\\+static_method_groups\" -I \"C:\\Users\\ja14996\\Documents\\turbif\\dpd\\nonlinear_shape_functions\\tbx\\NonlinearShapeFunctions\\+static_method_groups\\codegen\\mex\\mex\\interface\" -I \"C:\\Program Files\\MATLAB\\R2021a\\extern\\include\" -I \".\" -DMODEL=mex -D__USE_MINGW_ANSI_STDIO=1 -DMW_NEEDS_VERSION_H -fopenmp  \"C:/Program Files/MATLAB/R2021a/extern/version/cpp_mexapi_version.cpp\" -o build/win64/cpp_mexapi_version.o",
+    "file": "C:/Program Files/MATLAB/R2021a/extern/version/cpp_mexapi_version.cpp",
+    "output": "build/win64/cpp_mexapi_version.o"
+  }
+]

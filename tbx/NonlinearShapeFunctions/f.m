@@ -44,15 +44,8 @@ end
 FLAG_static = SimObject.FLAG_static;
 % Q =                                                                            %[temp,temp1,temp2,temp3,temp4,str,Struct,Cell,Table] = deal([]); %#ok<ASGLU> %workspace variables used only for debugging
 
-% global mult3d_mex
-% mult3d_mex = SimObject.mult3d_mex;
-% persistent global_counter
-% if isempty(global_counter)
-%     global_counter = 0;
-% else
-%     global_counter = 1;
-% end
-
+global mult3d_mex
+mult3d_mex = SimObject.mult3d_mex;
 % int_fnc = SimObject.int_fnc;
 aeroPartNames = SimObject.aeroPartNames;
 
@@ -77,19 +70,18 @@ end
 V = SimObject.V; %m/s
 rho = SimObject.rho; %kg/m^3
 Vinf = V.*uVec_freeStream_G;
-% tbf = SimObject.tbf;
 FLAG_free_free = SimObject.FLAG_free_free;
 % Gamma_Integration_Function = SimObject.Gamma_int_fnc;
 qg2nd_idx = SimObject.qg2nd_idx;
 dqg2nd_idx = SimObject.dqg2nd_idx;
 nqg2nd = SimObject.nqg2nd;
 nQ = size(Q);
-% if SimObject.tbf.FLAG_unsteady
+
 dQ_Aero = zeros(nQ(1), nQ(2), length(SimObject.aeroPartNames));
 if isa(Q, 'AutoDiff')
     dQ_Aero = AutoDiff(dQ_Aero, Q);
 end
-% end
+
 % if FLAG_free_free, nqr = 6; else, nqr = 0; end
 
 %=======remark on state vector notation========
@@ -226,7 +218,7 @@ partInformationStruct.(NBS_Master_partName).d2E_dt2_G_star = d2R_G_A_dt2_star;
 
 for i_flex_part = 1:nflexParts_nonlinear
     obj = SimObject.flexParts_nonlinear_cell{i_flex_part};
-    [dW_dq_part,dM_dq_part,partInformationStruct] = f_flexPart_nonlinear(obj,tbf,Q,partInformationStruct,outputFormat,tidx,i_flex_part); %TODO reduce to more general form like f_rigidPart()
+    [dW_dq_part,dM_dq_part,partInformationStruct] = f_flexPart_nonlinear(obj,Q,partInformationStruct,outputFormat,tidx); %TODO reduce to more general form like f_rigidPart()
     
     flex_part_name = obj.partName;
     %dq2nd_idx = partInformationStruct.(flex_part_name).dq2nd_idx;
@@ -242,7 +234,7 @@ end
 
 for i_rigid_part = 1:nrigidParts
     obj = SimObject.rigidParts_cell{i_rigid_part};
-    [dW_dq_part,dM_dq_part,partInformationStruct] = f_rigidPart(obj,tbf,Q,partInformationStruct,outputFormat,tidx);
+    [dW_dq_part,dM_dq_part,partInformationStruct] = f_rigidPart(obj,Q,partInformationStruct,outputFormat,tidx);
     
     rigid_part_name = obj.partName;
     %dq2nd_idx = partInformationStruct.(rigid_part_name).dq2nd_idx;
@@ -427,11 +419,12 @@ if ~isempty(aerodynamics)
             end
             
             %%
-            switch tbf.operation
+            switch SimObject.operation
                 case 'fixed'
-                    if ~tbf.FLAG_parked
-                        Omega_G = repmat([0;0;2*pi/SimObject.T], [1 1 nsAp*tbf.nB]);
-                        V_Omega = - utility_functions.crossn(Omega_G,Gamma_G_pm_global,1);
+                    if ~SimObject.FLAG_parked
+                        Omega_G = [0;0;2*pi/SimObject.T];
+%                         Omega_G = repmat([0;0;2*pi/SimObject.T], [1 1 nsAp*SimObject.nB]);
+                        V_Omega = - utility_functions.crossn(repmat(Omega_G,[1 1 nsAp*SimObject.nB]),Gamma_G_pm_global,1);
                         V_Free = SimObject.V*uVec_freeStream_G;
                         Vinf = V_Omega + V_Free;
                     else
@@ -440,7 +433,7 @@ if ~isempty(aerodynamics)
                     end
                 case {'forced', 'free'}
                     V_Free = SimObject.V* uVec_freeStream_G;
-                    Vinf = V_Free.*ones(1,1,nsAp.*tbf.nB);
+                    Vinf = V_Free.*ones(1,1,nsAp.*SimObject.nB);
             end
             
             alphaCP = 1 - aero_cntr_pm_global;
@@ -464,7 +457,7 @@ if ~isempty(aerodynamics)
             %                                                                 %
             %-----------------------------------------------------------------%
             
-            if ~tbf.FLAG_parked 
+            if ~SimObject.FLAG_parked 
                 
                 %====================== BEM ===============================
                 
@@ -480,7 +473,7 @@ if ~isempty(aerodynamics)
                     aeroPartName = aeroPartName_cell{1};
                     aeroData_part = partInformationStruct.(aeroPartName).aeroData;
                     BEMvar = aeroData_part.BEMvar;
-                    BEMvar.IDLING = tbf.FLAG_idling;
+                    BEMvar.IDLING = SimObject.FLAG_idling;
                     aero_cntr_pm_part = partInformationStruct.(aeroPartName).aero_cntr_pm;
                     if isempty(aero_cntr_pm_part)
                         alphaCP = 3/4;
@@ -515,7 +508,7 @@ if ~isempty(aerodynamics)
                     
                     %==============================================================
                     % global to aircraft (hub) rotation matrices for i'th blade
-                    az_part = 2*pi/tbf.nB*(i-1);
+                    az_part = 2*pi/SimObject.nB*(i-1);
                     R_A_G_part = utility_functions.r_matrix([0,0,1],az_part).'*R_A_G;%TODO CHECK
                     
                     
@@ -537,13 +530,13 @@ if ~isempty(aerodynamics)
                     
                     Vtan_A_part = utility_functions.crossn(repmat(Omega_A, [1 1 nsAp]), Gamma_A_pm_part, 1); % tangential velocity of mid panel due to rigid rotation
                     Vtan_Ap_part = utility_functions.MultiProd_(R_Ap_A_part, Vtan_A_part);
-                    r_tip = (TorqueDist_A_pn_part(end) - TorqueDist_A_pn_part)./TorqueDist_A_pn_part; r_hub = (TorqueDist_A_pn_part - tbf.r_hub)./TorqueDist_A_pn_part;
+                    r_tip = (TorqueDist_A_pn_part(end) - TorqueDist_A_pn_part)./TorqueDist_A_pn_part; r_hub = (TorqueDist_A_pn_part - SimObject.r_hub)./TorqueDist_A_pn_part;
                     r_tip = 0.5*(r_tip(2:end)+r_tip(1:end-1));
                     r_hub = 0.5*(r_hub(2:end)+r_hub(1:end-1));
                     BEMvar.losses = squeeze([r_tip; r_hub]).';
                     %==============================================================
 
-                    switch tbf.bemModel
+                    switch SimObject.bemModel
                         case 'ning'
                             [a_part, ap_part, alpha_part, ~, cl_part, cd_part, cm_part, Urel_G_part, Urel_A_part, ~] = ...
                                 aero.bem2D.bem_ning(Vrel_A_part, aeroCoeff2D_part, chord_part, EAp_A_pm_part, TorqueDist_A_pm_part, R_A_G_part, BEMvar);
@@ -582,11 +575,11 @@ if ~isempty(aerodynamics)
 %                     alpha_global == atan(uz1qrt./ux1qrt);                             
 %                     alpha_ = alpha_global*180/pi; %check is equal to
 %                     alpha_part
-                if tbf.FLAG_dw
+                if SimObject.FLAG_dw
                     Qaero_idx_dw = qAero_idx_global(nsAp*1*i_flex_part + 1:end);
                     wqs_A_global = [-a_global.*Vrel_A_global(1,:,:); ap_global.*Vrel_A_global(3,:,:)]; %[normal; tangential]
                     dwqs_dt = 0; dtau1_dt = 0;
-                    switch tbf.dwDetail
+                    switch SimObject.dwDetail
                         case 'full' % 4 states per strip
                             Qaero = reshape(Q(Qaero_idx_dw),4,1,[]);
                             wn_bar_qs = []; a_bar_qs = [];
@@ -597,7 +590,7 @@ if ~isempty(aerodynamics)
                             a_bar_qs = 1./R_A_pm_global(1).*trapz(squeeze(r_A_pm_global),squeeze(a_global));
                     end   
                     if FLAG_static
-                        switch tbf.dwDetail
+                        switch SimObject.dwDetail
                             case 'full' % 4 states per strip
                                 Qaero = wqs_A_global;
                             case 'simple' % 1 global state
@@ -606,7 +599,7 @@ if ~isempty(aerodynamics)
                     end
                     [dQaero,  ~, Urel_A_global] = aero.dynamicWake.oye(Qaero, Vrel_A_global,...
                         wqs_A_global, dwqs_dt, dtau1_dt, Vrel_A_global(3,:,:), r_A_pm_global,...
-                        R_A_pm_global(1), a_global, nsAp, wn_bar_qs, a_bar_qs, vn_bar_qs, tbf.dwDetail);             
+                        R_A_pm_global(1), a_global, nsAp, wn_bar_qs, a_bar_qs, vn_bar_qs, SimObject.dwDetail);             
                     
                     dQ_Aero(Qaero_idx_dw,1) = dQaero(:);
 %                     Q_Aero(Qaero_idx_dw,1) = Qaero(:);
@@ -628,9 +621,9 @@ if ~isempty(aerodynamics)
             end
 
             %===================dynamic stall==============================
-            switch tbf.aeroForces
+            switch SimObject.aeroForces
                 case 'dynamic stall'                   
-                    switch tbf.dsModel
+                    switch SimObject.dsModel
                         %%
                         %============LARSEN/NIELSEN========================
                         case 'larsen' %4 states per strip
@@ -654,10 +647,10 @@ if ~isempty(aerodynamics)
                             %                             ds_ID = find(afthick_global<0.35);
                             %                             Nds   = length(ds_ID);
                             %
-                            %                             Z3    = zeros(Nds,tbf.nB);
-                            %                             Z31    = zeros(Nds,tbf.nB);
-                            %                             ds = struct('X',zeros(4*Nds,tbf.nB),'b4',Z3,'cl_static',Z3,'cl0',Z3,'dcl0',Z3,'dalpha',Z3,'f',Z3...
-                            %                                 ,'tau_v',Z3,'cl0_d',Z3,'theta_d',Z3,'cl_d',Z31,'dcl',Z3,'d_dcl',Z3,'cl',Z3,'w1234_S',zeros(4*Nds,tbf.nB));
+                            %                             Z3    = zeros(Nds,SimObject.nB);
+                            %                             Z31    = zeros(Nds,SimObject.nB);
+                            %                             ds = struct('X',zeros(4*Nds,SimObject.nB),'b4',Z3,'cl_static',Z3,'cl0',Z3,'dcl0',Z3,'dalpha',Z3,'f',Z3...
+                            %                                 ,'tau_v',Z3,'cl0_d',Z3,'theta_d',Z3,'cl_d',Z31,'dcl',Z3,'d_dcl',Z3,'cl',Z3,'w1234_S',zeros(4*Nds,SimObject.nB));
                             %
                             %                             ds.c1_ID        = 1:Nds;
                             %                             ds.c2_ID        = 1+Nds:2*Nds;
@@ -698,34 +691,34 @@ if ~isempty(aerodynamics)
                             %============OYE===================================
                         case 'oye' %1 state per strip (dynamic only in stall)                         
                             oye_ = aeroData_global.oye;
-                            switch tbf.aeroInterp_method
+                            switch SimObject.aeroInterp_method
                                 case 'linear'
-                                    oyeCoeff.cl_fs = repmat(oye_.cl_fs, [tbf.nB,1,SimObject.tbf.nB]);
-                                    oyeCoeff.c_static = repmat(oye_.c_static, [tbf.nB,1,SimObject.tbf.nB]);
-                                    oyeCoeff.clINV = repmat(oye_.clINV, [tbf.nB,1,SimObject.tbf.nB]);
-                                    oyeCoeff.f_static = repmat(oye_.f_static, [tbf.nB,1,SimObject.tbf.nB]);
+                                    oyeCoeff.cl_fs = repmat(oye_.cl_fs, [1,1,SimObject.nB]);
+                                    oyeCoeff.c_static = repmat(oye_.c_static, [1,1,SimObject.nB]);
+                                    oyeCoeff.clINV = repmat(oye_.clINV, [1,1,SimObject.nB]);
+                                    oyeCoeff.f_static = repmat(oye_.f_static, [1,1,SimObject.nB]);
                                 case 'spline'
-                                    oyeCoeff.fit = repmat(oye_.fit, [tbf.nB,1]);
-                                    oyeCoeff.ftinv = repmat(oye_.ftinv, [tbf.nB,1]);
-                                    oyeCoeff.ftfs = repmat(oye_.ftfs, [tbf.nB,1]);
-                                    oyeCoeff.ftstat = repmat(oye_.ftstat, [tbf.nB,1]);
+                                    oyeCoeff.fit = repmat(oye_.fit, [SimObject.nB,1]);
+                                    oyeCoeff.ftinv = repmat(oye_.ftinv, [SimObject.nB,1]);
+                                    oyeCoeff.ftfs = repmat(oye_.ftfs, [SimObject.nB,1]);
+                                    oyeCoeff.ftstat = repmat(oye_.ftstat, [SimObject.nB,1]);
                                 case '3d'
-                                    oyeCoeff.ft_c = repmat(oye_.ft_c, [tbf.nB,1]);
-                                    oyeCoeff.ft_clinv = repmat({oye_.ft_clinv}, [tbf.nB,1]);
-                                    oyeCoeff.ft_clfs = repmat({oye_.ft_clfs}, [tbf.nB,1]);
-                                    oyeCoeff.ft_fst = repmat({oye_.ft_fst}, [tbf.nB,1]);
+                                    oyeCoeff.ft_c = repmat(oye_.ft_c, [SimObject.nB,1]);
+                                    oyeCoeff.ft_clinv = repmat({oye_.ft_clinv}, [SimObject.nB,1]);
+                                    oyeCoeff.ft_clfs = repmat({oye_.ft_clfs}, [SimObject.nB,1]);
+                                    oyeCoeff.ft_fst = repmat({oye_.ft_fst}, [SimObject.nB,1]);
                                     oyeCoeff.section = oye_.section;
                             end
                             
-                            if tbf.FLAG_dw
-                                Qaero_idx = qAero_idx_global(1:(nsAp*tbf.nB)*1);
+                            if SimObject.FLAG_dw
+                                Qaero_idx = qAero_idx_global(1:(nsAp*SimObject.nB)*1);
                                 Qaero = reshape(Q(Qaero_idx),1,1,[]);
                             else
                                 Qaero_idx = qAero_idx_global;
                                 Qaero = reshape(Q(Qaero_idx),1,1,[]);
                             end
 
-                            [dQaero, ~, cl_global, cd_global, cm_global] = aero.dynamicStall.oye(Qaero, vel, chord_pm_global, alpha_global, tbf.nB, oyeCoeff, tbf.aeroInterp_method, FLAG_static);
+                            [dQaero, ~, cl_global, cd_global, cm_global] = aero.dynamicStall.oye(Qaero, vel, chord_pm_global, alpha_global, SimObject.nB, oyeCoeff, SimObject.aeroInterp_method, FLAG_static);
                             dQ_Aero(Qaero_idx,1) = dQaero(:);
 %                             Q_Aero(Qaero_idx,1) = Qaero(:);
                             
@@ -741,8 +734,8 @@ if ~isempty(aerodynamics)
                     end  
                     
                 case 'lookup 2D'                    
-                    if tbf.FLAG_parked
-                        switch tbf.aeroInterp_method
+                    if SimObject.FLAG_parked
+                        switch SimObject.aeroInterp_method
                             case 'spline'                               
                                 aeroFit = aeroData_global.oye.fit;
 %                                 alpha_gpu = gpuArray(alpha_global);
@@ -816,14 +809,14 @@ if ~isempty(aerodynamics)
                     
                     
                     Qaero_idx = qAero_idx_global;
-                    if tbf.FLAG_unsteady
+                    if SimObject.FLAG_unsteady
                         Qaero = reshape(Q(Qaero_idx),2,1,[]);
                         qsteady = false;
                     else
                         Qaero = [];
                         qsteady = true;
                     end
-                    if ~tbf.FLAG_parked
+                    if ~SimObject.FLAG_parked
                         vx3qrt = sum(Vrel_G_global.*EAp_G_pm_global(:,1,:),1);
                     end
                     dAoA = dvarTheta_dt_G_pm_global;
@@ -839,7 +832,7 @@ if ~isempty(aerodynamics)
                     F_A = DRAG;
                     F_M = MOMENT;
                     
-                    if tbf.FLAG_unsteady
+                    if SimObject.FLAG_unsteady
                         dQ_Aero(Qaero_idx,1) = dQaero(:);
                     end
                         %==============================================================
@@ -937,7 +930,7 @@ switch outputFormat
         dQ = Q*0; %initialise 1st order state derivative
         
         %relate 1st and 2nd derivatives for second order variables
-        if tbf.FLAG_dynControl && tbf.type == 3
+        if SimObject.FLAG_dynControl && SimObject.type == 3
             dQ(qg2nd_idx) = Q(dqg2nd_idx(1:end-1));
         else
             dQ(qg2nd_idx) = Q(dqg2nd_idx);

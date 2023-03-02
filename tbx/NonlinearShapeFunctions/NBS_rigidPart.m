@@ -98,7 +98,7 @@ end
         obj.NBS_Master.allParts_struct.(obj.partName) = obj;
     end
     
-    function set_dependent_properties(obj, tbf)
+    function set_dependent_properties(obj)
         obj.ns = numel(obj.s);
         obj.L = obj.s(end) - obj.s(1);
         obj.nAnodes = numel(obj.s_aero);

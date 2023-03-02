@@ -50,7 +50,7 @@ classdef E_methods < handle
     
     
     
-    methods (Static = true, Access = private) %Group 1 Static Methods
+    methods (Static = true)%, Access = private) %Group 1 Static Methods
         
         %E_WE
         %----------------------------------------------------------------------

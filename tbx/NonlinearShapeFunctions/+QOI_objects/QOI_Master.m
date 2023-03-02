@@ -33,7 +33,7 @@ classdef QOI_Master < handle
         end
         
         function write_QOI_values(obj,qoiRequestSource,varargin)
-            
+         
             Display = utility_functions.get_option(varargin,'display',true);
             
 %             addpath('./utility_functions');

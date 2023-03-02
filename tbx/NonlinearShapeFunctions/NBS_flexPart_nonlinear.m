@@ -466,7 +466,7 @@ classdef NBS_flexPart_nonlinear < handle
 
     methods (Access = {?NBS_Master})
 
-        function set_dependent_properties(obj, tbf)
+        function set_dependent_properties(obj)
             %populate additional dependent wing parameters
             obj.R_W_WE_tr = obj.R_W_WE.';
             %obj.s_aeroMid = (obj.s_aero(2:end)+obj.s_aero(1:end-1))/2;
@@ -601,36 +601,36 @@ classdef NBS_flexPart_nonlinear < handle
 
                 if strcmp(obj.NBS_Master.aerodynamics,'WT')
                     
-                    if tbf.FLAG_unsteady
+                    if obj.NBS_Master.FLAG_unsteady
                         obj.qAero.n = 0;
                         obj.qAero.group = ['AeroStates_' obj.partName];
                         
-                        if strcmp(tbf.aeroForces, 'leishman')
+                        if strcmp(obj.NBS_Master.aeroForces, 'leishman')
                             obj.qAero.n = obj.nsAp*2;
                             obj.qAero.group = ['AeroStates_' obj.partName];
                         end
-                        if strcmp(tbf.aeroForces, 'dynamic stall')
-                            if strcmp(tbf.dsModel, 'oye')
+                        if strcmp(obj.NBS_Master.aeroForces, 'dynamic stall')
+                            if strcmp(obj.NBS_Master.dsModel, 'oye')
                                 obj.nQAero = 1;
                                 obj.qAero.n = obj.nsAp*obj.nQAero;
                                 obj.qAero.group = ['AeroStates_' obj.partName];
-                            elseif strcmp(tbf.dsModel, 'larsen')
+                            elseif strcmp(obj.NBS_Master.dsModel, 'larsen')
                                 obj.nQAero = 4;
                                 obj.qAero.n = obj.nsAp*obj.nQAero;
                                 obj.qAero.group = ['AeroStates_' obj.partName];
                             end
                         end
-                        if tbf.FLAG_dw
-                            if strcmp(tbf.aeroForces, 'lookup 2D')
+                        if obj.NBS_Master.FLAG_dw
+                            if strcmp(obj.NBS_Master.aeroForces, 'lookup 2D')
                                 obj.nQAero = 0;
-                                switch tbf.dwDetail
+                                switch obj.NBS_Master.dwDetail
                                     case 'full'
                                         obj.qAero.n = obj.nsAp*4;
                                     case 'simple'
                                         obj.qAero.n = 1;
                                 end
                             else                              
-                                switch tbf.dwDetail
+                                switch obj.NBS_Master.dwDetail
                                     case 'full'
                                         obj.qAero.n = obj.qAero.n + obj.nsAp*4;
                                     case 'simple'
@@ -975,7 +975,7 @@ classdef NBS_flexPart_nonlinear < handle
 
     methods
 
-        function [dW_dq_part,dM_dq_part,partInformationStruct] = f_flexPart_nonlinear(obj,tbf,Q,partInformationStruct,outputFormat,tidx,i_flex_part)
+        function [dW_dq_part,dM_dq_part,partInformationStruct] = f_flexPart_nonlinear(obj,Q,partInformationStruct,outputFormat,tidx)
             %#ok<*PROPLC>          
             
             SimObject = obj.NBS_Master;
@@ -1036,7 +1036,7 @@ classdef NBS_flexPart_nonlinear < handle
                 th_idx(:);si_idx(:);ph_idx(:);Sx_idx(:);Sy_idx(:);Sz_idx(:)];
 %         
 %             beta_ = beta_(1);
-%             az_ib = 2*pi/SimObject.tbf.nB*(i_flex_part-1);
+%             az_ib = 2*pi/SimObject.obj.nB*(i_flex_part-1);
 %             p1 = [1 cos(beta_ + az_ib) sin(beta_ + az_ib)];
 %             p2 = [0 -sin(beta_ + az_ib) cos(beta_ + az_ib)];
 % 
@@ -1287,12 +1287,12 @@ classdef NBS_flexPart_nonlinear < handle
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             %% FlexPart_nonlinear Applied Loads from PvecApplied_G, MvecApplied_G, Gravitational Acceleration
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            if ~isprop(tbf, 'operation')
+            if ~isprop(obj, 'operation')
                 PvecWeight_G = SimObject.grav_acc.*SimObject.gravVec_G.*obj.ms;
             else
-                switch tbf.operation
+                switch obj.operation
                     case 'fixed'
-                        if tbf.FLAG_parked
+                        if obj.FLAG_parked
                             PvecWeight_G = SimObject.grav_acc.*SimObject.gravVec_G.*obj.ms;
                         else
                             Omega_G = repmat([0; 0; 2*pi/SimObject.T], [1 1 obj.ns]);
@@ -1348,7 +1348,7 @@ classdef NBS_flexPart_nonlinear < handle
                     partInformationStruct.(flex_part_name).dEAp_dt_G_pm = dEAp_dt_G_pm;
                     partInformationStruct.(flex_part_name).d2EAp_dt2_G_star_pm = d2EAp_dt2_G_star_pm;
                     partInformationStruct.(flex_part_name).Gamma_G_pm = utility_functions.sample(Gamma_G,Apm_idx,3);
-                    partInformationStruct.(flex_part_name).d2Gamma_dt2_G_star_pm = utility_functions.sample(d2Gamma_dt2_G_star,Apm_idx,3);;
+                    partInformationStruct.(flex_part_name).d2Gamma_dt2_G_star_pm = utility_functions.sample(d2Gamma_dt2_G_star,Apm_idx,3);
                     partInformationStruct.(flex_part_name).Gamma_G_pn = utility_functions.sample(Gamma_G,Apn_idx,3);
                     partInformationStruct.(flex_part_name).dGamma_dt_G_pm = utility_functions.sample(dGamma_dt_G,Apm_idx,3);
                     %partInformationStruct.(flex_part_name).dGammaAlphaCP_dt_G_pm = dGammaAlphaCP_dt_G_pm;

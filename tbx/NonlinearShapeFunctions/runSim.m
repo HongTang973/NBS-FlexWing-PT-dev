@@ -3,13 +3,13 @@ function SimObject = runSim(t1,t2,varargin)
 if nargin == 0
     disp(' ')
     disp('function call of the form ''SimObject = runSim(t1,t2,options)''')
-    disp('where t1 and t2 are the start and end times (ignored for static tbf)')
+    disp('where t1 and t2 are the start and end times (ignored for static obj)')
     disp(' ')
     disp('additional keyword/value pairs specified in ''options'' argument')
     disp(' ')
     disp('optional keywords (default values marked with ''*''):')
     disp('        analysisType: [''dynamic''*/''static''] - specify dynamic or static analysis to be run')
-    disp('        solver:       [''ode15s''*/''NewmarkBeta''] - choose between ode15s and Newmark Beta solvers (ignored for static tbf)')
+    disp('        solver:       [''ode15s''*/''NewmarkBeta''] - choose between ode15s and Newmark Beta solvers (ignored for static obj)')
     disp('        intFnc:       [@functionName] - specify integration function to be used; Expected form, intVal = functionName(x,y)')
     disp('                                        where: size(x) = [1 nx], size(y) = [nfunc nx], size(intVal) = [nfunc nx]')
     disp('        profileCode:  [false*/true] - run code profiler if true')
@@ -30,7 +30,6 @@ solver = utility_functions.get_option(varargin,'solver','ode15s');
 intFnc = utility_functions.get_option(varargin,'intFnc',[]);
 profileCode = utility_functions.get_option(varargin,'profileCode',false);
 SimObj = utility_functions.get_option(varargin,'fromObject',[]);
-tbf = utility_functions.get_option(varargin,'fromParent',[]);
 
 if strcmpi(analysisType,'dynamic')
     displayWaitBar = utility_functions.get_option(varargin,'waitBar',true);
@@ -94,7 +93,7 @@ SimObject.Q = u;
 tic
 
 options = odeset('OutputFcn',@outputFunction,'BDF','off','relTol',1e-5);
-[t,u] = ode15s(fHandle, tsteps, SimObject.IC, options, SimObject,'dQ');
+[t,u] = ode15s(fHandle, tsteps, SimObject.IC, options, SimObject, 'dQ');
 
 % options = odeset('OutputFcn',@outputFunction,'relTol',1e-5);
 % [t,u] = ode45(fHandle, tsteps, SimObject.IC, options, SimObject,'dQ');
