@@ -15,7 +15,7 @@ end
 if ~isempty(TD)
     M_W = reshape(M_W_flat,3,[],ns);
     for I = 1:size(M_W_flat,2)
-        M_W(:,(1:3)+3*(I-1),:) = utility_functions.mult_Anmz_Bmp1(M_W(:,(1:3)+3*(I-1),:),TD);
+        M_W(:,(1:3)+3*(I-1),:) = utility_functions.MultiProd_(M_W(:,(1:3)+3*(I-1),:),TD);
     end
     M_W_flat = reshape(M_W,size(M_W_flat));
 end
