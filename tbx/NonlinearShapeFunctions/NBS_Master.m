@@ -1247,10 +1247,12 @@ classdef NBS_Master < handle
 
             unique_identifyer = num2str(floor(rand()*1e12));
             temp_fileName = ['temp_NBS_object_copy_' unique_identifyer '.mat'];
-            save(temp_fileName,'obj');
+            byteStream =  getByteStreamFromArray(obj);
+            save(temp_fileName,'-v6','byteStream');
             struct = load(temp_fileName);
             varName = fields(struct);
             obj_copy = struct.(varName{1});
+            obj_copy = getArrayFromByteStream(obj_copy);
             delete(temp_fileName);
         end
     end
