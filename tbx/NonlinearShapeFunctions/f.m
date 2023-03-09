@@ -538,7 +538,7 @@ if ~isempty(aerodynamics)
 
                     switch SimObject.bemModel
                         case 'ning'
-                            [a_part, ap_part, alpha_part, ~, cl_part, cd_part, cm_part, Urel_G_part, Urel_A_part, ~] = ...
+                            [a_part, ap_part, alpha_part, ~, cl_part, cd_part, cm_part, Urel_G_part, Urel_A_part, AICs_part, ~] = ...
                                 aero.bem2D.bem_ning(Vrel_A_part, aeroCoeff2D_part, chord_part, EAp_A_pm_part, TorqueDist_A_pm_part, R_A_G_part, BEMvar);
 %                                                   clf; plot(a_part, 'b'); hold on; plot(ap_part, 'b'); plot(alpha_part/180*pi, 'b');
                         case 'ponta'
