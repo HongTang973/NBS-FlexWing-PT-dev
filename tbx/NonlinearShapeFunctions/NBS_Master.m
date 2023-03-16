@@ -140,7 +140,7 @@ classdef NBS_Master < handle
         obj.aeroPartNames = [];
         for partObj_ = obj.allParts_cell
             partObj = partObj_{1};
-            if ~isa(partObj,'NBS_Master')
+            if ~isa(partObj,'TBF_Master')
                 partObj.set_dependent_properties();
             end
         end
@@ -152,7 +152,7 @@ classdef NBS_Master < handle
         obj.aeroPartNames = [];
         for partObj_ = obj.allParts_cell
             partObj = partObj_{1};
-            if ~isa(partObj,'NBS_Master')
+            if ~isa(partObj,'TBF_Master')
                 partObj.set_dependent_properties();               
             end
         end
@@ -220,16 +220,19 @@ classdef NBS_Master < handle
         %----------------------------------
         %Populate the rigid state StateInfo row 1 entries
         obj.StateInfo.qRigidT = {'global';'rigidBody';numel(obj.qRigidT);inf;obj.qRigidT};
-        obj.StateInfo.qRigidR = {'global';'rigidBody';0;inf;obj.qRigidR};
+        obj.StateInfo.qRigidR = {'global';'rigidBody';numel(obj.qRigidR);inf;obj.qRigidR};
         obj.StateInfo.dqRigidT = {'global';'drigidBody';numel(obj.qRigidT);inf;obj.dqRigidT};
         obj.StateInfo.dqRigidR = {'global';'drigidBody';numel(obj.qRigidR);inf;obj.dqRigidR};
         %----------------------------------
         %Populate the row 2 StateInfo entries and get the state vector indices qg2nd_idx, dqg2nd_idx and qg1st_idx
         StateGroups = obj.StateInfo.Properties.VariableNames;
         idx_counter = 0;
-        flexInd = ~strcmp(StateSets2ndOrder(1),StateGroups(1)); 
-        flex_counter = reshape(repmat(1:numel(flexNames), 12, 1), 12*numel(flexNames), []);
-        
+        flexInd = ~strcmp(StateSets2ndOrder{1},StateGroups{1}); 
+        if flexInd
+            flex_counter = reshape(repmat(1:numel(flexNames), 13, 1), 13*numel(flexNames), []);
+        else
+            flex_counter = reshape(repmat(1:numel(flexNames), 12, 1), 12*numel(flexNames), []);
+        end
         obj.qg1st_idx = []; obj.qg2nd_idx = []; obj.dqg2nd_idx = [];
 
         for j_ = 1:numel(StateGroups)
@@ -704,7 +707,7 @@ classdef NBS_Master < handle
 
         %invoke the draw_part method for each aircraft part
         for partObj = obj.allParts_cell
-            if ~isa(partObj,'NBS_Master') && (strcmp(parts,'all') || ismember({partObj{:}.partName},parts))
+            if ~isa(partObj,'TBF_Master') && (strcmp(parts,'all') || ismember({partObj{:}.partName},parts))
                 partObj{:}.draw_part('Tidx',Tidx,...
                     'qoiRequest',false,...
                     'XLIM',XLIM,...

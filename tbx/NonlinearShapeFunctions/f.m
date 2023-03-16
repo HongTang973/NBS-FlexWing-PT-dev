@@ -452,11 +452,11 @@ switch outputFormat
         dQ = Q*0; %initialise 1st order state derivative
         
         %relate 1st and 2nd derivatives for second order variables
-        if SimObject.FLAG_dynControl && SimObject.type == 3
-            dQ(qg2nd_idx) = Q(dqg2nd_idx(1:end-1));
-        else
+%         if SimObject.FLAG_dynControl && SimObject.type == 3
+%             dQ(qg2nd_idx) = Q(dqg2nd_idx(1:end-1));
+%         else
             dQ(qg2nd_idx) = Q(dqg2nd_idx);
-        end
+%         end
         
         dM_dqg_sum = sum(dM_dqg,3);% + sum(dM_dqg_rigidPart,3);
         
