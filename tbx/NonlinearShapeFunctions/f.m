@@ -43,7 +43,7 @@ else
 end
 FLAG_static = SimObject.FLAG_static;
 % Q =                                                                            %[temp,temp1,temp2,temp3,temp4,str,Struct,Cell,Table] = deal([]); %#ok<ASGLU> %workspace variables used only for debugging
-
+% Q = 
 global mult3d_mex
 mult3d_mex = SimObject.mult3d_mex;
 % int_fnc = SimObject.int_fnc;
@@ -368,7 +368,7 @@ if ~isempty(aerodynamics)
                 Gamma_G_pm_global, Gamma_A_pm_global, ...
                 dGamma_dqg_G_pm_global, ...
                 dvarTheta_dqg_G_pm_global, EAp_G_pm_global,...
-                aeroOffset_global, aeroOffset_skew_global, ApWidth_pm_global] ...
+                aeroOffset_global, aeroOffset_skew_global, ApWidth_pm_global, az_global] ...
                 = aero.wt_aero(SimObject,partInformationStruct,dQ_Aero,R_A_G,rBarA_G,Omega_G, t);
     end
     
@@ -455,6 +455,18 @@ switch outputFormat
 %         if SimObject.FLAG_dynControl && SimObject.type == 3
 %             dQ(qg2nd_idx) = Q(dqg2nd_idx(1:end-1));
 %         else
+            qrR_idx = SimObject.StateInfo.qRigidR{4};
+            dqrR_idx = SimObject.StateInfo.dqRigidR{4};
+Q_B = reshape(Q(1:qrR_idx-1), [1 10 3]);
+az_global = az_global + Beta_G(3);
+Q_NR_0(qg2nd_idx) = 1/3 * sum(Q(qg2nd_idx), 3);
+Q_NR_1c(qg2nd_idx) = 2/3 * sum(pagemtimes(Q(qg2nd_idx),cos(az_global)), 3);
+Q_NR_1s(qg2nd_idx) = 2/3 * sum(pagemtimes(Q(qg2nd_idx),sin(az_global)), 3);
+Q_NR_0(dqg2nd_idx) = 1/3 * sum(Q(dqg2nd_idx), 3);
+Q_NR_1c(dqg2nd_idx) = 2/3 * sum(pagemtimes(Q(dqg2nd_idx),-sin(az_global)), 3);
+Q_NR_1s(dqg2nd_idx) = 2/3 * sum(pagemtimes(Q(dqg2nd_idx),-cos(az_global)), 3);
+% Q = [
+
             dQ(qg2nd_idx) = Q(dqg2nd_idx);
 %         end
         
