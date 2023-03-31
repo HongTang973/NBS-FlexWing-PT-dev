@@ -1,4 +1,4 @@
-classdef ShapeFunctionObject
+classdef ShapeFunctionObject 
 
     properties
         shapeSetTemplate                                                   %[string] template set type upon which object is based (e.g. Chebyshev 1st)
@@ -23,10 +23,10 @@ classdef ShapeFunctionObject
 
     methods
 
-        function obj = ShapeFunctionObject(shapeSetTemplate,varargin)
+        function obj = ShapeFunctionObject(varargin)
 
             %addpath('./utility_functions');
-
+            shapeSetTemplate = utility_functions.get_option(varargin,'template','chebyshev_1st');
             obj.s = utility_functions.get_option(varargin,'s',linspace(0,1,101)); obj.s = reshape(obj.s,1,[],1);
             obj.BCs = utility_functions.get_option(varargin,'BCs',[0 1;1 1;1 1]);
             nShapes = utility_functions.get_option(varargin,'nShapes',10);
@@ -257,17 +257,17 @@ classdef ShapeFunctionObject
                     figure;
                     subplot(nRow,3,1), plot(obj.x,obj.y_all{1}); xlabel('x'); ylabel(obj.setHistory{1,2}); title(obj.setHistory{1,1},'interpreter','none');
                     subplot(nRow,3,2), plot(obj.x,obj.dy_dx); xlabel('x'); ylabel(obj.setHistory{1,4});
-                    hold on, x = obj.x; y = obj.y_all{1}; xDiff = diff(x); yDiff = diff(y.').'; plot((x(1:end-1)+x(2:end))/2,bsxfun(@times,yDiff,1./xDiff),'r:');
+                    hold on, obj.x = obj.x; obj.y = obj.y_all{1}; xDiff = diff(obj.x); yDiff = diff(obj.y.').'; plot((obj.x(1:end-1)+obj.x(2:end))/2,bsxfun(@times,yDiff,1./xDiff),'r:');
                     subplot(nRow,3,3), plot(obj.x,obj.weightFunction_all{1}); xlabel('x'); ylabel(obj.setHistory{1,6});
 
                     subplot(nRow,3,1+3), plot(obj.s,obj.y_all{1}); xlabel('s'); ylabel('y(x(s))');
                     subplot(nRow,3,2+3), plot(obj.s,bsxfun(@times,obj.dy_dx,obj.dx_ds)); xlabel('s'); ylabel('dy_ds');
-                    hold on, s = obj.s; y = obj.y_all{1}; sDiff = diff(s); yDiff = diff(y.').'; plot((s(1:end-1)+s(2:end))/2,bsxfun(@times,yDiff,1./sDiff),'r:');
+                    hold on, obj.s = obj.s; obj.y = obj.y_all{1}; sDiff = diff(obj.s); yDiff = diff(obj.y.').'; plot((obj.s(1:end-1)+obj.s(2:end))/2,bsxfun(@times,yDiff,1./sDiff),'r:');
                     subplot(nRow,3,3+3), plot(obj.s,obj.x); xlabel('s'); ylabel('x');
 
                     subplot(nRow,3,1+6), plot(obj.s,obj.y_all{2}); xlabel('s'); ylabel(obj.setHistory{2,2}); title(obj.setHistory{2,1},'interpreter','none');
                     subplot(nRow,3,2+6), plot(obj.s,obj.dy_ds_all{2}); xlabel('s'); ylabel(obj.setHistory{2,4});
-                    hold on, s = obj.s; y = obj.y_all{2}; sDiff = diff(s); yDiff = diff(y.').'; plot((s(1:end-1)+s(2:end))/2,bsxfun(@times,yDiff,1./sDiff),'r:');
+                    hold on, obj.s = obj.s; obj.y = obj.y_all{2}; sDiff = diff(obj.s); yDiff = diff(obj.y.').'; plot((obj.s(1:end-1)+obj.s(2:end))/2,bsxfun(@times,yDiff,1./sDiff),'r:');
                     subplot(nRow,3,3+6), plot(obj.s,obj.E); xlabel('s'); ylabel('E');
 
                     %             if ~isempty(obj.customShapes)
@@ -337,12 +337,12 @@ classdef ShapeFunctionObject
 
             PLOT = get_option(varargin,'PLOT',false);
 
-            nShapes = obj.nShapes;
-            orthMatrix = zeros(nShapes);
+         
+            orthMatrix = zeros(obj.nShapes);
             %--------------------------------------------------------------
             % calculate orthogonal integrals
-            for i_ = 1:nShapes
-                for j_ = 1:nShapes
+            for i_ = 1:obj.nShapes
+                for j_ = 1:obj.nShapes
                     orthMatrix(i_,j_) = obj.orth_integral(obj.s,obj.y(i_,:),obj.y(j_,:),obj.weightFunction);
                 end
             end
@@ -351,18 +351,18 @@ classdef ShapeFunctionObject
             if PLOT
                 % plot orthogonal integrals
                 figure;
-                for i_ = 1:nShapes
-                    for j_ = 1:nShapes
-                        subplot(nShapes,nShapes,i_+(j_-1)*nShapes), area(obj.s,obj.y(i_,:).*obj.y(j_,:).*obj.weightFunction), hold on, plot(obj.s,0);
+                for i_ = 1:obj.nShapes
+                    for j_ = 1:obj.nShapes
+                        subplot(obj.nShapes,obj.nShapes,i_+(j_-1)*obj.nShapes), area(obj.s,obj.y(i_,:).*obj.y(j_,:).*obj.weightFunction), hold on, plot(obj.s,0);
                         set(gca,'color',[1-abs(orthMatrix(i_,j_)/maxOrthVal) 1 1]);
                     end
                 end
                 %-----------------------------------
                 % plot orthMatrix
                 figure; hold on;
-                rectangle('position',[0.5 -nShapes-0.5 nShapes nShapes]);
-                for i_ = 1:nShapes,
-                    for j_ = 1:nShapes,
+                rectangle('position',[0.5 -obj.nShapes-0.5 obj.nShapes obj.nShapes]);
+                for i_ = 1:obj.nShapes
+                    for j_ = 1:obj.nShapes
                         plot(i_,-j_,'ko','markerFaceColor','blue','markerSize',abs(orthMatrix(i_,j_)/maxOrthVal)*20+0.01);
                     end
                 end; hold off

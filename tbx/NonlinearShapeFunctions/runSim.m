@@ -102,6 +102,7 @@ runTime = toc; disp(['   runTime: ' num2str(runTime)]);
 SimObject.runTime = runTime;
 SimObject.t = t.';
 SimObject.Q = u.';
+SimObject.Q(SimObject.rR_idx,:) = wrapTo2Pi(u(:,SimObject.rR_idx).');
 
 end
 
@@ -123,6 +124,9 @@ x0 = SimObject.IC(State_idx_static);
 
 SimObject.Q = SimObject.IC.*[0,0];
 SimObject.Q(State_idx_static,2) = x;
+if ~isempty(SimObject.rR_idx)
+SimObject.Q(SimObject.rR_idx,end) = wrapTo2Pi(x(State_idx_static == SimObject.rR_idx));
+end
 
 runTime = toc; %disp(['   runTime: ' num2str(runTime)]);
 SimObject.runTime = runTime;
