@@ -43,7 +43,7 @@ else
 end
 FLAG_static = SimObject.FLAG_static;
 % Q =                                                                            %[temp,temp1,temp2,temp3,temp4,str,Struct,Cell,Table] = deal([]); %#ok<ASGLU> %workspace variables used only for debugging
-
+% Q = 
 global mult3d_mex
 mult3d_mex = SimObject.mult3d_mex;
 % int_fnc = SimObject.int_fnc;
@@ -100,6 +100,13 @@ rT_idx  = SimObject.rT_idx;
 rR_idx  = SimObject.rR_idx;
 drT_idx = SimObject.drT_idx;
 drR_idx = SimObject.drR_idx;
+
+% Q(rR_idx) =  rem(Q(rR_idx),2*pi);
+if Q(rR_idx)/(2*pi) > 0
+    Q(rR_idx) = Q(rR_idx) - 2*pi.*floor(Q(rR_idx)./(2*pi));
+else
+    Q(rR_idx) = Q(rR_idx) - 2*pi.*ceil(Q(rR_idx)./(2*pi));
+end
 
 if FLAG_free_free
     
@@ -277,7 +284,6 @@ if ~isempty(aerodynamics)
             for aeroPartName_cell = aeroPartNames
                 aeroPartName = aeroPartName_cell{1};
                 aero_cntr_pm_global = cat(3,aero_cntr_pm_global,partInformationStruct.(aeroPartName).aero_cntr_pm);
-                aeroData_global = partInformationStruct.(aeroPartName).aeroData;
                 nsAp = partInformationStruct.(aeroPartName).nsAp;
                 EAp_G_pm_global = cat(3,EAp_G_pm_global,partInformationStruct.(aeroPartName).EAp_G_pm);
                 dEAp_dt_G_pm_global = cat(3,dEAp_dt_G_pm_global,partInformationStruct.(aeroPartName).dEAp_dt_G_pm);
@@ -331,7 +337,7 @@ if ~isempty(aerodynamics)
                     AIC = AICs_global;
                     C_D0 = 0;
                     qsteady = true;
-                    aeroData = aeroData_global;
+                    aeroData = SimObject.aeroData;
                     
                     [~,~,Fqc,Mqc,Drag,alpha_global] = aerodynamic_codes.aero_stripTheory_usteady_LeishmanIndicial(...
                         Qaero,rho,Vinf,V3qrt,xAp,yAp,zAp,dAoA,chord,ApWidth,AIC,C_D0,aeroData,qsteady);
@@ -368,14 +374,24 @@ if ~isempty(aerodynamics)
                 Gamma_G_pm_global, Gamma_A_pm_global, ...
                 dGamma_dqg_G_pm_global, ...
                 dvarTheta_dqg_G_pm_global, EAp_G_pm_global,...
-                aeroOffset_global, aeroOffset_skew_global, ApWidth_pm_global] ...
-                = aero.wt_aero(SimObject,partInformationStruct, Q, dQ_Aero,R_A_G, rBarA_G,Omega_G, t, FLAG_static);
+                aeroOffset_global, aeroOffset_skew_global, ApWidth_pm_global, az_global, R_A_G_global] ...
+                = aero.wt_aero(SimObject,partInformationStruct, Q, dQ_Aero, R_A_G,rBarA_G,Omega_G, t, FLAG_static);
     end
     
     PvecAero_G_pm_global = Fqc + Drag;
     PvecAero_Gamma_G = Gamma_G_pm_global + EAp_G_pm_global(:,1,:).*aeroOffset_global;
     MvecAero_G_pm_global = Mqc + utility_functions.MultiProd_(aeroOffset_skew_global,(Fqc + Drag));
+    MvecAero_A_pm_global = utility_functions.MultiProd_(R_A_G_global,MvecAero_G_pm_global);
+    PvecAero_A_pm_global = utility_functions.MultiProd_(R_A_G_global,PvecAero_G_pm_global);
     
+    torque_pm_global = Gamma_A_pm_global(1,:,:).*PvecAero_A_pm_global(2,:,:)...
+                    -  Gamma_A_pm_global(2,:,:).*PvecAero_A_pm_global(1,:,:)...
+                    +  MvecAero_A_pm_global(3,:,:);
+    thrust_pm_global = PvecAero_A_pm_global(3,:,:);
+    
+    torque_global = sum(torque_pm_global,3);
+    thrust_global = sum(thrust_pm_global,3); 
+    power_global = sum(torque_pm_global.*2.*pi./SimObject.T, 3); %W
 else
     
     [dGamma_dqg_G_pm_global,...
@@ -452,11 +468,7 @@ switch outputFormat
         dQ = Q*0; %initialise 1st order state derivative
         
         %relate 1st and 2nd derivatives for second order variables
-        %         if SimObject.FLAG_dynControl && SimObject.type == 3
-        %             dQ(qg2nd_idx) = Q(dqg2nd_idx(1:end-1));
-        %         else
         dQ(qg2nd_idx) = Q(dqg2nd_idx);
-        %         end
         
         dM_dqg_sum = sum(dM_dqg,3);% + sum(dM_dqg_rigidPart,3);
         
