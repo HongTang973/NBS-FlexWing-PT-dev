@@ -23,10 +23,10 @@ classdef ShapeFunctionObject
 
     methods
 
-        function obj = ShapeFunctionObject(shapeSetTemplate,varargin)
+        function obj = ShapeFunctionObject(varargin)
 
             %addpath('./utility_functions');
-
+            shapeSetTemplate = utility_functions.get_option(varargin,'template','chebyshev_1st');
             obj.s = utility_functions.get_option(varargin,'s',linspace(0,1,101)); obj.s = reshape(obj.s,1,[],1);
             obj.BCs = utility_functions.get_option(varargin,'BCs',[0 1;1 1;1 1]);
             nShapes = utility_functions.get_option(varargin,'nShapes',10);

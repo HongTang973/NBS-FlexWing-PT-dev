@@ -609,16 +609,14 @@ classdef NBS_flexPart_nonlinear < handle
                             obj.qAero.n = obj.nsAp*2;
                             obj.qAero.group = ['AeroStates_' obj.partName];
                         end
-                        if strcmp(obj.NBS_Master.aeroForces, 'dynamic stall')
-                            if strcmp(obj.NBS_Master.dsModel, 'oye')
+                        if any(strcmp(obj.NBS_Master.aeroForces, {'oye', 'larsen'}))
+                            if strcmp(obj.NBS_Master.aeroForces, 'oye')
                                 obj.nQAero = 1;
-                                obj.qAero.n = obj.nsAp*obj.nQAero;
-                                obj.qAero.group = ['AeroStates_' obj.partName];
-                            elseif strcmp(obj.NBS_Master.dsModel, 'larsen')
+                            elseif strcmp(obj.NBS_Master.aeroForces, 'larsen')
                                 obj.nQAero = 4;
-                                obj.qAero.n = obj.nsAp*obj.nQAero;
-                                obj.qAero.group = ['AeroStates_' obj.partName];
                             end
+                            obj.qAero.n = obj.nsAp*obj.nQAero;
+                            obj.qAero.group = ['AeroStates_' obj.partName];
                         end
                         if obj.NBS_Master.FLAG_dw
                             if strcmp(obj.NBS_Master.aeroForces, 'lookup 2D')

@@ -369,7 +369,7 @@ if ~isempty(aerodynamics)
                 dGamma_dqg_G_pm_global, ...
                 dvarTheta_dqg_G_pm_global, EAp_G_pm_global,...
                 aeroOffset_global, aeroOffset_skew_global, ApWidth_pm_global] ...
-                = aero.wt_aero(SimObject,partInformationStruct,dQ_Aero,R_A_G,rBarA_G,Omega_G, t);
+                = aero.wt_aero(SimObject,partInformationStruct, Q, dQ_Aero,R_A_G, rBarA_G,Omega_G, t, FLAG_static);
     end
     
     PvecAero_G_pm_global = Fqc + Drag;
@@ -452,11 +452,11 @@ switch outputFormat
         dQ = Q*0; %initialise 1st order state derivative
         
         %relate 1st and 2nd derivatives for second order variables
-%         if SimObject.FLAG_dynControl && SimObject.type == 3
-%             dQ(qg2nd_idx) = Q(dqg2nd_idx(1:end-1));
-%         else
-            dQ(qg2nd_idx) = Q(dqg2nd_idx);
-%         end
+        %         if SimObject.FLAG_dynControl && SimObject.type == 3
+        %             dQ(qg2nd_idx) = Q(dqg2nd_idx(1:end-1));
+        %         else
+        dQ(qg2nd_idx) = Q(dqg2nd_idx);
+        %         end
         
         dM_dqg_sum = sum(dM_dqg,3);% + sum(dM_dqg_rigidPart,3);
         
