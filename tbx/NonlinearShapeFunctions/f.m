@@ -375,7 +375,7 @@ if ~isempty(aerodynamics)
                 dGamma_dqg_G_pm_global, ...
                 dvarTheta_dqg_G_pm_global, EAp_G_pm_global,...
                 aeroOffset_global, aeroOffset_skew_global, ApWidth_pm_global, az_global, R_A_G_global] ...
-                = aero.wt_aero(SimObject,partInformationStruct, Q, dQ_Aero, R_A_G,rBarA_G,Omega_G, t, FLAG_static);
+                = aero.wt_aero(SimObject, partInformationStruct, Q, dQ_Aero, R_A_G, rBarA_G, Omega_G, t, FLAG_static);
     end
     
     PvecAero_G_pm_global = Fqc + Drag;
@@ -541,6 +541,7 @@ switch outputFormat
             %             QOI_Container.add_qoi('dCp_da', tidx,dcp_da,'1','dC_{p}/da','[]');
             %             QOI_Container.add_qoi('EAp_G_pm', tidx,reshape(EAp_G_pm_global,9,1,[]),'1:nsAp','EAp_{[G]}','[]','GlobalAeroQuantity',true);
             %             QOI_Container.add_qoi('EAp_A_pm', tidx,reshape(EAp_A_pm_global,9,1,[]),'1:nsAp','EAp_{[A]}','[]','GlobalAeroQuantity',true);
+            
             QOI_Container.add_qoi('Gamma_G_pm', tidx,Gamma_G_pm_global,'1:nsAp','Gamma_{[G]}_pm','[]','GlobalAeroQuantity',true);
             QOI_Container.add_qoi('Gamma_A_pm', tidx,Gamma_A_pm_global,'1:nsAp','Gamma_{[A]}_pm','[]','GlobalAeroQuantity',true);
             QOI_Container.add_qoi('Aero_Forces_G' ,tidx,PvecAero_G_pm_global,'1:nsAp','AeroForce#_{[G]}','N','GlobalAeroQuantity',true);
