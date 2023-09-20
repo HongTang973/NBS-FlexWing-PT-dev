@@ -806,15 +806,16 @@ classdef NBS_Master < handle
             set(gcf,'Renderer','zbuffer');
             ax = gca;
             set(ax,'Units','pixels');
-            view([90,-70])
+            % view([90,0])
 %             set(ax, 'Xdir', 'reverse')
 %             set(ax, 'Zdir', 'reverse')
             pos = get(ax,'Position');
             marg = 30;
 %             rect = [-marg, -marg, pos(3)+2*marg, pos(4)+2*marg];
             title(['t = ' num2str(t_(tidx))]);
-            F = getframe(gca);
-            writeVideo(writerObj,F);
+            F(i_) = getframe(gca);
+            writeVideo(writerObj,F(i_));
+            exportgraphics(gcf, 'giffy.gif', 'Append',true)
         end
         close(gcf);
     end
