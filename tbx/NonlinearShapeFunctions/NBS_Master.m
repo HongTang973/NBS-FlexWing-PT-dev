@@ -791,9 +791,9 @@ classdef NBS_Master < handle
         %populate any extra info required based on above request
         obj.QOI_Master.write_QOI_values('systemLevel','display',false);
         
-        writerObj = VideoWriter(fileName);
-        writerObj.FrameRate = framesPerSecond_closestDiscreteFit*playSpeed;
-        open(writerObj);
+        % writerObj = VideoWriter(fileName);
+        % writerObj.FrameRate = framesPerSecond_closestDiscreteFit*playSpeed;
+        % open(writerObj);
         
         figure('WindowStyle','modal');
         set(gcf,'outerPosition',[100 100 800 800],'color',[1 1 1]);
@@ -813,9 +813,9 @@ classdef NBS_Master < handle
             marg = 30;
 %             rect = [-marg, -marg, pos(3)+2*marg, pos(4)+2*marg];
             title(['t = ' num2str(t_(tidx))]);
-            F(i_) = getframe(gca);
-            writeVideo(writerObj,F(i_));
-            exportgraphics(gcf, 'giffy.gif', 'Append',true)
+            % F(i_) = getframe(gca);
+            % writeVideo(writerObj,F(i_));
+            exportgraphics(gcf, [fileName,'.gif'], 'Append', true)
         end
         close(gcf);
     end
