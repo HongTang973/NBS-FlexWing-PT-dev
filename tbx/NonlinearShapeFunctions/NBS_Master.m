@@ -795,7 +795,7 @@ classdef NBS_Master < handle
         writerObj.FrameRate = framesPerSecond_closestDiscreteFit*playSpeed;
         open(writerObj);
         
-        figure('WindowStyle','normal');
+        figure('WindowStyle','modal');
         set(gcf,'outerPosition',[100 100 800 800],'color',[1 1 1]);
         pause(0.1);
         
@@ -1415,7 +1415,7 @@ classdef NBS_Master < handle
 %             plot3(GammaX,zrs+YLIM_projection,GammaZ,'color',[0,0.75,0.75],'lineWidth',1.5);
             
             plot3(GammaX,GammaY,zrs+ZLIM_projection,'color',[0.75,0.75,0.75],'lineWidth',1.5);
-            plot3(zrs+GammaX(end),zrs+GammaY(end),GammaZ,'color',[0,0.25,0.75],'lineWidth',1.5);
+            plot3([GammaX(end),GammaX(end)],[GammaY(end),GammaY(end)],[0,GammaZ(end)],'color',[0,0.25,0.75],'lineWidth',1.5);
             
             plot3([0,XLIM_projection],[0,0],[0,0],'color',[0.75,0.75,0.75],'lineStyle',':','lineWidth',1);
             plot3([0,0],[0,0],[0,ZLIM_projection],'color',[0.75,0.75,0.75],'lineStyle',':','lineWidth',1);

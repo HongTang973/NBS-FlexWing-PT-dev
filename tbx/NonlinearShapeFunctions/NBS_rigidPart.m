@@ -211,7 +211,15 @@ end
         varargin = [varargin,...
             {'CrossSectionProfiles'},{obj.CrossSectionProfiles},...
             {'idx_ribs'},{[1 2]}];
-        
+
+        idx_plot2D = find(strcmp(varargin,{'plot2DProjections'}));
+        if isempty(idx_plot2D)
+            varargin = [varargin,...
+                {'plot2DProjections'}, [0,0,0]];
+        else
+            varargin{idx_plot2D + 1} = [0 0 0];
+        end
+
         obj.NBS_Master.draw_genericPart(obj.s,E_Gdraw_flat,Gamma_G,width,obj.h,obj.beam_cntr,varargin{:});
     end
     
