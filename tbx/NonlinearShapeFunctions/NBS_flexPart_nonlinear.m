@@ -600,44 +600,45 @@ classdef NBS_flexPart_nonlinear < handle
 
 
             if strcmp(obj.NBS_Master.aerodynamics,'WT')
+                if ~isempty(obj.NBS_Master.aeroForces)
+                    if obj.NBS_Master.FLAG_unsteady
+                        obj.qAero.n = 0;
+                        obj.qAero.group = ['AeroStates_' obj.partName];
 
-                if obj.NBS_Master.FLAG_unsteady
-                    obj.qAero.n = 0;
-                    obj.qAero.group = ['AeroStates_' obj.partName];
+                        switch obj.NBS_Master.aeroForces
+                            case 'leishman'
+                                obj.qAero.n = obj.nsAp*2;
+                                obj.qAero.group = ['AeroStates_' obj.partName];
+                            case'oye'
+                                obj.nQAero = 1;
+                                obj.qAero.n = obj.nsAp*obj.nQAero;
+                                obj.qAero.group = ['AeroStates_' obj.partName];
 
-                    switch obj.NBS_Master.aeroForces
-                        case 'leishman'
-                            obj.qAero.n = obj.nsAp*2;
-                            obj.qAero.group = ['AeroStates_' obj.partName];
-                        case'oye'
-                            obj.nQAero = 1;
-                            obj.qAero.n = obj.nsAp*obj.nQAero;
-                            obj.qAero.group = ['AeroStates_' obj.partName];
+                                % obj.nQAero = 1;
+                                % obj.qAero.n = 6;
+                                % obj.qAero.group = ['AeroStates_' obj.partName];
+                            case'larsen'
+                                obj.nQAero = 4;
+                                obj.qAero.n = obj.nsAp*obj.nQAero;
+                                obj.qAero.group = ['AeroStates_' obj.partName];
+                        end
 
-                            % obj.nQAero = 1;
-                            % obj.qAero.n = 6;
-                            % obj.qAero.group = ['AeroStates_' obj.partName];
-                        case'larsen'
-                            obj.nQAero = 4;
-                            obj.qAero.n = obj.nsAp*obj.nQAero;
-                            obj.qAero.group = ['AeroStates_' obj.partName];
-                    end
-
-                    if obj.NBS_Master.FLAG_dw
-                        if strcmp(obj.NBS_Master.aeroForces, 'lookup 2D')
-                            obj.nQAero = 0;
-                            switch obj.NBS_Master.dwDetail
-                                case 'full'
-                                    obj.qAero.n = obj.nsAp*4;
-                                case 'simple'
-                                    obj.qAero.n = 1;
-                            end
-                        else
-                            switch obj.NBS_Master.dwDetail
-                                case 'full'
-                                    obj.qAero.n = obj.qAero.n + obj.nsAp*4;
-                                case 'simple'
-                                    obj.qAero.n = obj.qAero.n + 1;
+                        if obj.NBS_Master.FLAG_dw
+                            if strcmp(obj.NBS_Master.aeroForces, 'lookup 2D')
+                                obj.nQAero = 0;
+                                switch obj.NBS_Master.dwDetail
+                                    case 'full'
+                                        obj.qAero.n = obj.nsAp*4;
+                                    case 'simple'
+                                        obj.qAero.n = 1;
+                                end
+                            else
+                                switch obj.NBS_Master.dwDetail
+                                    case 'full'
+                                        obj.qAero.n = obj.qAero.n + obj.nsAp*4;
+                                    case 'simple'
+                                        obj.qAero.n = obj.qAero.n + 1;
+                                end
                             end
                         end
                     end
