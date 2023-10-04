@@ -93,8 +93,11 @@ SimObject.Q = u;
 tic
 
 options = odeset('OutputFcn',@outputFunction,'BDF','off','relTol',1e-5);
-[t,u] = ode15s(fHandle, tsteps, SimObject.IC, options, SimObject, 'dQ');
-
+if func2str(fHandle) == 'f'
+    [t,u] = ode15s(fHandle, tsteps, SimObject.IC, options, SimObject, 'dQ');
+else
+    [t,u] = ode15s(fHandle, tsteps, SimObject.IC, options);
+end
 % options = odeset('OutputFcn',@outputFunction,'relTol',1e-5);
 % [t,u] = ode45(fHandle, tsteps, SimObject.IC, options, SimObject,'dQ');
 
