@@ -371,6 +371,8 @@ if ~isempty(aerodynamics)
             %TODO pre allocate aero matrices after the first iteration
             [dQ_Aero, ...
                 Fqc, Mqc, Drag,...
+                CL,CD,CM,...
+                alpha_global, dalpha_dt_global, ...
                 Gamma_G_pm_global, Gamma_A_pm_global, ...
                 dGamma_dqg_G_pm_global, ...
                 dvarTheta_dqg_G_pm_global, EAp_G_pm_global,...
@@ -555,11 +557,14 @@ switch outputFormat
             QOI_Container.add_qoi('Aero_MomentPerSpan_G', tidx, MvecAero_G_pm_global./ApWidth_pm_global,'1:nsAp','AeroMomentPerSpan#_{[G]}','N','GlobalAeroQuantity',true);
             QOI_Container.add_qoi('Net_Lift', tidx, sum(PvecAero_G_pm_global(3,1,:)),'1','NetLift','N');
             if exist('alpha_global','var')
-                alpha_degrees = alpha_global*180/pi;
-                QOI_Container.add_qoi('Angle_Of_Attack',tidx,reshape(alpha_degrees,1,1,[]),'1:nsAp','Angle Of Attack','deg');
+                alpha_degrees = alpha_global*180/pi; dalpha_dt_degrees = dalpha_dt_global*180/pi;
+                QOI_Container.add_qoi('Angle_Of_Attack',tidx,alpha_degrees,'1:nsAp','Angle Of Attack','deg','GlobalAeroQuantity',true);
+                QOI_Container.add_qoi('dAngle_Of_Attack_dt',tidx,dalpha_dt_degrees,'1:nsAp','dAngle Of Attack_dt','deg.s^{-1}','GlobalAeroQuantity',true);
             end
             if exist('CL','var')
-                QOI_Container.add_generic_qoi('CL' ,tidx,reshape(CL,1,1,[]),'1:nsAp','CL','');
+                QOI_Container.add_qoi('CL' ,tidx, CL, '1:nsAp','CL','' ,'GlobalAeroQuantity',true);
+                QOI_Container.add_qoi('CD' ,tidx, CD, '1:nsAp','CD','' ,'GlobalAeroQuantity',true);
+                QOI_Container.add_qoi('CM' ,tidx, CM, '1:nsAp','CM','' ,'GlobalAeroQuantity',true);
             end
         end
         
