@@ -8,7 +8,7 @@ function val = crossn(a,b,dim)
     idx2 = repmat({':'},1,ndim_a); idx2{dim} = 2;
     idx3 = repmat({':'},1,ndim_a); idx3{dim} = 3;
     
-    val = zeros(sza, 'like', b);
+    val = b.*0;
     val(idx1{:}) = a(idx2{:}).*b(idx3{:})-a(idx3{:}).*b(idx2{:});
     val(idx2{:}) = a(idx3{:}).*b(idx1{:})-a(idx1{:}).*b(idx3{:});
     val(idx3{:}) = a(idx1{:}).*b(idx2{:})-a(idx2{:}).*b(idx1{:});
