@@ -1344,8 +1344,12 @@ classdef NBS_Master < handle
                 if s_draw(j_)>s_aeroProfiles{AP_counter+1}
                     AP_counter = AP_counter + 1;
                 end
-                profileScalingFactor = (s_draw(j_) - s_aeroProfiles{AP_counter})/(s_aeroProfiles{AP_counter+1} - s_aeroProfiles{AP_counter});
+                try
 
+                profileScalingFactor = (s_draw(j_) - s_aeroProfiles{AP_counter})/(s_aeroProfiles{AP_counter+1} - s_aeroProfiles{AP_counter});
+                catch
+                    keyboard
+                end
                 idx_stringers = 1:floor((nx-1)/(no_stringers)):nx;
                 idx_stringers(end) = [];
                 idx_stringers = [idx_stringers ; idx_stringers+nx].';

@@ -49,6 +49,8 @@ classdef NBS_flexPart_nonlinear < handle
         c                                                                  %[m] wing chord lengths in direction of aerodynamic panels
         c_pm                                               %[m] wing chord sampled at aero panel mid points
         c_pn                                               %[m] wing chord sampled at aero panel nodal points
+        t2c
+        t2c_pm
         ApWidths_pm                                        %[m] aero panel widths in the eyAp direction
         w                                                                  %[m] wing width in the ex direction
         h                                                                  %[m] wing thicknesses
@@ -552,6 +554,7 @@ classdef NBS_flexPart_nonlinear < handle
 
             %------------------------------------------------------------------
             obj.c_pm = utility_functions.sample(obj.c,obj.Apm_idx,3);
+            obj.t2c_pm = utility_functions.sample(obj.t2c,obj.Apm_idx,3);
             obj.c_pn = utility_functions.sample(obj.c,obj.Apn_idx,3);
             obj.beam_cntr_pm = utility_functions.sample(obj.beam_cntr,obj.Apm_idx,3);
             obj.aero_cntr_pm = utility_functions.sample(obj.aero_cntr,obj.Apm_idx,3);
