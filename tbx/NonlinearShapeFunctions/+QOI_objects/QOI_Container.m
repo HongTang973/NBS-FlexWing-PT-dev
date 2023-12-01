@@ -102,7 +102,13 @@ classdef QOI_Container < handle
                 for pt_obj_cell = NBS_Master_obj.allParts_cell; %for each child object in the model
                     pt_obj = pt_obj_cell{1};
                     if ~isa(pt_obj,'NBS_Master') && pt_obj.isAero
+                        
                         sAp_idx_global = pt_obj.sAp_idx_global; %retrieve the global indices that reference the child object
+                        if isequal(dim2_str, '1')
+                            nsAp = pt_obj.nsAp;
+                            sAp_idx_global = sAp_idx_global(end)./nsAp;
+                        end
+
                         pt_obj.QOI_Container.add_qoi(qoiName,tidx,value(:,sAp_idx_global),dim2_str,plotName_str,units_str); %extract the section of the global aero quantity corresponding to the object and add the section to its qoi list
                     end
                 end

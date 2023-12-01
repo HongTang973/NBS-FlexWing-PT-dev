@@ -297,7 +297,7 @@ if ~isempty(aerodynamics)
                 AICs_global = cat(3,AICs_global,partInformationStruct.(aeroPartName).AIC);
                 qAero_idx_global = cat(1,qAero_idx_global,partInformationStruct.(aeroPartName).qAero_idx(:));
                 
-                SimObject.allParts_struct.(aeroPartName).sAp_idx_global = 1:nsAp + global_idx_counter;
+                SimObject.allParts_struct.(aeroPartName).sAp_idx_global = (1:nsAp) + global_idx_counter;
                 global_idx_counter = global_idx_counter + nsAp;
                 
                 dqg2nd_to_dq2nd_idx = partInformationStruct.(aeroPartName).dqg2nd_to_dq2nd_idx;
@@ -371,29 +371,22 @@ if ~isempty(aerodynamics)
             %TODO pre allocate aero matrices after the first iteration
             [dQ_Aero, ...
                 Fqc, Mqc, Drag,...
-                CL,CD,CM,...
+                F_N, F_T, ...
+                thrust, torque, power,...
+                CL, CD, CM,...
+                a_global, ap_global, phi_global, ...
                 alpha_global, dalpha_dt_global, ...
                 Gamma_G_pm_global, Gamma_A_pm_global, ...
                 dGamma_dqg_G_pm_global, ...
                 dvarTheta_dqg_G_pm_global, EAp_G_pm_global,...
                 aeroOffset_global, aeroOffset_skew_global, ApWidth_pm_global, az_global, R_A_G_global] ...
-                = aero.wt_aero(SimObject, partInformationStruct, Q, dQ_Aero, R_A_G, rBarA_G, Omega_G, t, FLAG_static);
+                = aero.wt_aero(SimObject, partInformationStruct, Q, dQ_Aero, R_A_G, rBarA_G, Omega_G, t, FLAG_static, outputFormat);
     end
     
     PvecAero_G_pm_global = Fqc + Drag;
     PvecAero_Gamma_G = Gamma_G_pm_global + EAp_G_pm_global(:,1,:).*aeroOffset_global;
     MvecAero_G_pm_global = Mqc + utility_functions.MultiProd_(aeroOffset_skew_global,(Fqc + Drag));
-    MvecAero_A_pm_global = utility_functions.MultiProd_(R_A_G_global,MvecAero_G_pm_global);
-    PvecAero_A_pm_global = utility_functions.MultiProd_(R_A_G_global,PvecAero_G_pm_global);
-    
-    torque_pm_global = Gamma_A_pm_global(1,:,:).*PvecAero_A_pm_global(2,:,:)...
-                    -  Gamma_A_pm_global(2,:,:).*PvecAero_A_pm_global(1,:,:)...
-                    +  MvecAero_A_pm_global(3,:,:);
-    thrust_pm_global = PvecAero_A_pm_global(3,:,:);
-    
-    torque_global = sum(torque_pm_global,3);
-    thrust_global = sum(thrust_pm_global,3); 
-    power_global = sum(torque_pm_global.*2.*pi./SimObject.T, 3); %W
+
 else
     
     [dGamma_dqg_G_pm_global,...
@@ -546,22 +539,30 @@ switch outputFormat
             
             QOI_Container.add_qoi('Gamma_G_pm', tidx,Gamma_G_pm_global,'1:nsAp','Gamma_{[G]}_pm','[]','GlobalAeroQuantity',true);
             QOI_Container.add_qoi('Gamma_A_pm', tidx,Gamma_A_pm_global,'1:nsAp','Gamma_{[A]}_pm','[]','GlobalAeroQuantity',true);
-            QOI_Container.add_qoi('Aero_Forces_G' ,tidx,PvecAero_G_pm_global,'1:nsAp','AeroForce#_{[G]}','N','GlobalAeroQuantity',true);
+            QOI_Container.add_qoi('Aero_Forces_G' ,tidx, PvecAero_G_pm_global,'1:nsAp','AeroForce#_{[G]}','N','GlobalAeroQuantity',true);
             PvecAero_A_pm_global = pagemtimes(R_A_G,PvecAero_G_pm_global);
             QOI_Container.add_qoi('Aero_Forces_A' ,tidx,PvecAero_A_pm_global,'1:nsAp','AeroForce#_{[A]}','N','GlobalAeroQuantity',true);
             QOI_Container.add_qoi('Aero_ForcePerSpan_G', tidx,PvecAero_G_pm_global./ApWidth_pm_global,'1:nsAp','AeroForcePerSpan#_{[G]}','N/m','GlobalAeroQuantity',true);
+            QOI_Container.add_qoi('Aero_ForcePerSpan_A', tidx,PvecAero_A_pm_global./ApWidth_pm_global,'1:nsAp','AeroForcePerSpan#_{[A]}','N/m','GlobalAeroQuantity',true);
             QOI_Container.add_qoi('Aero_Forces_Gamma_G', tidx, PvecAero_Gamma_G,'1:nsAp','AeroForce \Gamma#_{[G]}','m');
             QOI_Container.add_qoi('Aero_Moments_G',tidx, MvecAero_G_pm_global,'1:nsAp','AeroMoment#_{[G]}','Nm','GlobalAeroQuantity',true);
             MvecAero_A_pm_global = pagemtimes(R_A_G,MvecAero_G_pm_global);
             QOI_Container.add_qoi('Aero_Moments_A',tidx, MvecAero_A_pm_global,'1:nsAp','AeroMoment#_{[A]}','Nm','GlobalAeroQuantity',true);
             QOI_Container.add_qoi('Aero_MomentPerSpan_G', tidx, MvecAero_G_pm_global./ApWidth_pm_global,'1:nsAp','AeroMomentPerSpan#_{[G]}','N','GlobalAeroQuantity',true);
             QOI_Container.add_qoi('Net_Lift', tidx, sum(PvecAero_G_pm_global(3,1,:)),'1','NetLift','N');
-            if exist('alpha_global','var')
-                alpha_degrees = alpha_global*180/pi; dalpha_dt_degrees = dalpha_dt_global*180/pi;
+            
+            if isequal(aerodynamics, 'WT') 
+                QOI_Container.add_qoi('F_N_ps',tidx, F_N./ApWidth_pm_global,'1:nsAp','F_N_ps#_{[Ap]}','N/m','GlobalAeroQuantity',true);
+                QOI_Container.add_qoi('F_T_ps',tidx, F_T./ApWidth_pm_global,'1:nsAp','F_T_ps#_{[G]}', 'N/m','GlobalAeroQuantity',true);
+                QOI_Container.add_qoi('Thrust',tidx, thrust,'1','Thrust', 'N','GlobalAeroQuantity',true);
+                QOI_Container.add_qoi('Torque',tidx, torque,'1','Torque', 'Nm','GlobalAeroQuantity',true);
+                QOI_Container.add_qoi('Power',tidx, power,'1','Power', 'W','GlobalAeroQuantity',true);
+                alpha_degrees = alpha_global*180/pi; %dalpha_dt_degrees = dalpha_dt_global*180/pi;
                 QOI_Container.add_qoi('Angle_Of_Attack',tidx,alpha_degrees,'1:nsAp','Angle Of Attack','deg','GlobalAeroQuantity',true);
-                QOI_Container.add_qoi('dAngle_Of_Attack_dt',tidx,dalpha_dt_degrees,'1:nsAp','dAngle Of Attack_dt','deg.s^{-1}','GlobalAeroQuantity',true);
-            end
-            if exist('CL','var')
+                % QOI_Container.add_qoi('dAngle_Of_Attack_dt',tidx,dalpha_dt_degrees,'1:nsAp','dAngle Of Attack_dt','deg.s^{-1}','GlobalAeroQuantity',true);
+                QOI_Container.add_qoi('Inflow_Angle',tidx,phi_global,'1:nsAp','Inflow Angle','deg','GlobalAeroQuantity',true);
+                QOI_Container.add_qoi('Axial_Induction',tidx,a_global,'1:nsAp','Axial_Induction','[]','GlobalAeroQuantity',true);
+                QOI_Container.add_qoi('Tangential_Induction',tidx,ap_global,'1:nsAp','Tangential Induction','[]','GlobalAeroQuantity',true);
                 QOI_Container.add_qoi('CL' ,tidx, CL, '1:nsAp','CL','' ,'GlobalAeroQuantity',true);
                 QOI_Container.add_qoi('CD' ,tidx, CD, '1:nsAp','CD','' ,'GlobalAeroQuantity',true);
                 QOI_Container.add_qoi('CM' ,tidx, CM, '1:nsAp','CM','' ,'GlobalAeroQuantity',true);
@@ -570,8 +571,7 @@ switch outputFormat
         
         QOI_Container.discretisationVariables.nsAp = nsAp;
         QOI_Container.discretisationVariables.nt = SimObject.nt;
-        QOI_Container.discretisationVariables.ns = 1;
-        
+        QOI_Container.discretisationVariables.ns = 1;       
 end
 
 
