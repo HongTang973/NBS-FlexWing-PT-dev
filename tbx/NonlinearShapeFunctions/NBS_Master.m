@@ -1281,6 +1281,7 @@ classdef NBS_Master < handle
         ZLIM = utility_functions.get_option(varargin,'ZLIM',[]);
         plotReferenceLine = utility_functions.get_option(varargin,'plotReferenceLine',true);
         plot2DProjections = utility_functions.get_option(varargin,'plot2DProjections',[1,1,1]);
+        plotAeroCS = utility_functions.get_option(varargin,'plotAeroCS',false);
 
         if length(w) == 1, w = ones(1,ns_draw)*w; end
 
@@ -1298,7 +1299,7 @@ classdef NBS_Master < handle
             CrossSectionProfiles_ = {L_,x(1:25),y(1:25),x(26:51),y(26:51)};
         end
         if isempty(idx_ribs_)
-            no_ribs = 20;
+            no_ribs = 50;
             idx_ribs_ = ns_draw:-floor((ns_draw-1)/(no_ribs-1)):1; idx_ribs_(end) = 1;
         end
 
@@ -1306,8 +1307,17 @@ classdef NBS_Master < handle
 
 %         campos([1 mean(ylim) mean(zlim)]);
 %         camtarget([0 mean(ylim) mean(zlim)]);
+        if plotAeroCS
+        plotWhat.plotReferenceLine = false;
+        plotWhat.plotSurface = false;
+        plotWhat.plotStringers = false;
+        else
+        plotWhat.plotReferenceLine = plotReferenceLine;
+        plotWhat.plotSurface = true;
+        plotWhat.plotStringers = true;    
+        end
 
-        draw_section(s_draw,E,r,w,h,beam_cntr,CrossSectionProfiles_,idx_ribs_,plotReferenceLine,CamLight);
+        draw_section(s_draw,E,r,w,h,beam_cntr,CrossSectionProfiles_,idx_ribs_,plotWhat,CamLight);
 
         if ~isempty(idx_intrinsic)
             for i_ = idx_intrinsic
@@ -1323,9 +1333,11 @@ classdef NBS_Master < handle
             plot_2D_projections(r,XLIM,YLIM,ZLIM,plot2DProjections);
         end
 
-        function [] = draw_section(s_draw,E,r,w,h,beam_cntr,CrossSectionProfiles_,idx_ribs,plotReferenceLine,CamLight)
+        function [] = draw_section(s_draw,E,r,w,h,beam_cntr,CrossSectionProfiles_,idx_ribs,plotWhat,CamLight)
             % draw airfoil section profile over plotting elements
-            if plotReferenceLine
+            
+
+            if plotWhat.plotReferenceLine
                 plot3(r(1,:),r(2,:),r(3,:),'color',[0 0.5 0],'lineWidth',2);
             end
 
@@ -1369,13 +1381,15 @@ classdef NBS_Master < handle
 
                 P_airfoil = [P_airfoil_up P_airfoil_dn];
                 Paf = [P_airfoil_prev P_airfoil];
-                if j_>1
+            
+                if plotWhat.plotStringers && j_>1
                     plot3_pairs(Paf,idx_stringers,{'color',[0.4,0.4,0.4]});
                 end
+
                 if ismember(j_,idx_ribs)
                     %fill3(P_airfoil(1,:),P_airfoil(2,:),P_airfoil(3,:),'r','edgeColor','r','faceAlpha',0.4);
-                    fill3(P_airfoil(1,:),P_airfoil(2,:),P_airfoil(3,:),'k','edgeColor',[0.4,0.4,0.4],'faceAlpha',0.0);
-                    %fill3(P_airfoil(1,:),P_airfoil(2,:),P_airfoil(3,:),'r','edgeColor','r','faceAlpha',1.0);
+                    fill3(P_airfoil(1,:),P_airfoil(2,:),P_airfoil(3,:),'k','edgeColor',[0.4,0.4,0.4],'faceAlpha',0);
+                    % fill3(P_airfoil(1,:),P_airfoil(2,:),P_airfoil(3,:),'r','edgeColor','r','faceAlpha',1.0);
                     %surf(P_airfoil(1,:),P_airfoil(2,:),P_airfoil(3,:));
                     %plot3(r(1,j_),r(2,j_),r(3,j_),'marker','+','markerEdgeColor','b');
                 end
@@ -1386,12 +1400,14 @@ classdef NBS_Master < handle
             Ysurf = squeeze(P_Airfoil(2,:,:));
             Zsurf = squeeze(P_Airfoil(3,:,:));
             surfaceOptions = {...
-                'FaceAlpha',0.7+0.3,...
-                'FaceColor',[0.6,0.7,0.8]+0.2,...
+                'FaceAlpha',0.7,...
+                'FaceColor',[0.6,0.7,0.8],...
                 'MeshStyle','row',...
                 'edgeColor','none',...
                 'FaceLighting','gouraud'};
-            surf(Xsurf,Ysurf,Zsurf,surfaceOptions{:});
+            if plotWhat.plotSurface
+                surf(Xsurf,Ysurf,Zsurf,surfaceOptions{:});
+            end
             camlight(CamLight(1),CamLight(2));
         end
 
@@ -1414,7 +1430,7 @@ classdef NBS_Master < handle
             hold on;
             zrs = GammaX*0;
             plot3(zrs+XLIM_projection,GammaY,GammaZ,'color',[0.75,0.75,0.75],'lineWidth',1.5);
-            plot3(GammaX,GammaY,zrs,'color',[0,0.25,0.75],'lineWidth',1.5);
+            % plot3(GammaX,GammaY,zrs,'color',[0,0.25,0.75],'lineWidth',1.5);
             
 %             plot3(GammaX,zrs+YLIM_projection,GammaZ,'color',[0,0.75,0.75],'lineWidth',1.5);
             
