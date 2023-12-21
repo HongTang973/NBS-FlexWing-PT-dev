@@ -560,9 +560,11 @@ switch outputFormat
                 alpha_degrees = alpha_global*180/pi; %dalpha_dt_degrees = dalpha_dt_global*180/pi;
                 QOI_Container.add_qoi('Angle_Of_Attack',tidx,alpha_degrees,'1:nsAp','Angle Of Attack','deg','GlobalAeroQuantity',true);
                 % QOI_Container.add_qoi('dAngle_Of_Attack_dt',tidx,dalpha_dt_degrees,'1:nsAp','dAngle Of Attack_dt','deg.s^{-1}','GlobalAeroQuantity',true);
-                QOI_Container.add_qoi('Inflow_Angle',tidx,phi_global,'1:nsAp','Inflow Angle','deg','GlobalAeroQuantity',true);
-                QOI_Container.add_qoi('Axial_Induction',tidx,a_global,'1:nsAp','Axial_Induction','[]','GlobalAeroQuantity',true);
-                QOI_Container.add_qoi('Tangential_Induction',tidx,ap_global,'1:nsAp','Tangential Induction','[]','GlobalAeroQuantity',true);
+                if ~SimObject.FLAG_parked && ~strcmp(SimObject.bemModel, 'none')
+                    QOI_Container.add_qoi('Inflow_Angle',tidx,phi_global,'1:nsAp','Inflow Angle','deg','GlobalAeroQuantity',true);
+                    QOI_Container.add_qoi('Axial_Induction',tidx,a_global,'1:nsAp','Axial_Induction','[]','GlobalAeroQuantity',true);
+                    QOI_Container.add_qoi('Tangential_Induction',tidx,ap_global,'1:nsAp','Tangential Induction','[]','GlobalAeroQuantity',true);
+                end
                 QOI_Container.add_qoi('CL' ,tidx, CL, '1:nsAp','CL','' ,'GlobalAeroQuantity',true);
                 QOI_Container.add_qoi('CD' ,tidx, CD, '1:nsAp','CD','' ,'GlobalAeroQuantity',true);
                 QOI_Container.add_qoi('CM' ,tidx, CM, '1:nsAp','CM','' ,'GlobalAeroQuantity',true);
