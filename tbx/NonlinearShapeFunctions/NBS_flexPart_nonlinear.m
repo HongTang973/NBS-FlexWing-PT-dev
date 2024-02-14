@@ -1484,6 +1484,7 @@ classdef NBS_flexPart_nonlinear < handle
                 QOI_Container.add_qoi('Gamma_m_G',tidx,Gamma_m_G,'1:ns','\Gamma_m#_{[G]}','m');
                 %dGamma_dt_G = squeeze(bsxfun(@plus,drBarA_dt_G,map_WtoG(dGamma_dt_W,R_G_W) + MultiProd_(dR_G_W_dt,Gamma_W)));
                 QOI_Container.add_qoi('dGamma_dt_G',tidx,dGamma_dt_G,'1:ns','d\Gamma#/dt_{[G]}','m/s');
+                QOI_Container.add_qoi('d2Gamma_dt2_G',tidx,d2Gamma_dt2_G_star,'1:ns','d2\Gamma#/dt2_{[G]}','m/s');
                 dGamma_dt_A = utility_functions.MultiProd_(R_A_G,dGamma_dt_G);
                 QOI_Container.add_qoi('dGamma_dt_A',tidx,dGamma_dt_A,'1:ns','d\Gamma#/dt_{[A]}','m/s');
 
