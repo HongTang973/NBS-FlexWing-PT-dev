@@ -99,7 +99,7 @@ classdef QOI_Container < handle
             if isGlobalAeroQuantity && isa(obj.partObject,'NBS_Master') %if the qoi is a global aerodynamic quantity and obj is the Master object
                 NBS_Master_obj = obj.partObject;
                 
-                for pt_obj_cell = NBS_Master_obj.allParts_cell; %for each child object in the model
+                for pt_obj_cell = NBS_Master_obj.allParts_cell %for each child object in the model
                     pt_obj = pt_obj_cell{1};
                     if ~isa(pt_obj,'NBS_Master') && pt_obj.isAero
                         
