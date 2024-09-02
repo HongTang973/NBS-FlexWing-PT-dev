@@ -627,11 +627,11 @@ classdef NBS_flexPart_nonlinear < handle
                         end
 
                         if obj.NBS_Master.FLAG_dw
-                            if strcmp(obj.NBS_Master.aeroForces, 'lookup 2D')
-                                obj.nQAero = 0;
+                            if strcmp(obj.NBS_Master.aeroForces, 'quasi_steady')
+                                obj.nQAero = 0; %states per strip
                                 switch obj.NBS_Master.dwDetail
                                     case 'full'
-                                        obj.qAero.n = obj.nsAp*4;
+                                        obj.qAero.n = 4; %states per blade
                                     case 'simple'
                                         obj.qAero.n = 1;
                                 end
