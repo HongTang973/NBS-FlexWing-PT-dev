@@ -35,7 +35,7 @@ tidx = [];
 if strcmp(varargin{4},'static')
     t = 0;
     [qStatic,qStatic_idx,SimObject,outputFormat] = varargin{:};
-    Q = SimObject.IC*0;
+    Q = SimObject.IC;
     Q(qStatic_idx) = qStatic;
 else
     [t,Q,SimObject,outputFormat] = varargin{:};
@@ -369,7 +369,7 @@ if ~isempty(aerodynamics)
         case 'WT'
             R_A_G = R_G_A.';
             %TODO pre allocate aero matrices after the first iteration
-            [dQ_Aero, ...
+            [dQ_Aero, Qaero, qAero_idx_global,...
                 Fqc, Mqc, Drag,...
                 F_N, F_T, ...
                 thrust, torque, power,...
@@ -515,6 +515,7 @@ switch outputFormat
         %         Jacobian_flag = 'jac';
         
     case 'qoi'
+
         QOI_Container = utility_functions.get_field(SimObject,['QOI_Master.QOIcontainers_struct.',NBS_Master_partName]); %TODO read properties(QOI_Master) to get 'QOIcontainers_struct' string
         
         CoM_info = [CoM_info_flexPart_nonlinear , CoM_info_rigidPart];
@@ -533,6 +534,9 @@ switch outputFormat
         nsAp = size(PvecAero_G_pm_global,3);
         
         if ~isempty(SimObject.aeroPartNames) && ~isempty(aerodynamics)
+            if FLAG_static && SimObject.FLAG_unsteady
+                SimObject.Q(qAero_idx_global,2) = Qaero(:);
+            end
             %             QOI_Container.add_qoi('C_p', tidx,cp,'1','C_p','[]');
             %             QOI_Container.add_qoi('dCp_da', tidx,dcp_da,'1','dC_{p}/da','[]');
             %             QOI_Container.add_qoi('EAp_G_pm', tidx,reshape(EAp_G_pm_global,9,1,[]),'1:nsAp','EAp_{[G]}','[]','GlobalAeroQuantity',true);

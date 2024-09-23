@@ -229,8 +229,8 @@ classdef NBS_Master < handle
         idx_counter = 0;
         flexInd = ~strcmp(StateSets2ndOrder{1},StateGroups{1}); 
         if flexInd
-            flex_counter = reshape(repmat(1:numel(flexNames), 13, 1), 13*numel(flexNames), []);
-        else
+            % flex_counter = reshape(repmat(1:numel(flexNames), 13, 1), 13*numel(flexNames), []);
+        % else
             flex_counter = reshape(repmat(1:numel(flexNames), 12, 1), 12*numel(flexNames), []);
         end
         obj.qg1st_idx = []; obj.qg2nd_idx = []; obj.dqg2nd_idx = [];
