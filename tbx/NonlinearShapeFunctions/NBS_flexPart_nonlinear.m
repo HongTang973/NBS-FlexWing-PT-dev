@@ -388,7 +388,7 @@ classdef NBS_flexPart_nonlinear < handle
 
             function shapeObject = create_shape_object(shapeTemplate,s_custom,B_custom,dB_custom,varargin)
                 varargin = ['template', shapeTemplate, varargin];
-                shapeObject  = PeriodicShape(varargin{:});
+                shapeObject  = shapeFunctionObject(varargin{:});
                 if ~isempty(B_custom)
                     shapeObject = shapeObject.addCustomFunctions(s_custom,B_custom,dB_custom);
                     if ~isempty(shapeObject.weightFunction)

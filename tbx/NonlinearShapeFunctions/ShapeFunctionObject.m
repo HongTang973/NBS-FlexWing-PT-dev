@@ -24,15 +24,14 @@ classdef ShapeFunctionObject
     methods
 
         function obj = ShapeFunctionObject(varargin)
-
-            %addpath('./utility_functions');
-            shapeSetTemplate = utility_functions.get_option(varargin,'template','chebyshev_1st');
+            
             obj.s = utility_functions.get_option(varargin,'s',linspace(0,1,101)); obj.s = reshape(obj.s,1,[],1);
             obj.BCs = utility_functions.get_option(varargin,'BCs',[0 1;1 1;1 1]);
             nShapes = utility_functions.get_option(varargin,'nShapes',10);
             obj.halfShape = utility_functions.get_option(varargin,'halfShape',false);
             obj.setName = utility_functions.get_option(varargin,'setName',[]);
             obj.setHistory{1,3} = zeros(nShapes,1);
+            shapeSetTemplate = utility_functions.get_option(varargin,'template','chebyshev_1st');
 
             ShapeSetTemplates = {...
                 'polynomial',...
@@ -233,6 +232,7 @@ classdef ShapeFunctionObject
         function [] = plotShapes(obj,varargin)
 
             output_detail = utility_functions.get_option(varargin,'output_detail','final');
+            name = utility_functions.get_option(varargin, 'name','-');
 
             switch output_detail
 
@@ -243,7 +243,7 @@ classdef ShapeFunctionObject
 
                 case 'final_2' %plot only the final shape set plus a few supporting panels
 
-                    figure('windowStyle','docked');
+                    figure('windowStyle','docked', 'Name', ['Final Shape Set - ', name]);
                     subplot(6,3,[1 2 4 5 7 8]), plot(obj.s,obj.y_all{end}); xlabel('s'); ylabel(obj.setHistory{end,2}); title(obj.setName,'interpreter','none');
                     subplot(6,3,[10 11 13 14 16 17]), plot(obj.s,obj.dy_ds_all{end}); xlabel('s'); ylabel(obj.setHistory{end,4});
                     subplot(6,3,[3 6]), plot(obj.s,obj.x); xlabel('s'); ylabel('x');

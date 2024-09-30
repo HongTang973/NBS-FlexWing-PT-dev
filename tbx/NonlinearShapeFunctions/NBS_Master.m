@@ -635,6 +635,7 @@ classdef NBS_Master < handle
         AeroForce = utility_functions.get_option(varargin,'AeroForce',false);
         newFig = utility_functions.get_option(varargin,'newFig',true);
         figureName = utility_functions.get_option(varargin,'figureName','');
+        plotAeroCS = utility_functions.get_option(varargin,'plotAeroCS', 0);
         if newFig
             figure('WindowStyle','docked','DockControls','on','Name',figureName);
         end
@@ -734,9 +735,13 @@ classdef NBS_Master < handle
         hold off;
 
         %set extra figure options
+        if ~plotAeroCS
         ax = gca;
         view(ax,[azimuth,elevation]);
-        box on; grid on;
+        box on; 
+        end        
+        grid on;
+
 %         title(['System Parts: ' utility_functions.cell2char(parts,'parseChars',', ') ' , t = ' num2str(t_)]);
 
     end
@@ -833,9 +838,9 @@ classdef NBS_Master < handle
         for i_ = 1:obj.nflexParts_nonlinear
             flexPartName = flexParts_nonlinear_names{i_};
             shapeObject_bend = utility_functions.get_field(obj,['.flexParts_nonlinear.' flexPartName '.shapeObject_bend']);
-            shapeObject_bend.plotShapes('output_detail',output_detail);
+            shapeObject_bend.plotShapes('output_detail',output_detail, 'name', 'Bend');
             shapeObject_twist = utility_functions.get_field(obj,['.flexParts_nonlinear.' flexPartName '.shapeObject_twist']);
-            shapeObject_twist.plotShapes('output_detail',output_detail);
+            shapeObject_twist.plotShapes('output_detail',output_detail, 'name', 'Twist');
         end
     end
 
@@ -1308,10 +1313,13 @@ classdef NBS_Master < handle
 %         campos([1 mean(ylim) mean(zlim)]);
 %         camtarget([0 mean(ylim) mean(zlim)]);
         if plotAeroCS
-        plotWhat.plotReferenceLine = false;
+        plotWhat.plotReferenceLine = true;
         plotWhat.plotSurface = false;
         plotWhat.plotStringers = false;
+        plot2DProjections = [0,0,0];
+        plotWhat.p3 = 0;
         else
+        plotWhat.p3 = 1;
         plotWhat.plotReferenceLine = plotReferenceLine;
         plotWhat.plotSurface = true;
         plotWhat.plotStringers = true;    
@@ -1328,7 +1336,10 @@ classdef NBS_Master < handle
         end
 
         hold on;
+        if ~plotAeroCS
         xlim(XLIM); ylim(YLIM); zlim(ZLIM);
+        end
+
         if plot2DProjections
             plot_2D_projections(r,XLIM,YLIM,ZLIM,plot2DProjections);
         end
@@ -1338,7 +1349,11 @@ classdef NBS_Master < handle
             
 
             if plotWhat.plotReferenceLine
-                plot3(r(1,:),r(2,:),r(3,:),'color',[0 0.5 0],'lineWidth',2);
+                if plotWhat.p3
+                    plot3(r(1,:),r(2,:),r(3,:),'color',[0 0.5 0],'lineWidth', 2);
+                else
+                    % plot(r(1,:),r(3,:),'color',[0 0 0.5],'lineWidth', 2);
+                end
             end
 
             nx = length(CrossSectionProfiles_{1,2}) + length(CrossSectionProfiles_{1,4});
@@ -1350,7 +1365,9 @@ classdef NBS_Master < handle
             CrossSectionProfiles_ = [CrossSectionProfiles_(1,:) ; CrossSectionProfiles_]; CrossSectionProfiles_{1,1} = 0;
             s_aeroProfiles = CrossSectionProfiles_(:,1);
             P_Airfoil = zeros(3,nx,numel(s_draw));
-
+            
+            colours = utility.color_gen(size(r,2), 0, 'seq', 1);
+            alpha_ = linspace(0.25,1,size(r,2));
             for j_ = 1:size(r,2)
 
                 if s_draw(j_)>s_aeroProfiles{AP_counter+1}
@@ -1385,17 +1402,38 @@ classdef NBS_Master < handle
                 if plotWhat.plotStringers && j_>1
                     plot3_pairs(Paf,idx_stringers,{'color',[0.4,0.4,0.4]});
                 end
+                
 
                 if ismember(j_,idx_ribs)
                     %fill3(P_airfoil(1,:),P_airfoil(2,:),P_airfoil(3,:),'r','edgeColor','r','faceAlpha',0.4);
-                    fill3(P_airfoil(1,:),P_airfoil(2,:),P_airfoil(3,:),'k','edgeColor',[0.4,0.4,0.4],'faceAlpha',0);
+                    if plotWhat.p3
+                        fill3(P_airfoil(1,:),P_airfoil(2,:),P_airfoil(3,:),'k','edgeColor',[0.4,0.4,0.4],'faceAlpha',0);
+                    else
+                        % yyaxis left
+
+                        plot(P_airfoil(1,:),P_airfoil(3,:),'-k', 'Color',colours(j_,:), 'LineWidth', 2);
+                        plot([P_airfoil(1,end) P_airfoil(1,1)], [P_airfoil(3,end) P_airfoil(3,1)],'-k', 'Color',colours(j_,:), 'LineWidth', 2);
+           
+                        if j_ ~= size(r,2)
+                        plot([r(1, j_) r(1, j_+4)], [r(3, j_) r(3, j_+4)], '-', 'Color', [[0,0,0.5], alpha_(j_)])
+                        end
+                        % yyaxis right
+                        % beta = -atan(ex(3)./ex(1))*180/pi;
+                        % plot(r(3, j_), beta, '.b')
+                        % plot([r(3, j_), r(3, j_)], [0 beta], '-b')
+                        
+                        % yyaxis left
+                        % scatter(r(1, j_), r(3, j_), '+b','MarkerFaceAlpha', alpha_(j_), 'MarkerEdgeAlpha', alpha_(j_))
+                    end
                     % fill3(P_airfoil(1,:),P_airfoil(2,:),P_airfoil(3,:),'r','edgeColor','r','faceAlpha',1.0);
                     %surf(P_airfoil(1,:),P_airfoil(2,:),P_airfoil(3,:));
-                    %plot3(r(1,j_),r(2,j_),r(3,j_),'marker','+','markerEdgeColor','b');
+                    % plot3(r(1,j_),r(2,j_),r(3,j_),'marker','+','markerEdgeColor','b');
                 end
                 P_airfoil_prev = P_airfoil;
                 P_Airfoil(:,:,j_) = P_airfoil;
             end
+
+
             Xsurf = squeeze(P_Airfoil(1,:,:));
             Ysurf = squeeze(P_Airfoil(2,:,:));
             Zsurf = squeeze(P_Airfoil(3,:,:));
@@ -1405,9 +1443,11 @@ classdef NBS_Master < handle
                 'MeshStyle','row',...
                 'edgeColor','none',...
                 'FaceLighting','gouraud'};
+
             if plotWhat.plotSurface
                 surf(Xsurf,Ysurf,Zsurf,surfaceOptions{:});
             end
+
             camlight(CamLight(1),CamLight(2));
         end
 
