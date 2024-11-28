@@ -728,7 +728,12 @@ classdef NBS_Master < handle
         if AeroForce
             FAero = obj.get_qoiValue(obj,'Aero_Forces_G','Tidx',Tidx,'Sidx',':','generate_QOIs',false);
             FAero_Gamma = obj.get_qoiValue(obj,'Aero_Forces_Gamma_G','Tidx',Tidx,'Sidx',':','generate_QOIs',false);
-            quiver3(FAero_Gamma(1,:),FAero_Gamma(2,:),FAero_Gamma(3,:),FAero(1,:),FAero(2,:),FAero(3,:));
+            scale_q = 2.3e3;
+            q = quiver3(FAero_Gamma(1,:),FAero_Gamma(2,:),FAero_Gamma(3,:),FAero(1,:)./scale_q,FAero(2,:)./scale_q,FAero(3,:)./scale_q, 'b', 'AutoScale', 'off');
+            scale_q = 2.3e3;
+            plot3(FAero_Gamma(1,:) + FAero(1,:)./scale_q, FAero_Gamma(2,:) + FAero(2,:)./scale_q,FAero_Gamma(3,:) + FAero(3,:)./scale_q, 'g')
+            q.ShowArrowHead = 'off';
+            q.Marker = '.';
         end
 
         end
@@ -1433,10 +1438,8 @@ classdef NBS_Master < handle
                 P_Airfoil(:,:,j_) = P_airfoil;
             end
 
-
-            Xsurf = squeeze(P_Airfoil(1,:,:));
-            Ysurf = squeeze(P_Airfoil(2,:,:));
-            Zsurf = squeeze(P_Airfoil(3,:,:));
+            
+     
             surfaceOptions = {...
                 'FaceAlpha',0.7,...
                 'FaceColor',[0.6,0.7,0.8],...
@@ -1444,11 +1447,19 @@ classdef NBS_Master < handle
                 'edgeColor','none',...
                 'FaceLighting','gouraud'};
 
-            if plotWhat.plotSurface
+            if plotWhat.plotSurface && j_ ~= 40     
+                Xsurf = squeeze(P_Airfoil(1,1:4:end,1:4:end));
+                Ysurf = squeeze(P_Airfoil(2,1:4:end,1:4:end));
+                Zsurf = squeeze(P_Airfoil(3,1:4:end,1:4:end));
+                surf(Xsurf,Ysurf,Zsurf,surfaceOptions{:});
+            else
+                Xsurf = squeeze(P_Airfoil(1,:,:));
+                Ysurf = squeeze(P_Airfoil(2,:,:));
+                Zsurf = squeeze(P_Airfoil(3,:,:));
                 surf(Xsurf,Ysurf,Zsurf,surfaceOptions{:});
             end
 
-            camlight(CamLight(1),CamLight(2));
+            % camlight(CamLight(1),CamLight(2));
         end
 
         function [] = plot3_pairs(z,idc,args)
