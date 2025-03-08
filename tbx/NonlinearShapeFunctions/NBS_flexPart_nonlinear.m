@@ -388,7 +388,7 @@ classdef NBS_flexPart_nonlinear < handle
 
             function shapeObject = create_shape_object(shapeTemplate,s_custom,B_custom,dB_custom,varargin)
                 varargin = ['template', shapeTemplate, varargin];
-                shapeObject  = PeriodicShape(varargin{:});
+                shapeObject  = shapeFunctionObject(varargin{:});
                 if ~isempty(B_custom)
                     shapeObject = shapeObject.addCustomFunctions(s_custom,B_custom,dB_custom);
                     if ~isempty(shapeObject.weightFunction)
@@ -628,18 +628,21 @@ classdef NBS_flexPart_nonlinear < handle
 
                         if obj.NBS_Master.FLAG_dw
                             if strcmp(obj.NBS_Master.aeroForces, 'quasi_steady')
-                                obj.nQAero = 0; %states per strip
                                 switch obj.NBS_Master.dwDetail
                                     case 'full'
-                                        obj.qAero.n = 4; %states per blade
+                                        obj.nQAero = 4; %states per strip
+                                        obj.qAero.n = obj.nsAp*4; %states per blade
                                     case 'simple'
+                                        obj.nQAero = 0; %states per strip
                                         obj.qAero.n = 1;
                                 end
                             else
                                 switch obj.NBS_Master.dwDetail
                                     case 'full'
+                                        obj.nQAero = 4;
                                         obj.qAero.n = obj.qAero.n + obj.nsAp*4;
                                     case 'simple'
+                                        obj.nQAero = 0;
                                         obj.qAero.n = obj.qAero.n + 1;
                                 end
                             end

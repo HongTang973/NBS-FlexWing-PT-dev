@@ -1,6 +1,6 @@
 
 function AB = MultiProd_(A,B,~)
-global mult3d_mex
+% global mult3d_mex
 %returns the product of the multidimensional arrays A and B
 %product obtained by multiplying together all of the (dim1,dim2) 2d sub-matrices of A and B
 %automatic array expansion of unit length dimensions

@@ -92,7 +92,9 @@ SimObject.Q = u;
                                                                            % sort(imag(eig(J_est))/(2*pi)),
 tic
 
-options = odeset('OutputFcn',@outputFunction,'BDF','off','relTol',1e-5);
+% l_ic = length(SimObject.IC);
+% M = zeros(l_ic, l_ic); M([SimObject.qg2nd_idx; SimObject.dqg2nd_idx],[SimObject.qg2nd_idx; SimObject.dqg2nd_idx]) = diag(ones(1, length([SimObject.qg2nd_idx; SimObject.dqg2nd_idx])));
+options = odeset('OutputFcn',@outputFunction,'BDF','off','relTol',1e-3);
 if func2str(fHandle) == 'f'
     [t,u] = ode15s(fHandle, tsteps, SimObject.IC, options, SimObject, 'dQ');
 else
