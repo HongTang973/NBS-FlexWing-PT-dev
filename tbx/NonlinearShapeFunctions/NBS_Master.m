@@ -12,7 +12,15 @@ classdef NBS_Master < handle
         rho                                                                %[kg/m^3] air density
         grav_acc                                                           %[m/s^2] magnitude of gravitational acceleration
         gravVec_G = [0;0;-1]                                               %[-] global orientation of gravitational acceleration (unit vector)
-        aerodynamics                                                       %[-] aerodynamics switch
+        aerodynamics   
+        
+        % ************** -------Implementation of DynamicStall  ---------- *********************
+        DynamicStall                                                       %[-] bool value to determine if the stall is on
+        nAero_states  = 2;                                                 %[-] when strip theory is used, dimension of state model
+        nstates_ps    = 2;                                                 %[-] the number of states per strip to model aerodynamics
+        AoA_PitchRate_formulation
+        % ************** ------------------------------------------------  *************************
+                                                            %[-] aerodynamics switch
         prescribedMotion_fnc                                               %handle to a function that prescribes an enforced motion of the aircraft reference point
         CUSTOM_free_states                                                 %handle to a function that prescribes a mapping from a set of kinematic states to position/rotational quantities and their variations
         ff_h
@@ -140,7 +148,7 @@ classdef NBS_Master < handle
         obj.aeroPartNames = [];
         for partObj_ = obj.allParts_cell
             partObj = partObj_{1};
-            if ~isa(partObj,'TBF_Master')
+            if ~isa(partObj,'TBF_Master') 
                 partObj.set_dependent_properties();
             end
         end
@@ -152,7 +160,7 @@ classdef NBS_Master < handle
         obj.aeroPartNames = [];
         for partObj_ = obj.allParts_cell
             partObj = partObj_{1};
-            if ~isa(partObj,'TBF_Master')
+            if ~isa(partObj,'TBF_Master') & ~isa(partObj,'NBS_Master')
                 partObj.set_dependent_properties();               
             end
         end
@@ -342,6 +350,11 @@ classdef NBS_Master < handle
 
         QOI_Master_object = QOI_objects.QOI_Master(obj);
 
+        
+        %> this is modified to call the customized function
+        QOI_Master_object.fHandle = get_option(varargin,'fHandle',@f);
+
+      
         QOI_Master_object.add_QOI_Container(['.QOIcontainers_struct.' obj.partName],obj);
         for i_flexPart = 1:obj.nflexParts_nonlinear
             flexPart_obj = obj.flexParts_nonlinear_cell{i_flexPart};
@@ -356,8 +369,9 @@ classdef NBS_Master < handle
     end
 
     function initialise_qois(obj)
-        f(0,reshape(obj.IC,[],1,1),obj,'qoi',1);
-    end
+    %> this is modified to call the customized function 
+    obj.QOI_Master.fHandle(0,reshape(obj.IC,[],1,1),obj,'qoi',1);
+end
 
     function populate_QOIs(obj,qoiRequest)
 

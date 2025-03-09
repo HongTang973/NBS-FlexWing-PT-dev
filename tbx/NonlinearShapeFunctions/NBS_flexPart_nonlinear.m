@@ -388,7 +388,7 @@ classdef NBS_flexPart_nonlinear < handle
 
             function shapeObject = create_shape_object(shapeTemplate,s_custom,B_custom,dB_custom,varargin)
                 varargin = ['template', shapeTemplate, varargin];
-                shapeObject  = shapeFunctionObject(varargin{:});
+                shapeObject  = ShapeFunctionObject(varargin{:});
                 if ~isempty(B_custom)
                     shapeObject = shapeObject.addCustomFunctions(s_custom,B_custom,dB_custom);
                     if ~isempty(shapeObject.weightFunction)
@@ -597,7 +597,14 @@ classdef NBS_flexPart_nonlinear < handle
 
 
             if strcmp(obj.NBS_Master.aerodynamics,'strip_unsteady')
-                obj.qAero.n = obj.nsAp*2;
+                if obj.NBS_Master.DynamicStall
+                    % this is to consider the two extra variables of time
+                    % instances
+                    obj.NBS_Master.nstates_ps =  obj.NBS_Master.nAero_states + 2;
+                else 
+                    obj.NBS_Master.nstates_ps =  obj.NBS_Master.nAero_states;
+                end
+                obj.qAero.n     = obj.nsAp * obj.NBS_Master.nstates_ps;
                 obj.qAero.group = ['AeroStates_' obj.partName];
             end
 
