@@ -12,15 +12,8 @@ classdef NBS_Master < handle
         rho                                                                %[kg/m^3] air density
         grav_acc                                                           %[m/s^2] magnitude of gravitational acceleration
         gravVec_G = [0;0;-1]                                               %[-] global orientation of gravitational acceleration (unit vector)
-        aerodynamics   
-        
-        % ************** -------Implementation of DynamicStall  ---------- *********************
-        DynamicStall                                                       %[-] bool value to determine if the stall is on
-        nAero_states  = 2;                                                 %[-] when strip theory is used, dimension of state model
-        nstates_ps    = 2;                                                 %[-] the number of states per strip to model aerodynamics
-        AoA_PitchRate_formulation
-        % ************** ------------------------------------------------  *************************
-                                                            %[-] aerodynamics switch
+        aerodynamics                                                       %[-] aerodynamics switch
+
         prescribedMotion_fnc                                               %handle to a function that prescribes an enforced motion of the aircraft reference point
         CUSTOM_free_states                                                 %handle to a function that prescribes a mapping from a set of kinematic states to position/rotational quantities and their variations
         ff_h
@@ -338,7 +331,7 @@ classdef NBS_Master < handle
         obj.get_StateMap;
     end
 
-    function initialise_QOI_Master(obj)
+    function initialise_QOI_Master(obj,varargin)
 
 %         O.nflexParts_nonlinear = numel(O.flexParts_nonlinear_cell);
 %         try
@@ -352,7 +345,7 @@ classdef NBS_Master < handle
 
         
         %> this is modified to call the customized function
-        QOI_Master_object.fHandle = get_option(varargin,'fHandle',@f);
+        QOI_Master_object.fHandle = utility_functions.get_option(varargin,'fHandle',@f);
 
       
         QOI_Master_object.add_QOI_Container(['.QOIcontainers_struct.' obj.partName],obj);
@@ -513,7 +506,7 @@ end
 %         end
 
         %run QOI_Master.write_QOI_values methods with partLevel request
-        obj.QOI_Master.write_QOI_values('partLevel','display',false);
+         obj.QOI_Master.write_QOI_values('partLevel','display',false);
 
         %run the 2d plotting method contained in qoiContainer
         QOI_Container_requestedPart.generate_2dplot(axisHandle,...

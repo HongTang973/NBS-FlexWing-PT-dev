@@ -999,7 +999,8 @@ classdef NBS_flexPart_nonlinear < handle
             parentName = parentObj.partName;
             parentConnIdx = obj.connection_idx_ParentObj;
             Omega_G = partInformationStruct.(parentName).dvarTheta_dt_G;
-            beta_ = partInformationStruct.(parentName).azimuth;
+            % beta_ = partInformationStruct.(parentName).azimuth; % this is
+            % potentially ready for prescribed motion
             R_G_A = partInformationStruct.(parentName).E_G(:,:,parentConnIdx);
             dR_G_A_dt = partInformationStruct.(parentName).dE_dt_G(:,:,parentConnIdx);
             dR_G_A_dqe_Dim3x3x1xnqe = partInformationStruct.(parentName).dE_dq_G(:,:,parentConnIdx,:);
@@ -1340,38 +1341,60 @@ classdef NBS_flexPart_nonlinear < handle
 
                 switch SimObject.aerodynamics
                     case {'strip_steady','strip_unsteady','WT'}
-                        E_G_pm = utility_functions.sample(E_G,Apm_idx,3);
-                        dE_dt_G_pm = utility_functions.sample(dE_dt_G,Apm_idx,3);
-                        d2E_dt2_G_star_pm = utility_functions.sample(d2E_dt2_G_star,Apm_idx,3);
-                        % dGamma_dt_G_pm = sample(dGamma_dt_G,Apm_idx,3);
-                        dvarTheta_dt_G_pm = utility_functions.sample(dvarTheta_dt_G,Apm_idx,3);
-                        EAp_I_pm = obj.EAp_I_pm;
-                        EAp_G_pm = utility_functions.MultiProd_(E_G_pm,EAp_I_pm);
-                        dEAp_dt_G_pm = utility_functions.MultiProd_(dE_dt_G_pm,EAp_I_pm);
-                        d2EAp_dt2_G_star_pm = utility_functions.MultiProd_(d2E_dt2_G_star_pm,EAp_I_pm);
-                        %dexAp_dt_G_pm = dEAp_dt_G_pm(:,1,:);
+                        % sample for the motions of aero panels from structure motion #PT
+                
+                        E_G_pm                  = utility_functions.sample(E_G,Apm_idx,3);
+                        dE_dt_G_pm              = utility_functions.sample(dE_dt_G,Apm_idx,3);
+                        d2E_dt2_G_star_pm       = utility_functions.sample(d2E_dt2_G_star,Apm_idx,3);
+                        
+                        dGamma_dt_G_pm          = utility_functions.sample(dGamma_dt_G,Apm_idx,3);
+                        d2Gamma_dt2_G_star_pm   = utility_functions.sample(d2Gamma_dt2_G_star,Apm_idx,3);
+                        dGamma_dq_G_pm          = utility_functions.sample(dGamma_dq_G_Dim3x1xnsxnq2nd,Apm_idx,3);
+
+                        dvarTheta_dt_G_pm       = utility_functions.sample(dvarTheta_dt_G,Apm_idx,3);
+                        d2varTheta_dt2_G_pm     = utility_functions.sample(d2varTheta_dt2_G_star,Apm_idx,3);
+                        dvarTheta_dq_G_pm       = utility_functions.sample(dvarTheta_dq_G_Dim3x1xnsxnq2nd,Apm_idx,3);
+                    
+
+                        EAp_I_pm                = obj.EAp_I_pm;
+                        EAp_G_pm                = utility_functions.MultiProd_(E_G_pm,EAp_I_pm);
+                        dEAp_dt_G_pm            = utility_functions.MultiProd_(dE_dt_G_pm,EAp_I_pm);
+                        d2EAp_dt2_G_star_pm     = utility_functions.MultiProd_(d2E_dt2_G_star_pm,EAp_I_pm);
+      
 
                         %     dexAp_dt_G_pm = dEAp_dt_G_pm(:,1,:);
                         %     alphaCP = 3/4;
                         %     dGammaAlphaCP_dt_G_pm = bsxfun(@plus,drBarA_dt_G,...
                         %                            dGamma_dt_G_pm + bsxfun(@times,c_pm.*(alphaCP - beam_cntr_pm),dexAp_dt_G_pm));
-                        partInformationStruct.(flex_part_name).aero_cntr_pm = obj.aero_cntr_pm;
-                        partInformationStruct.(flex_part_name).nsAp = nsAp;
-                        partInformationStruct.(flex_part_name).EAp_G_pm = EAp_G_pm;
-                        partInformationStruct.(flex_part_name).dEAp_dt_G_pm = dEAp_dt_G_pm;
-                        partInformationStruct.(flex_part_name).d2EAp_dt2_G_star_pm = d2EAp_dt2_G_star_pm;
-                        partInformationStruct.(flex_part_name).Gamma_G_pm = utility_functions.sample(Gamma_G,Apm_idx,3);
-                        partInformationStruct.(flex_part_name).d2Gamma_dt2_G_star_pm = utility_functions.sample(d2Gamma_dt2_G_star,Apm_idx,3);
-                        partInformationStruct.(flex_part_name).Gamma_G_pn = utility_functions.sample(Gamma_G,Apn_idx,3);
-                        partInformationStruct.(flex_part_name).dGamma_dt_G_pm = utility_functions.sample(dGamma_dt_G,Apm_idx,3);
+                        
+                        % store the related info in to the *partInformationStruct*  #PT basic info
+                        partInformationStruct.(flex_part_name).nsAp                 = nsAp;
+                        partInformationStruct.(flex_part_name).chord                = obj.c_pm;
+                        partInformationStruct.(flex_part_name).ApWidth              = obj.ApWidths_pm;
+                        partInformationStruct.(flex_part_name).beam_cntr_pm         = obj.beam_cntr_pm;
+                        partInformationStruct.(flex_part_name).AIC                  = obj.AICs;
+                        partInformationStruct.(flex_part_name).aero_cntr_pm         = obj.aero_cntr_pm;
+                   
+                        partInformationStruct.(flex_part_name).EAp_G_pm             = EAp_G_pm;
+                        partInformationStruct.(flex_part_name).dEAp_dt_G_pm         = dEAp_dt_G_pm;
+                        partInformationStruct.(flex_part_name).d2EAp_dt2_G_star_pm  = d2EAp_dt2_G_star_pm;
+                        
+                        partInformationStruct.(flex_part_name).Gamma_G_pm           = utility_functions.sample(Gamma_G,Apm_idx,3);
+                        partInformationStruct.(flex_part_name).dGamma_dt_G_pm       = dGamma_dt_G_pm;
+                        partInformationStruct.(flex_part_name).d2Gamma_dt2_G_star_pm= d2Gamma_dt2_G_star_pm;
+                        partInformationStruct.(flex_part_name).dGamma_dq_G_pm       = dGamma_dq_G_pm;
+
+
+                        partInformationStruct.(flex_part_name).Gamma_G_pn           = utility_functions.sample(Gamma_G,Apn_idx,3);
+        
                         %partInformationStruct.(flex_part_name).dGammaAlphaCP_dt_G_pm = dGammaAlphaCP_dt_G_pm;
-                        partInformationStruct.(flex_part_name).dvarTheta_dt_G_pm = dvarTheta_dt_G_pm;
-                        partInformationStruct.(flex_part_name).chord = obj.c_pm;
-                        partInformationStruct.(flex_part_name).ApWidth = obj.ApWidths_pm;
-                        partInformationStruct.(flex_part_name).beam_cntr_pm = obj.beam_cntr_pm;
-                        partInformationStruct.(flex_part_name).AIC = obj.AICs;
-                        partInformationStruct.(flex_part_name).dGamma_dq_G_pm = utility_functions.sample(dGamma_dq_G_Dim3x1xnsxnq2nd,Apm_idx,3);
-                        partInformationStruct.(flex_part_name).dvarTheta_dq_G_pm = utility_functions.sample(dvarTheta_dq_G_Dim3x1xnsxnq2nd,Apm_idx,3);
+                        partInformationStruct.(flex_part_name).dvarTheta_dt_G_pm    = dvarTheta_dt_G_pm;
+                        partInformationStruct.(flex_part_name).d2varTheta_dt2_G_pm  = d2varTheta_dt2_G_pm;
+                        partInformationStruct.(flex_part_name).dvarTheta_dq_G_pm    = dvarTheta_dq_G_pm;
+                        %PvecAero_G_pm = [];
+                        %MvecAero_G_pm = [];
+
+                        
                         %                          F_SUM = utility_functions.sample(PvecApplied_G, Apm_idx,3);
                         %                          M_SUM = utility_functions.sample(MvecApplied_G, Apm_idx,3);
 

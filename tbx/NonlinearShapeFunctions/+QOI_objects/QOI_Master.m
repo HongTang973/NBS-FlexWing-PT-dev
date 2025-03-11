@@ -12,6 +12,7 @@ classdef QOI_Master < handle
     
     properties
         nQOI_Containers
+        fHandle
     end
     
     methods
@@ -52,7 +53,9 @@ classdef QOI_Master < handle
             nTidx_request_ = numel(Tidx_request_);
             for i_ = 1:nTidx_request_
                 tidx = Tidx_request_(i_);
-                f(obj.parentObject.t(tidx),obj.parentObject.Q(:,tidx),obj.parentObject,'qoi',tidx);
+                % this is modified to consider customized system equation
+                % script
+                obj.fHandle(obj.parentObject.t(tidx),obj.parentObject.Q(:,tidx),obj.parentObject,'qoi',tidx);
                 if Display, waitbar(i_/nTidx_request_,waitBar); end
             end
             
